@@ -1,194 +1,168 @@
 #pragma once
 
-
+#include <cstdint>
+#include <string>
 #include <string_view>
 #include <variant>
 
 // Independ User Interface Core
 namespace iuic {
-  using pixel_t = int;
+using pixel_t = int;
 
-  struct position {
-    pixel_t x,y = 0;
+struct position {
+  pixel_t x, y = 0;
+};
+
+struct size {
+  // вместо pixel_t использовать беззнаковое число
+  pixel_t w, h = 0;
+};
+
+struct ui_rect {
+  position position;
+  size size;
+};
+
+struct text_render_data {};
+
+struct surface_render_data {};
+
+struct frame_render_data {};
+
+struct image_render_data {};
+
+using render_data = std::variant<frame_render_data, surface_render_data,
+                                 text_render_data, image_render_data>;
+
+struct relement {
+  ui_rect area;       // x,y w,h
+  ui_rect clip_area;  // простая обрезка
+  int z_index;        // слой
+  float opacity;      // прозрачность
+  render_data data;   // метаданные для отрисовки
+};
+
+enum class SurfaceDataType { STR, JSON, XML, YAML, TOML, CSV };
+
+struct surface_create_info {
+  std::string type;
+  std::string version;
+  SurfaceDataType data_type;
+  // ну или std::string view или
+  // архитектурно storage_ref, рефененс на значение в
+  // хранилище
+  std::string data;
+};
+
+struct text_create_info {
+  std::string data;
+  std::string font;
+  uint32_t size;
+};
+struct image_create_info {};
+
+// стаил уже должен содержать
+// компоновку дочекних элементов
+struct style {
+  // box | greed | list | etc
+  int layout_type;  // TODO
+};
+
+enum class KeyMod {
+  None,
+  Alt,
+  Shift,
+  // ...
+};
+
+enum class KeyAction { Down, Up, Hold };
+
+struct ret_t {};
+
+constexpr style def_style{};
+
+class render_tree {};
+
+// макет + стиль + композитор + отрисовка
+// build contex and run
+// данные можно сохранять в store
+// и даже изменять между обновлениями
+class context {
+ public:
+  class event_reciver {
+   public:
+    void key(std::string_view, KeyAction, KeyMod = KeyMod::None){};
+    void pointer(position){};
   };
+  class builder {
+    friend context;
 
-  struct size {
-    // вместо pixel_t использовать беззнаковое число 
-    pixel_t w,h = 0;
-  };
-
-  struct ui_rect {
-    position position;
-    size size; 
-  };
-
-  struct text_render_data {};
-
-  struct surface_render_data {};
-
-  struct frame_render_data {};
-
-  struct image_render_data {};
-
-  using render_data = std::variant<frame_render_data,surface_render_data,text_render_data,image_render_data>;
-
-  struct relement {
-    ui_rect area;      // x,y w,h
-    ui_rect clip_area; // простая обрезка
-    int z_index;       // слой
-    float opacity;     // прозрачность
-    render_data data;  // метаданные для отрисовки
-  };
-
-  // стаил уже должен содержать
-  // компоновку дочекних элементов
-  struct style {
-    // box | greed | list | etc
-    int layout_type; // TODO
-  };
-
-  enum class KeyMod {
-    None,
-    Alt,
-    Shift,
-    // ...
-  };
-
-  enum class KeyAction {
-    Down,
-    Up,
-    Hold
-  };
-
-  
-  struct ret_t {
-  };
-
-  constexpr style def_style{};
-
-
-  class render_tree {};
-
-  // макет + стиль + композитор + отрисовка
-  // build contex and run
-  // данные можно сохранять в store
-  // и даже изменять между обновлениями
-  class context {
-  public:
-    class event_reciver {
-    public:
-      void key(std::string_view,KeyAction,KeyMod = KeyMod::None){};
-      void pointer(position){};
-    };
-    class builder {
-      friend context;
-    public:
-      /*
-	Базовая форма для всего.Стелизуемый рамка.
-      */
-      template<style st = def_style,typename Call = void>
-      void frame(Call call){
-	call(*this);
-      };
-      
-      /*
-	Является конечной точкой.Отрисовка текста
-      */
-      template<style st = def_style,typename Call = void>
-      void text(Call call){
-	call(*this);
-      };
-
-      /*
-	Является конечной точкой.Отрисовка изображения
-      */
-      template<style st = def_style,typename Call = void>
-      void image(Call call) {
-	call(*this);
-      };
-      
-
-      /*
-	Пользовательская поверхность.
-      */
-      template<style st = def_style,typename Call = void>
-      void surface(Call call){
-	// surface create info
-	style sci;
-	call(*this,sci);
-      };
-      ret_t ret() {
-	return {};
-      };
-
-
-    private:
-      builder(context&ctx);
-      // animator
-      context& ctx;
-    };
-  public: // api
-
-    void set_view_size(size sz) {
-      if(true) { // check for valide size
-	view_size = sz;
-      }
+   public:
+    /*
+      Базовая форма для всего.Стелизуемый рамка.
+    */
+    template <style st = def_style, typename Call = void>
+    void frame(Call call) {
+      call(*this);
     };
 
-    template<style st = def_style,typename Call = void>
-    void make(Call call) {
-      // do
-      call(b);
+    /*
+      Является конечной точкой.Отрисовка текста
+    */
+    template <style st = def_style, typename Call = void>
+    void text(Call call) {
+      text_create_info info;
+      call(*this);
     };
 
-    render_tree get_tree();
+    /*
+      Является конечной точкой.Отрисовка изображения
+    */
+    template <style st = def_style, typename Call = void>
+    void image(Call call) {
+      image_create_info info;
+      call(info);
+    };
 
-    event_reciver event;
-  private:
-    // event reciver
-    // store
+    /*
+      Пользовательская поверхность.
+    */
+    template <style st = def_style, typename Call = void>
+    void surface(Call call) {
+      // surface create info
+      surface_create_info info;
+      call(*this, info);
+    };
+    ret_t ret() { return {}; };
+
+   private:
+    builder(context& ctx);
     // animator
-    size view_size;
-    builder b{*this};
+    context& ctx;
   };
-}
-void test() {
 
-  iuic::context ctx{};
+ public:  // api
+  void set_view_size(size sz) {
+    if (true) {  // check for valide size
+      view_size = sz;
+    }
+  };
 
-  ctx.set_view_size(iuic::size{1280,720});
+  template <style st = def_style, typename Call = void>
+  void make(Call call) {
+    // do
+    call(b);
+  };
 
-  ctx.make([](auto&ctx){
-    ctx.frame([](auto&ctx){
-      return ctx.ret();
-    });
-    ctx.text([](auto&tci){
-      return tci.ret();
-    });
+  render_tree get_tree();
 
-    ctx.image([](auto&ici){
-      return ici.ret();
-    });
+  event_reciver event;
 
-    ctx.surface([](auto&ctx,auto&sci){
-      return ctx.ret();
-    });
-
-    return ctx.ret();
-  });
-
-
-  // события
-  // тут может быть даже буфер
-  ctx.event.key("K",iuic::KeyAction::Down,iuic::KeyMod::Alt);
-  ctx.event.key("Mouse-1",iuic::KeyAction::Down);
-  ctx.event.pointer(iuic::position{22,44});
-
-  // получение дерева и рендеринг
-  auto tree = ctx.get_tree();
-  
-  // далее активация событий работа только с хранилищем
-  // дерево в этот момент никак не изменяеться 
-
-  // редеринг
-}
+ private:
+  // event reciver
+  // store
+  // animator
+  size view_size;
+  builder b{*this};
+};
+}  // namespace iuic
