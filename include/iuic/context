@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <string_view>
 #include <variant>
 
 // Independ User Interface Core
@@ -47,6 +48,7 @@ namespace iuic {
   };
 
   enum class KeyMod {
+    None,
     Alt,
     Shift,
     // ...
@@ -73,6 +75,11 @@ namespace iuic {
   // и даже изменять между обновлениями
   class context {
   public:
+    class event_reciver {
+    public:
+      void key(std::string_view,KeyAction,KeyMod = KeyMod::None){};
+      void pointer(position){};
+    };
     class builder {
       friend context;
     public:
@@ -135,6 +142,8 @@ namespace iuic {
     };
 
     render_tree get_tree();
+
+    event_reciver event;
   private:
     // event reciver
     // store
