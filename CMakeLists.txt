@@ -13,3 +13,6 @@ include_directories(include)
 add_library(${PROJECT_NAME}
   "./src/component.cpp"
 )
+
+
+add_subdirectory(test)
