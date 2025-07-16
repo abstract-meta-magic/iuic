@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <stack>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -70,15 +71,6 @@ struct image_create_info {};
 
 struct layout {};
 
-struct ui_raw_tree {
-  struct node {
-    node *parent;
-    std::vector<node *> childs;
-  };
-};
-// |A|A-1|A-2|B|B-1|B-1-1|B-2|B-3
-// стаил уже должен содержать
-// компоновку дочекних элементов
 struct style {
   using layout_t = std::unique_ptr<layout> (*)();
 
@@ -96,6 +88,48 @@ struct style {
 
   layout_t layout; // TODO
 };
+
+// flat tree of calculations
+struct FTC {
+  struct node {
+    const style &style;
+    relement elament{};
+    // 0 - is root
+    std::size_t parent;
+  };
+
+  void clear() {
+    nodes.clear();
+    parent = {}; // ...
+  };
+
+  void add(const style &style, render_data &&data) {
+    auto parent_id = parent.empty() ? 0 : parent.top();
+    nodes.push_back(node{style, {.data = std::move(data)}, parent.top()});
+    parent.push(nodes.size() - 1);
+  };
+
+  void up() { parent.pop(); };
+
+  // TODO: Refactor
+  const std::vector<node> &get();
+
+  node &get_current();
+
+private:
+  std::vector<node> nodes;
+  // current type
+  std::stack<std::size_t> parent;
+};
+
+// event tree
+struct ET {};
+
+struct render_list {};
+
+// |A|A-1|A-2|B|B-1|B-1-1|B-2|B-3
+// стаил уже должен содержать
+// компоновку дочекних элементов
 
 // что нужно для просчета расположений
 // min\max padding(может быть опущен)\margin
@@ -124,6 +158,8 @@ class render_tree {};
 // и даже изменять между обновлениями
 class context {
 public:
+  class animator {};
+  class storage {};
   class event_reciver {
   public:
     void key(std::string_view, KeyAction, KeyMod = KeyMod::None){};
@@ -138,15 +174,19 @@ public:
     */
     template <style st = def_style, typename Call = void>
     void frame(Call call) {
+      ctx.calc_tree.add(st, frame_render_data{});
       call(*this);
+      ctx.calc_tree.up();
     };
 
     /*
       Является конечной точкой.Отрисовка текста
     */
     template <style st = def_style, typename Call = void> void text(Call call) {
-      text_create_info info;
-      call(*this);
+      ctx.calc_tree.add(st, text_render_data{});
+      call(
+          std::get<text_render_data>(ctx.calc_tree.get_current().elament.data));
+      ctx.calc_tree.up();
     };
 
     /*
@@ -154,8 +194,10 @@ public:
     */
     template <style st = def_style, typename Call = void>
     void image(Call call) {
-      image_create_info info;
-      call(info);
+      ctx.calc_tree.add(st, image_render_data{});
+      call(std::get<image_render_data>(
+          ctx.calc_tree.get_current().elament.data));
+      ctx.calc_tree.up();
     };
 
     /*
@@ -163,10 +205,12 @@ public:
     */
     template <style st = def_style, typename Call = void>
     void surface(Call call) {
-      // surface create info
-      surface_create_info info;
-      call(*this, info);
+      ctx.calc_tree.add(st, surface_render_data{});
+      call(*this, std::get<surface_render_data>(
+                      ctx.calc_tree.get_current().elament.data));
+      ctx.calc_tree.up();
     };
+
     ret_t ret() { return {}; };
 
   private:
@@ -185,17 +229,38 @@ public: // api
   template <style st = def_style, typename Call = void> void make(Call call) {
     // do
     call(b);
+
+    // построение FTC
+
+    // первый этап вычислений
+
+    // балансировка
+
+    // на его основе построение
+    // событий\рендеренга
   };
 
   render_tree get_tree();
 
+public:
+  // event reciver
   event_reciver event;
+  // store
+  storage storage;
+
+  // animator
+  animator animator;
 
 private:
-  // event reciver
-  // store
-  // animator
   size view_size;
+
+  // плоское дерево вычислений
+  FTC calc_tree;
+  // дерево событий
+  ET event_tree;
+  // плоский список отрисовки
+  render_list render_list;
+  // ядро построения
   builder b{*this};
 };
 } // namespace iuic

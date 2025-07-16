@@ -35,5 +35,7 @@ int main() {
   ctx.event.key("B", KeyAction::Down);
   ctx.event.pointer({22, 44});
 
-  return 0;
+  ctx.
+
+      return 0;
 }
