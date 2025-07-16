@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 // Independ User Interface Core
 namespace iuic {
@@ -35,11 +38,11 @@ using render_data = std::variant<frame_render_data, surface_render_data,
                                  text_render_data, image_render_data>;
 
 struct relement {
-  ui_rect area;       // x,y w,h
-  ui_rect clip_area;  // простая обрезка
-  int z_index;        // слой
-  float opacity;      // прозрачность
-  render_data data;   // метаданные для отрисовки
+  ui_rect area;      // x,y w,h
+  ui_rect clip_area; // простая обрезка
+  int z_index;       // слой
+  float opacity;     // прозрачность
+  render_data data;  // метаданные для отрисовки
 };
 
 enum class SurfaceDataType { STR, JSON, XML, YAML, TOML, CSV };
@@ -59,14 +62,46 @@ struct text_create_info {
   std::string font;
   uint32_t size;
 };
+
+// родитель берет дочерние объекты и считает свой размер
+// если требуется перепросчитываються размеры дочерних объектов
+
 struct image_create_info {};
 
+struct layout {};
+
+struct ui_raw_tree {
+  struct node {
+    node *parent;
+    std::vector<node *> childs;
+  };
+};
+// |A|A-1|A-2|B|B-1|B-1-1|B-2|B-3
 // стаил уже должен содержать
 // компоновку дочекних элементов
 struct style {
-  // box | greed | list | etc
-  int layout_type;  // TODO
+  using layout_t = std::unique_ptr<layout> (*)();
+
+  size min_width, min_height, max_width, max_height;
+
+  int margin;
+
+  int padding;
+
+  int border;
+
+  int background;
+
+  int layer;
+
+  layout_t layout; // TODO
 };
+
+// что нужно для просчета расположений
+// min\max padding(может быть опущен)\margin
+// возможно ширина рамки
+
+void compositor(style, int childs);
 
 enum class KeyMod {
   None,
@@ -88,16 +123,16 @@ class render_tree {};
 // данные можно сохранять в store
 // и даже изменять между обновлениями
 class context {
- public:
+public:
   class event_reciver {
-   public:
+  public:
     void key(std::string_view, KeyAction, KeyMod = KeyMod::None){};
     void pointer(position){};
   };
   class builder {
     friend context;
 
-   public:
+  public:
     /*
       Базовая форма для всего.Стелизуемый рамка.
     */
@@ -109,8 +144,7 @@ class context {
     /*
       Является конечной точкой.Отрисовка текста
     */
-    template <style st = def_style, typename Call = void>
-    void text(Call call) {
+    template <style st = def_style, typename Call = void> void text(Call call) {
       text_create_info info;
       call(*this);
     };
@@ -135,21 +169,20 @@ class context {
     };
     ret_t ret() { return {}; };
 
-   private:
-    builder(context& ctx);
+  private:
+    builder(context &ctx);
     // animator
-    context& ctx;
+    context &ctx;
   };
 
- public:  // api
+public: // api
   void set_view_size(size sz) {
-    if (true) {  // check for valide size
+    if (true) { // check for valide size
       view_size = sz;
     }
   };
 
-  template <style st = def_style, typename Call = void>
-  void make(Call call) {
+  template <style st = def_style, typename Call = void> void make(Call call) {
     // do
     call(b);
   };
@@ -158,11 +191,11 @@ class context {
 
   event_reciver event;
 
- private:
+private:
   // event reciver
   // store
   // animator
   size view_size;
   builder b{*this};
 };
-}  // namespace iuic
+} // namespace iuic
