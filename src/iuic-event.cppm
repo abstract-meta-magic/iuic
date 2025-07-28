@@ -2,6 +2,8 @@
 module;
 
 #include <any>
+#include <cstdint>
+#include <functional>
 #include <string_view>
 #include <vector>
 
@@ -12,10 +14,13 @@ import :storage;
 namespace iuic {
 
 struct event {
+  using event_call_t = void (*)(storage_ref &);
   ui_rect rect;
-  // info
-  // data
-  // slot
+  event_call_t call;
+  storage_ref ref;
+  enum property : std::uint8_t {
+    // ...
+  };
 };
 
 void test() {

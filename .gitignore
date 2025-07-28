@@ -5,6 +5,7 @@
 .cache
 compile_commands.json
 *~
+/#*#
 
 # Compiled Object files
 *.slo

@@ -1,49 +1,55 @@
 
 module;
 
+#include <deque>
+#include <iostream>
 #include <stack>
 #include <vector>
 
 export module iuic.core:ftc;
 import :base;
+import :layout.box;
 
 namespace iuic {
 
 // flat tree of calculations
 struct FTC {
   struct node {
-    celement elament;
     // 0 - is root
-    std::size_t parent;
-    std::size_t childs_end;
+    const layout *layout{nullptr};
+    std::deque<size_t> childs;
   };
 
   void clear() {
     nodes.clear();
+    elements.clear();
     parent = {}; // ...
   };
 
-  void add(const style &style, render_data &&data) {
+  void add(const style &style, const layout *layout) {
     static constexpr box_layout box{};
-    auto parent_id = parent.empty() ? 0 : parent.top();
-    nodes.push_back(node{{&style}, parent_id});
-    nodes.back().elament.layout = &box; // WARNING tmp
-    auto &e = nodes.back().elament;
-    if (parent_id != 0) {
-      nodes[parent_id].childs_end = nodes.size();
+    elements.push_back({elements.size(), &style});
+    nodes.push_back(node{layout});
+
+    if (not parent.empty()) {
+      std::cout << "parent:" << parent.top() << std::endl;
+      std::cout << "parent set child:" << elements.size() - 1 << std::endl;
+      nodes[parent.top()].childs.push_back(elements.size() - 1);
     }
-    parent.push(nodes.size() - 1);
+    parent.push(elements.size() - 1);
   };
 
   void up() { parent.pop(); };
 
   // TODO: Refactor
-  std::vector<node> &get();
+  std::vector<celement> &get();
+  node &get(size_t);
 
   node &get_current();
 
 private:
   std::vector<node> nodes;
+  std::vector<celement> elements;
   // current type
   std::stack<std::size_t> parent;
 };

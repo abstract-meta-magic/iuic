@@ -20,10 +20,14 @@ target_sources(${PROJECT_NAME} PUBLIC
 	"src/iuic-storage.cppm"
 	"src/iuic-animator.cppm"
 	"src/iuic-event.cppm"
+	"src/iuic-render.cppm"
+	"src/iuic-transformer.cppm"
+	"src/iuic-box-layout.cppm"
 	"src/iuic-ctx.cppm"
 )
 
 target_sources(${PROJECT_NAME} PUBLIC
+	"src/iuic-base.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-ftc.cpp"
 )

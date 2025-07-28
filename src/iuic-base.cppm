@@ -2,12 +2,14 @@
 
 module;
 
+#include <concepts>
 #include <cstdint>
+#include <deque>
 #include <expected>
 #include <iostream>
-#include <ranges>
-#include <span>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -17,7 +19,6 @@ export module iuic.core:base;
 export namespace iuic {
 
 // сделать отдельной частью модуля iuic.core:render
-class render_list {};
 
 struct celement;
 struct relement;
@@ -31,10 +32,27 @@ enum class KeyMod {
   // ...
 };
 
+// Унифицированный код нажатых кнопок
+struct key_code {};
+namespace keymap::en {
+key_code qwerty(std::same_as<std::string_view> auto... args) {
+  // TODO : Make key_cade ctor
+  return {};
+};
+
+key_code qwerty(std::same_as<const char *> auto... args) {
+  return qwerty(std::string_view{args}...);
+};
+} // namespace keymap::en
+
 enum class KeyAction { Down, Up, Hold };
 
-using pixel_t = int;
+enum class PointerAction { Move, In, Out };
+
+using pixel_t = int; // swap to int64_t
 using upixel_t = unsigned;
+
+// in version 0.2
 struct adaptive_t {
   enum type {
     PIXEL,
@@ -48,7 +66,7 @@ struct ui_position {
 };
 
 struct ui_size {
-  upixel_t w, h = 0;
+  upixel_t h, w = 0;
 };
 
 struct ui_rect {
@@ -61,8 +79,13 @@ struct indent {
   // конструкторы и т.д.
 };
 
+struct border_radius {
+  // TODO : body
+};
+
 // top | bottom = horisontal center
 // right | left = vertical center
+// TODO : нормальные доки
 enum class align : std::uint8_t {
   none, // 0
   top,
@@ -80,8 +103,13 @@ struct style_font {
   // ...
 };
 
+struct color {
+  uint8_t r, g, b, a;
+};
+
 // вынести
 struct style_background {
+  color color;
   // ...
 };
 
@@ -94,6 +122,17 @@ struct style_shape {
   indent padding;
 
   indent border;
+
+  struct {
+    struct {
+      border_radius left;
+      border_radius right;
+    } top;
+    struct {
+      border_radius left;
+      border_radius right;
+    } bottom;
+  } border_radius;
 };
 
 // base color is RGBA\16
@@ -110,6 +149,28 @@ struct style {
   align align;
 };
 
+template <typename T>
+concept layout_cpt = std::is_base_of_v<layout, T>;
+
+/*
+ Невладеющий объект.
+ Можно оставить в chs элементы, и они
+ будут помечены как discarted
+ */
+struct childs_set final {
+  constexpr childs_set(std::vector<celement> *c, std::deque<size_t> *ch)
+      : container{c}, chs{ch} {};
+  constexpr bool has_next() const noexcept { return not chs->empty(); };
+  // получить элемент и убрать из стака значение
+  celement &get();
+  // получить элемент и убрать из стака значение
+  const celement &get() const;
+
+private:
+  std::vector<celement> *container;
+  std::deque<size_t> *chs;
+};
+
 struct layout {
   // может позже переписать под ошибки
   using for_err = std::expected<int, int>;
@@ -117,16 +178,21 @@ struct layout {
 
   // примитивная оценка собственного размера
   virtual ui_size self_size(const style &,
-                            std::vector<ui_size> &) const noexcept = 0;
+                            const childs_set chs) const noexcept = 0;
   // приблезительное расположение элементов
-  virtual void set_childs_position(ui_rect, align,
-                                   std::vector<ui_rect> &) const noexcept = 0;
+  virtual void set_childs_position(const celement &,
+                                   childs_set chs) const noexcept = 0;
   // Балансировка очень сложна
   // тут сложно и нужно подумать
   // Сверху приходит ваш ui_rect, а вы должны
   // максимально точно вычислить ui_rect своих дитей
   // может быть вызван более одного раза
-  virtual void balancing(ui_rect, std::span<celement> &) const noexcept = 0;
+  virtual void balancing(const celement &, childs_set chs) const noexcept = 0;
+
+  template <layout_cpt T> static constexpr const layout &instance() {
+    static constexpr T _{};
+    return _;
+  };
 };
 
 // TOTO : in version 0.2
@@ -141,6 +207,7 @@ struct styleset {
 struct text_render_data {
   const style_font &font;
   std::size_t size;
+  // ... etc
 };
 
 enum class SurfaceDataType { STR, JSON, XML, YAML, TOML, CSV };
@@ -181,20 +248,22 @@ struct image_render_data {};
 using render_data = std::variant<frame_render_data, surface_render_data,
                                  text_render_data, image_render_data>;
 
-enum class calc_statment {
-  managed,
-  discarted,
-};
 // вычисляемый элемент сделать полуприватным ?
 struct celement {
-  // celement(const style &style_) : style{style_} {}
+  /*
+    Позже можно будет прописать
+    индивидуальную обработку
+  enum : std::uint8_t {
+    invalid,
+    discarded,
+    absolute,
+    parent_of,
+    dynamic_childs,
+  } properties;
+  */
+  const size_t id{0};
   const style *style{nullptr};
-  const layout *layout{nullptr};
   ui_rect calculated_area;
-  // layout-proccess
-
-  // ее можно привязать по id элемента не забивая celement мусором
-  // render_data linked_data{image_render_data{}}; // метаданные для отрисовки
 };
 
 // рисуемый элемент
@@ -207,58 +276,25 @@ struct relement {
   render_data data; // метаданные для отрисовки
 };
 
-// базовый приватный layout для всех
-// если в стиле отсутствует layout
-// для вычислений используется этот
-struct box_layout final : layout {
-  ui_size self_size(const style &st,
-                    std::vector<ui_size> &szs) const noexcept override {
-    ui_size res{st.shape.min_size.h, 0};
+ui_size minmax(const style &st, ui_size val) {
 
-    if (szs.empty()) {
-      return st.shape.min_size;
-    }
+  if (st.shape.max_size.w == 0) {
+  } else if (val.w > st.shape.max_size.w) {
+    val.w = st.shape.max_size.w;
+  } else if (st.shape.min_size.w == 0) {
+  } else if (val.w < st.shape.min_size.w) {
+    val.w = st.shape.min_size.w;
+  }
 
-    for (auto &&sz : szs) {
-
-      if (res.w < sz.w) {
-        res.w = sz.w;
-      }
-
-      res.h += sz.h;
-      std::cout << "[sz]" << sz.h << ":" << sz.w << std::endl;
-    }
-
-    if (st.shape.max_size.w == 0) {
-    } else if (res.w > st.shape.max_size.w) {
-      res.w = st.shape.max_size.w;
-    } else if (st.shape.min_size.w == 0) {
-    } else if (res.w < st.shape.min_size.w) {
-      res.w = st.shape.min_size.w;
-    }
-
-    // max\min set
-    if (st.shape.max_size.h == 0) {
-    } else if (res.h > st.shape.max_size.h) {
-      res.h = st.shape.max_size.h;
-    } else if (st.shape.min_size.h == 0) {
-    } else if (res.h < st.shape.min_size.h) {
-      res.h = st.shape.min_size.h;
-    }
-
-    std::cout << res.h << ":" << res.w << std::endl;
-
-    return res;
-  };
-
-  void set_childs_position(ui_rect r, align a,
-                           std::vector<ui_rect> &chs) const noexcept override {
-
-  };
-
-  void balancing(ui_rect self,
-                 std::span<celement> &els) const noexcept override {
-
-  };
+  // max\min set
+  if (st.shape.max_size.h == 0) {
+  } else if (val.h > st.shape.max_size.h) {
+    val.h = st.shape.max_size.h;
+  } else if (st.shape.min_size.h == 0) {
+  } else if (val.h < st.shape.min_size.h) {
+    val.h = st.shape.min_size.h;
+  }
+  return val;
 };
+
 } // namespace iuic

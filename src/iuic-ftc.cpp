@@ -9,5 +9,7 @@ import :ftc;
 
 namespace iuic {
 
-std::vector<FTC::node> &FTC::get() { return nodes; };
+std::vector<celement> &FTC::get() { return elements; };
+
+FTC::node &FTC::get(size_t id) { return nodes[id]; };
 }; // namespace iuic

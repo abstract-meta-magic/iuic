@@ -1,19 +1,40 @@
 
 module;
 
+#include <string_view>
+#include <utility>
 #include <variant>
+#include <vector>
 
 export module iuic.core;
 export import :base;
+import :layout.box;
+import :transform;
 import :ftc;
 import :storage;
 import :animator;
 import :event;
 
+// import :default
+
 export namespace iuic {
 
 // base stye
-constexpr style def_style{.shape{.min_size{200, 100}}};
+constexpr style def_style = []() {
+  style res{};
+
+  res.shape.min_size = {120, 240};
+
+  res.shape.margin.top = 20;
+  res.shape.margin.left = 30;
+
+  res.background.color = {150, 11, 11, 255};
+
+  return res;
+}();
+
+constexpr const auto def_layout = box_layout{};
+// constexpr const layout &def_layout = def_layout_val;
 
 // WARRNING : Not Impl eat
 enum class UpdateType { Dynamic, Static, DirtyFlag };
@@ -31,33 +52,58 @@ public:
     /*
       Базовая форма для всего.Стелизуемый рамка.
     */
-    template <style = def_style, UpdateType update = UpdateType::Dynamic,
+    template <style = def_style, layout_cpt layout = box_layout,
               typename Call = void>
     void frame(Call call);
 
     /*
       Является конечной точкой.Отрисовка текста
     */
-    template <style = def_style, UpdateType = UpdateType::Dynamic,
-              typename Call = void>
-    void text(Call call);
+    template <style = def_style, layout_cpt layout = box_layout>
+    void text(std::string_view str);
 
     /*
       Является конечной точкой.Отрисовка изображения
     */
-    template <style = def_style, UpdateType = UpdateType::Dynamic,
-              typename Call = void>
-    void image(Call call);
+    template <style = def_style, layout_cpt layout = box_layout>
+    void image(image_render_data);
 
     /*
       Пользовательская поверхность.
     */
-    template <style = def_style, UpdateType = UpdateType::Dynamic,
+    template <style = def_style, layout_cpt layout = box_layout,
               typename Call = void>
     void surface(Call call, const surface_static_info &);
 
+    // event
+    template <KeyAction, typename Call = void>
+    void event(key_code, KeyMod, Call &&) {};
+
+    template <KeyAction key, typename Call = void>
+    void event(key_code kc, Call &&call) {
+      event<key, Call>(kc, KeyMod::None, std::forward<Call>(call));
+    };
+
+    template <KeyAction, typename Call = void>
+    void event(key_code, KeyMod, Call &&call, storage_registry_key stk) {};
+
+    template <KeyAction key, typename Call = void>
+    void event(key_code kc, Call &&call, storage_registry_key stk) {
+      event<key, Call>(kc, KeyMod::None, std::forward<Call>(call), stk);
+    };
+
+    template <PointerAction, typename Call = void> void event(Call){};
+
+    // использовать трансформатор для изменения
+    // позиций, размеров и вращения элементов
+    // transform.shape
+    // transform.position
+    void transform();
+
+    const storage &storage;
+
   private:
-    builder(context &ctx_) : ctx{ctx_} {};
+    builder(context &ctx_) : ctx{ctx_}, storage{ctx_.storage} {};
     // animator
     context &ctx;
   };
@@ -68,7 +114,7 @@ public: // api
   template <UpdateType = UpdateType::Dynamic, typename Call = void>
   void make(Call call);
 
-  render_list get_tree();
+  const std::vector<relement> &get_tree();
 
 private:
   void reset();
@@ -98,7 +144,7 @@ private:
   // дерево событий
   tmp_event_registry event_registry;
   // плоский список отрисовки
-  render_list rl;
+  std::vector<relement> to_render;
   // ядро построения
   builder b{*this};
 };
@@ -111,7 +157,7 @@ void context::make(Call call) {
 
   style st{.shape{.min_size{view_size}, .max_size{view_size}}};
   // построение FTC
-  calc_tree.add(st, frame_render_data{{}});
+  calc_tree.add(st, &def_layout);
   call(b);
   calc_tree.up();
   // step 2
@@ -124,28 +170,38 @@ void context::make(Call call) {
 };
 
 // Builder Template Impl
-template <style st = def_style, UpdateType = UpdateType::Dynamic,
-          typename Call = void>
+template <style st = def_style, layout_cpt Layout, typename Call = void>
 void context::builder::frame(Call call) {
 
   // bg
   // boreders
-
-  ctx.calc_tree.add(st, frame_render_data{st.background});
+  ctx.calc_tree.add(st, &layout::instance<Layout>());
   call(*this);
   ctx.calc_tree.up();
 };
 
-template <style st = def_style, UpdateType = UpdateType::Dynamic,
-          typename Call = void>
+template <style st = def_style, layout_cpt Layout, typename Call = void>
 void context::builder::surface(Call call, const surface_static_info &si) {
-  ctx.calc_tree.add(st, surface_render_data{si});
+  ctx.calc_tree.add(st, &layout::instance<Layout>());
 
   // wrong
   surface_static_info s{};
   surface_render_data sr{s};
   // wrong
   call(*this, sr);
+  ctx.calc_tree.up();
+}
+template <style st = def_style, layout_cpt Layout>
+void context::builder::text(std::string_view str) {
+  ctx.calc_tree.add(st, &layout::instance<Layout>());
+  // WARNING : установить данные для отрисовки текста
+  ctx.calc_tree.up();
+}
+
+template <style st = def_style, layout_cpt Layout>
+void context::builder::image(image_render_data ird) {
+  ctx.calc_tree.add(st, &layout::instance<Layout>());
+  // WARNING : установить данные для отрисовки текста
   ctx.calc_tree.up();
 }
 } // namespace iuic
