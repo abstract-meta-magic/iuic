@@ -21,7 +21,7 @@ target_sources(${PROJECT_NAME} PUBLIC
 	"src/iuic-animator.cppm"
 	"src/iuic-event.cppm"
 	"src/iuic-render.cppm"
-	"src/iuic-transformer.cppm"
+	"src/iuic-transform.cppm"
 	"src/iuic-box-layout.cppm"
 	"src/iuic-ctx.cppm"
 )

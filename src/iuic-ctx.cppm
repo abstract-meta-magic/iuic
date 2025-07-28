@@ -1,4 +1,5 @@
 
+#include <concepts>
 module;
 
 #include <string_view>
@@ -84,10 +85,10 @@ public:
       event<key, Call>(kc, KeyMod::None, std::forward<Call>(call));
     };
 
-    template <KeyAction, typename Call = void>
+    template <KeyAction, std::invocable<storage_ref> Call = void>
     void event(key_code, KeyMod, Call &&call, storage_registry_key stk) {};
 
-    template <KeyAction key, typename Call = void>
+    template <KeyAction key, std::invocable<storage_ref> Call = void>
     void event(key_code kc, Call &&call, storage_registry_key stk) {
       event<key, Call>(kc, KeyMod::None, std::forward<Call>(call), stk);
     };
