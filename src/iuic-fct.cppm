@@ -82,7 +82,12 @@ struct computing_context {
 };
 
 // flat tree of calculations
-struct FTC {
+// TODO : rename to flat computing tree
+// и расширить его функцианал
+struct FCTree {
+  // Хочиться сделать FCTree более удобным для совместного использования
+  // с computing_context
+
   void clear() {
     nodes.clear();
     parent = {}; // ...

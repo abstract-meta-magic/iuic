@@ -155,7 +155,7 @@ private:
   ui_size view_size;
 
   // плоское дерево вычислений
-  FTC calc_tree;
+  FCTree calc_tree;
   // дерево событий
   tmp_event_registry event_registry{storage};
   // плоский список отрисовки
