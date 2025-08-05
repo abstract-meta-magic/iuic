@@ -53,18 +53,30 @@ constexpr inline void button(auto &b, std::string_view str) {
     };
 
     b.template event<iuic::KeyAction::Down>(
-        iuic::keymap::en::qwerty("A", "B"), iuic::KeyMod::None,
-        [](auto ref) {
-
+        iuic::keymap::en::qwerty("A", "B"),
+        [](auto sr) {
+          if (auto ref = sr.storage.get_ref(sr.srk); ref.template as<int>()) {
+            // do
+            auto &val = ref.template unwrap<int>();
+          }
+          std::cout << "EVENT DROP" << std::endl;
+          sr.storage.emplace("u-22-zv", std::string_view{"my val"});
         },
-        b.storage.get_key(233));
-    b.template event<iuic::KeyAction::Up>(iuic::keymap::en::qwerty("W"),
-                                          iuic::KeyMod::Shift, []() {
-                                            // ...
-                                          });
+        b.storage.get_key(220));
+
+    b.template event<iuic::KeyAction::Up>(
+        iuic::keymap::en::qwerty("W"), iuic::KeyMod::Shift, [](auto data) {
+          if (auto ref = data.storage.get_ref(data.srk);
+              ref.template as<int>()) {
+            // do
+          }
+        });
+
+    b.template event<iuic::KeyAction::Down>(iuic::keymap::en::qwerty("U"),
+                                            [](auto data) {});
 
     b.template event<iuic::KeyAction::Down>(iuic::keymap::en::qwerty("X"),
-                                            [](auto &r) {});
+                                            [](auto data) {});
 
     b.template event<iuic::PointerAction::Move>([](iuic::ui_position pos) {
       // ...
@@ -94,8 +106,8 @@ int main() {
 
   std::cout << "complite" << std::endl;
 
-  ctx.event.key("A", KeyAction::Down);
-  ctx.event.key("B", KeyAction::Down);
+  ctx.event.key(iuic::keymap::en::qwerty("W"), KeyAction::Down);
+  ctx.event.key(iuic::keymap::en::qwerty("B"), KeyAction::Down);
   ctx.event.pointer({22, 44});
 
   // SDL BASE
@@ -130,9 +142,8 @@ int main() {
 
     ctx.make([](auto &b) {
       // frame(create_info,childs_lambda)
-      b.frame([](auto &b) {
-        b.template frame<s_1>([](auto &b) { b.frame([](auto &) {}); });
-      });
+      b.frame(
+          [](auto &b) { b.template frame<s_1>([](auto &b) { b.frame(); }); });
 
       b.text("test text");
       b.template text<style{.shape{.min_size{240, 400}},
@@ -149,9 +160,7 @@ int main() {
 
     std::cout << "GO" << std::endl;
     auto &tree = ctx.get_tree();
-    size_t begin{1}, end{tree.size() - 1};
-    for (; begin != end; ++begin) {
-      auto &r = tree[begin];
+    for (auto &&r : tree) {
       auto rect = to_sdl_rect(r.area);
       std::visit(
           [renderer, &rect](auto &obj) {

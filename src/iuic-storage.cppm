@@ -98,8 +98,7 @@ public:
   };
 
   // Ограниченный буфер для временных значений
-  template <typename Key, pure_type Val>
-  storage_registry_key tmp(Key, Val &&) const;
+  template <pure_type Val> storage_registry_key tmp(Val &&) const;
 
   // Удалить элимент по ключу
   template <typename Key> void erase(Key){};

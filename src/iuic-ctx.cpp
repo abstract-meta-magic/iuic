@@ -24,88 +24,61 @@ void context::reset() {
   to_render.clear();
 };
 
-// У меня есть собранные элементы
-// нужно сделать первичный просчет и выдать
-// базовую деагностику
-struct ui_limiter {
-  ui_size min, max;
-};
-
-void context::primary_calculations() {
-  std::cout << "-------------------------" << std::endl
-            << "Collecting" << std::endl
-            << "-------------------------" << std::endl;
+void context::self_size() {
   auto &tree = calc_tree.get();
-  // down to up
 
   if (tree.empty()) {
     return;
   }
 
-  using it_t = typename std::remove_cvref_t<decltype(tree)>::iterator;
+  auto current = std::rbegin(tree);
+  auto end = std::rend(tree);
 
-  std::stack<std::pair<size_t, size_t>> st;
-
-  size_t begin{tree.size() - 1}, end{0};
-
-  celement a;
-  // TOTO : Refactor it's penis
-
-  static std::vector<celement> ep_el{};
-  static std::deque<size_t> ep_ch{};
-
-  for (;; --begin) {
-    auto &node = calc_tree.get(begin);
-
-    if (not node.childs.empty()) {
-      ep_ch = node.childs;
-      tree[begin].calculated_area.size =
-          node.layout->self_size(*tree[begin].style, {&tree, &ep_ch});
-    } else {
-      tree[begin].calculated_area.size =
-          node.layout->self_size(*tree[begin].style, {&ep_el, &ep_ch});
+  for (; current != end; ++current) {
+    auto &cc = *current;
+    if (cc.element.tags & celement::discarded) {
+      continue;
     }
+    cc.layout->set_childs_position({&cc, &calc_tree.get_parent(cc)});
 
-    if (begin == 0) {
-      break;
-    }
-  }
-
-  end = tree.size() - 1;
-  for (; begin != end; ++begin) {
-    auto &node = calc_tree.get(begin);
-    if (not node.childs.empty()) {
-      ep_ch = node.childs;
-      node.layout->set_childs_position(tree[begin], {&tree, &ep_ch});
-    } else {
-      ep_ch.clear();
-      node.layout->set_childs_position(tree[begin], {&tree, &ep_ch});
-    }
-  }
-
-  begin = 0;
-  for (; begin != end; ++begin) {
-    auto &el = tree[begin];
-    std::cout << "Height : " << el.calculated_area.size.h
-              << " | Width : " << el.calculated_area.size.w << std::endl;
-
-    // ограничитель + набор объектов
-    //   i.elament.style.layout(style, std::vector<style>{});
-  };
-
-  for (auto &el : tree) {
-    to_render.push_back({.area{el.calculated_area},
-                         .data{frame_render_data{el.style->background}}});
+    cc.layout->self_size({&cc, &calc_tree.get_parent(cc)});
   }
 };
+void context::childs_position() {
+  // TODO : PARALLEL
+  auto &tree = calc_tree.get();
+
+  for (auto &cc : tree) {
+    if (cc.element.tags & celement::discarded) {
+      continue;
+    }
+    cc.layout->set_childs_position({&cc, &calc_tree.get_parent(cc)});
+  }
+}
 
 void context::balancing() {
-  std::cout << "-------------------------" << std::endl
-            << "Balancing" << std::endl
-            << "-------------------------" << std::endl;
+  // TODO : PARALLEL
+  auto &tree = calc_tree.get();
+  for (auto &cc : tree) {
+    cc.layout->balancing({&cc, &calc_tree.get_parent(cc)});
+  }
 };
 
-void context::build_event_tree() { assert("TODO"); };
+void context::build_render_list() {
+  // тут нужно будет отсеять лишние и
+  // маркерованные элементы
+  // после чего составить простой список
+  // отрисовки
 
-void context::build_render_list() { assert("TODO"); };
+  auto &tree = calc_tree.get();
+
+  for (auto &cc : tree) {
+    if (cc.element.tags & celement::discarded) {
+      continue;
+    }
+    to_render.push_back(
+        {.area{cc.element.full_area},
+         .data{frame_render_data{.background{cc.style->background}}}});
+  }
+}
 }; // namespace iuic

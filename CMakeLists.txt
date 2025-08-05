@@ -8,11 +8,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(iuic)
 
-add_library(${PROJECT_NAME})
 
+option(IUIC_PRETTY "Включить pretty" OFF)
+option(IUIC_INFO "Вывод информации" ON)
+
+add_library(${PROJECT_NAME}_core STATIC)
+
+if(IUIC_INFO)
+message("iuic::core : static")
+endif()
 # Modules
-target_sources(${PROJECT_NAME} PUBLIC
-	FILE_SET iuic_modules 
+target_sources(${PROJECT_NAME}_core PUBLIC
+	FILE_SET iuic_core_modules 
 	TYPE CXX_MODULES
 	FILES
 	"src/iuic-base.cppm"
@@ -26,12 +33,38 @@ target_sources(${PROJECT_NAME} PUBLIC
 	"src/iuic-ctx.cppm"
 )
 
-target_sources(${PROJECT_NAME} PUBLIC
+target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-ftc.cpp"
+	"src/iuic-layout-utils.cpp"
+)
+## Main alias
+add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
+
+
+if(IUIC_PRETTY)
+
+## Простое сообщение
+if(IUIC_INFO)
+message("iuic::pretty : static")
+endif()
+
+## Позже будет доделана
+add_library(${PROJECT_NAME}_pretty STATIC)
+
+target_link_libraries(${PROJECT_NAME}_pretty PUBLIC ${PROJECT_NAME}_core)
+
+target_sources(${PROJECT_NAME}_pretty PUBLIC
+	FILE_SET iuic_pretty_modules 
+	TYPE CXX_MODULES
+	FILES
+	"src/iuic-pretty.cppm" # other module
 )
 
+## pretty alias
+add_library(${PROJECT_NAME}::pretty ALIAS ${PROJECT_NAME}_pretty)
+endif()
 
-# TODO : tests
+## Tests
 add_subdirectory(test)
