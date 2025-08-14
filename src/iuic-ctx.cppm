@@ -72,7 +72,7 @@ public:
     template <style = def_style> void image(image_render_data);
 
     /*
-      Пользовательская поверхность.
+      Пользовательская поверхность. Будет добавленно в v0.2
     */
     template <style = def_style, layout_cpt layout = box_layout,
               typename Call = void>
@@ -85,8 +85,8 @@ public:
     template <KeyAction ka, typename Call = void>
     void event(key_code kc, KeyMod km, Call &&call) {
       // Проверять на правельный тип вызова
-      ctx.event_registry.registry_key_event<Call{}>(
-          ctx.calc_tree.get_current_id(), kc, km, ka);
+      // ctx.event_registry.registry_key_event<Call{}>(ctx.ctree.get_current_id(),
+      //                                             kc, km, ka);
     };
 
     template <KeyAction key, typename Call = void>
@@ -97,8 +97,8 @@ public:
     template <KeyAction ka, std::invocable<key_event_transfer_data> Call = void>
     void event(key_code kc, KeyMod km, Call &&call, storage_registry_key srk) {
       // Проверять на правельный тип вызова
-      ctx.event_registry.registry_key_event<Call{}>(
-          ctx.calc_tree.get_current_id(), kc, km, ka, srk);
+      // ctx.event_registry.registry_key_event<Call{}>(ctx.ctree.get_current_id(),
+      //                                            kc, km, ka, srk);
     };
 
     template <KeyAction key,
@@ -110,7 +110,8 @@ public:
     template <PointerAction, typename Call = void> void event(Call){};
 
     // использовать трансформатор для изменения
-    // позиций, размеров и вращения элементов
+    // позиций, размеров и вращения элементов будет добавленно в
+    // следующих версиях
     // transform.shape
     // transform.position
     void transform();
@@ -129,6 +130,7 @@ public: // api
   template <UpdateType = UpdateType::Dynamic, typename Call = void>
   void make(Call call);
 
+  // TODO : rename
   const std::vector<relement> &get_tree();
 
 private:
@@ -152,19 +154,14 @@ public:
   animator animator;
 
 private:
-  ui_size view_size;
-
   // плоское дерево вычислений
-  FCTree calc_tree;
+  FCTree ctree;
   // дерево событий
   tmp_event_registry event_registry{storage};
   // плоский список отрисовки
   std::vector<relement> to_render;
   // ядро построения
   builder b{*this};
-
-  // стелизация точки входа
-  style viewport;
 };
 
 // Contex Template Impl
@@ -173,18 +170,14 @@ void context::make(Call call) {
   // step 1
   reset();
 
-  // Может его сдеалть частью класса context ?
-  style st{.shape{.min_size{view_size}, .max_size{view_size}}};
-  // begin построение FTC
-  calc_tree.add(st, &def_layout);
+  // построение FCT
   call(b);
-  calc_tree.up();
-  // end
 
   self_size();
   childs_position();
   balancing();
 
+  ctree.print_tree();
   // dop
   build_render_list();
 };
@@ -195,9 +188,9 @@ void context::builder::frame(Call call) {
 
   // bg
   // boreders
-  ctx.calc_tree.add(st, &layout::instance<Layout>());
+  ctx.ctree.add(st, &layout::instance<Layout>());
   call(*this);
-  ctx.calc_tree.up();
+  ctx.ctree.up();
 };
 
 template <style st = def_style, layout_cpt Layout>
@@ -205,44 +198,44 @@ void context::builder::frame() {
 
   // bg
   // boreders
-  ctx.calc_tree.add(st, &layout::instance<Layout>());
-  ctx.calc_tree.up();
+  ctx.ctree.add(st, &layout::instance<Layout>());
+  ctx.ctree.up();
 };
 
 template <style st = def_style, layout_cpt Layout, typename Call = void>
 void context::builder::surface(Call call, surface_create_info sci) {
-  ctx.calc_tree.add(st, &layout::instance<Layout>());
+  ctx.ctree.add(st, &layout::instance<Layout>());
 
   // wrong
   surface_static_info s{};
   surface_render_data sr{s};
   // wrong
   call(*this, sr);
-  ctx.calc_tree.up();
+  ctx.ctree.up();
 }
 
 template <style st = def_style, layout_cpt Layout>
 void context::builder::surface(surface_create_info sci) {
-  ctx.calc_tree.add(st, &layout::instance<Layout>());
+  ctx.ctree.add(st, &layout::instance<Layout>());
 
   // wrong
   surface_static_info s{};
   surface_render_data sr{s};
   // wrong
-  ctx.calc_tree.up();
+  ctx.ctree.up();
 }
 
 template <style st = def_style>
 void context::builder::text(std::string_view str) {
-  ctx.calc_tree.add(st, &layout::instance<box_layout>());
+  ctx.ctree.add(st, &layout::instance<box_layout>());
   // WARNING : установить данные для отрисовки текста
-  ctx.calc_tree.up();
+  ctx.ctree.up();
 }
 
 template <style st = def_style>
 void context::builder::image(image_render_data ird) {
-  ctx.calc_tree.add(st, &layout::instance<box_layout>());
-  // WARNING : установить данные для отрисовки текста
-  ctx.calc_tree.up();
+  ctx.ctree.add(st, &layout::instance<box_layout>());
+  // WARNING : установить данные для отрисовки картинки
+  ctx.ctree.up();
 }
 } // namespace iuic

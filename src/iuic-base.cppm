@@ -10,7 +10,9 @@ module;
 #include <expected>
 #include <iostream>
 #include <list>
+#include <queue>
 #include <span>
+#include <stack>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -164,9 +166,7 @@ template <typename T>
 concept layout_cpt = std::is_base_of_v<layout, T>;
 
 struct area_request {
-  constexpr area_request(computing_context *of_, computing_context *to_,
-                         ui_size rq) noexcept
-      : requiest_value{rq}, of{of_}, to{to_} {}
+  constexpr area_request(computing_context *of_) noexcept : of{of_} {}
 
   constexpr area_request(const area_request &) = default;
 
@@ -188,15 +188,11 @@ struct area_request {
   const ui_size &value() const noexcept;
 
 private:
-  ui_size requiest_value;
   computing_context *of;
-  computing_context *to;
 };
 
 struct layout_utils_base {
-  layout_utils_base(computing_context *self_,
-                    computing_context *parent_) noexcept
-      : self{self_}, parent{parent_} {};
+  layout_utils_base(computing_context *ctx_) noexcept : ctx{ctx_} {};
   // Обычное сообщение для отладки
   void log(std::string_view message) const noexcept;
   // Предупреждение об исключительной ситвации.
@@ -211,14 +207,13 @@ struct layout_utils_base {
   const style &parent_style() const;
 
   // получение ссылки на viewport стиль
-  const style &viewport_style() const;
+  const style &root_style() const;
 
   // отложить
   void defer();
 
 protected: // общие нужды
-  computing_context *self{nullptr};
-  computing_context *parent{nullptr};
+  computing_context *ctx{nullptr};
 
 private: // реализация базовых концепций логирования
 };
@@ -226,8 +221,9 @@ private: // реализация базовых концепций логиро�
 // Структура которая помогает
 // при вычислении собственной позиции
 struct area_utils : layout_utils_base {
-  area_utils(computing_context *self, computing_context *parent) noexcept
-      : layout_utils_base{self, parent} {};
+
+  area_utils(computing_context *self) noexcept;
+
   // терминальный метод.
   // потребовать позицию.
   // требования могут быть отклонены,
@@ -240,11 +236,15 @@ struct area_utils : layout_utils_base {
   // но иерархически пренадлижащим своим элементам.
   void viewport_request_size(ui_size);
 
-  // есть ли запросы на выделение
-  bool has_request() const noexcept;
+  // терминальный метод.
+  // жестко задать размер,
+  // без запроса к родительскому элименту.
+  // Может привести к некоторым визуальным багам или
+  // к пометке элемента как discarded.
+  void set_hard_size(ui_size);
 
-  // следующий запрос
-  area_request next_request();
+  // запросы на выделение площади от дочерних объектов
+  std::vector<area_request> get_requests();
 
   // терминальный метод.
   // помечает элемент и его детей как discarted
@@ -272,8 +272,7 @@ private:
 };
 
 struct position_utils : layout_utils_base {
-  position_utils(computing_context *self, computing_context *parent) noexcept
-      : layout_utils_base{self, parent} {};
+  position_utils(computing_context *ctx_) noexcept : layout_utils_base{ctx_} {};
   ;
 
   const ui_position &self_position() const noexcept;
@@ -285,8 +284,8 @@ struct position_utils : layout_utils_base {
 // для точного определения позиций
 // и размеров
 struct balancing_utils : layout_utils_base {
-  balancing_utils(computing_context *self, computing_context *parent) noexcept
-      : layout_utils_base{self, parent} {};
+  balancing_utils(computing_context *ctx_) noexcept
+      : layout_utils_base{ctx_} {};
   ;
   // Вернет запрашиваемый текущем элиментом
   // размер
@@ -322,8 +321,10 @@ struct layout {
   // примитивная оценка собственного размера
   // можно подумать о предоставлении ограничителя на
   // вычисления размеров относительно родителя
+  // process area
   virtual void self_size(area_utils) const noexcept = 0;
   // приблезительное расположение элементов
+  // process position
   virtual void set_childs_position(position_utils) const noexcept = 0;
 
   // Балансировка очень сложна
@@ -331,6 +332,7 @@ struct layout {
   // Сверху приходит ваш ui_rect, а вы должны
   // максимально точно вычислить ui_rect своих дитей
   // может быть вызван более одного раза
+  // process balancing
   virtual void balancing(balancing_utils) const noexcept = 0;
 
   template <layout_cpt T> static constexpr const layout &instance() {

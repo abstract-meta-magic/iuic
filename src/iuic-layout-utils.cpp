@@ -1,5 +1,6 @@
 
 module;
+#include <print>
 #include <string_view>
 #include <vector>
 module iuic.core;
@@ -8,36 +9,42 @@ import :ftc;
 
 namespace iuic {
 void area_request::apply() {
-  of->element.full_area.size = requiest_value;
-  of->element.tags += celement::request_strong_applyed;
-  to->applyed_group.push_back(of);
+  // тут вроде как можно проверить на is_area_request_dispatched
+  of->set_area({}, celement::area_tags_t::area_request_strong_appyed);
 };
 
 void area_request::apply(ui_size sz) {
-  of->element.full_area.size = sz;
-  to->applyed_group.push_front(of);
+  of->set_area(sz, celement::area_tags_t::area_request_soft_appyed);
 };
 
-const ui_size &area_request::value() const noexcept { return requiest_value; }
+const ui_size &area_request::value() const noexcept {
+  return of->get_rect().size;
+}
 
-void area_request::discard() {
-  // TODO : Не происходит пометка всех дочерних по иерархии элементов
-  // как discarted
-  // что позволяет некоторым объектам отоброжаться вызвая баги отрисовки
-  // нужно разабраться с системой discarded
-  // подсказка 1 2 2 2 2 1 2 3 4 5 4 3 2 2 1
-  //               obj 1 - ^         ^ - obj 2
-  // если (1) помечен как discarted то можно помечать все объекты влоть до (2)
-  // его ближаешого родствиника как discarted, что делаеться на уровне FTC
-  of->applyed_group.clear(); // нет дочерних объектов нет проблемм )
-  of->element.tags += celement::discarded;
+std::vector<area_request> area_utils::get_requests() {
+  std::vector<area_request> res;
+
+  for (auto &&cc : ctx->get_childs()) {
+    if (cc->is_discarted() || not cc->is_area_request_dispatched())
+      continue;
+
+    res.push_back({cc});
+  };
+
+  return res;
 };
 
-const style &area_request::style_of() const { return *of->style; }
+void area_request::discard() { of->discard(); };
 
-const style &layout_utils_base::self_style() const { return *self->style; };
-const style &layout_utils_base::parent_style() const { return *parent->style; };
-const style &layout_utils_base::viewport_style() const {
+const style &area_request::style_of() const { return of->get_style(); }
+
+const style &layout_utils_base::self_style() const { return ctx->get_style(); };
+
+const style &layout_utils_base::parent_style() const {
+  return ctx->get_parent()->get_style();
+};
+
+const style &layout_utils_base::root_style() const {
   // TODO : Сделать viewport style ref
   static style _;
 
@@ -50,92 +57,70 @@ void layout_utils_base::log(std::string_view message) const noexcept {}
 void layout_utils_base::warning(std::string_view message) const noexcept {}
 
 // AREA
-
-bool area_utils::has_request() const noexcept {
-  return not self->requests.empty();
-};
-area_request area_utils::next_request() {
-  if (has_request()) {
-    auto res = self->requests.top();
-    self->requests.pop();
-    return res;
-  }
-  // error
-  throw "EMPTY";
-};
+area_utils::area_utils(computing_context *ctx_) noexcept
+    : layout_utils_base{ctx_} {}
 
 void area_utils::request_size(ui_size sz) {
-  if (self->element.tags &
-      (celement::discarded + celement::size_request_dispatched)) {
+  if (ctx->is_discarted()) {
     // TODO : В Debug сборке тут можно сделать исключение
     return;
   }
-  parent->requests.push({self, parent, sz});
-  self->element.tags += celement::size_request_dispatched;
 
-  discard_remaining_requiests();
+  ctx->set_area(sz, celement::area_tags_t::area_request_dispatched);
 };
+
 void area_utils::viewport_request_size(ui_size sz) {
   // WARNING : Пака вообще не работает
-  if (self->element.tags &
-      (celement::discarded + celement::size_request_dispatched)) {
+  if (ctx->is_discarted()) {
     // TODO : В Debug сборке тут можно сделать исключение
     return;
   }
-  parent->requests.push({self, parent, sz});
-  self->element.tags += celement::size_request_dispatched + celement::absolute;
 
-  discard_remaining_requiests();
+  ctx->set_area(sz, celement::area_tags_t::area_request_dispatched);
 };
 
+void area_utils::set_hard_size(ui_size sz) {
+  ctx->set_area(sz, celement::area_tags_t::area_request_strong_appyed);
+}
+
 void area_utils::self_discard() {
-  if (self->element.tags &
-      (celement::discarded + celement::size_request_dispatched)) {
+  if (ctx->is_discarted()) {
     // TODO : В Debug сборке тут можно сделать исключение
     return;
   }
-  self->element.tags += celement::discarded;
 
-  discard_remaining_requiests();
+  ctx->discard();
 };
 
 void area_utils::discard_remaining_requiests() {
-  auto requests = self->requests;
-  for (; not requests.empty();) {
-    auto &rq = requests.top();
-
-    rq.discard();
-
-    requests.pop();
-  }
+  // WRONG
 };
 
 // POSITION
 
 void position_request::apply(ui_position pos) {
-  owner->element.full_area.position = pos;
-  owner->element.tags += celement::position_inspected;
+  owner->set_position(pos, celement::position_tags_t::set_position_is_applyed);
 };
 
-void position_request::discard() {
-  owner->element.tags += celement::discarded;
-};
+void position_request::discard() { owner->discard(); };
 
 const style &position_request::style_of() const noexcept {
-  return *owner->style;
+  return owner->get_style();
 };
 
 const ui_size &position_request::size_of() const noexcept {
-  return owner->element.full_area.size;
+  return owner->get_rect().size;
 };
 
 std::vector<position_request> position_utils::content() {
   std::vector<position_request> res{};
 
-  for (auto &&cc : self->applyed_group) {
-    if (cc->element.tags & celement::discarded) {
+  for (auto &&cc : ctx->get_childs()) {
+    if (cc->is_discarted()) {
+      std::println("Position discard");
       continue;
     }
+    std::println("Position rq");
     res.push_back({cc});
   }
 
@@ -143,16 +128,18 @@ std::vector<position_request> position_utils::content() {
 };
 
 const ui_position &position_utils::self_position() const noexcept {
-  return self->element.full_area.position;
+  return ctx->get_rect().position;
 };
 
 // BALANCING
 
 bool balancing_utils::is_requiest_applied() const noexcept {
-  return self->element.full_area.size != ui_size{0, 0};
+  // WRONG
+  return false;
 };
 
 bool balancing_utils::is_strong_applied() const noexcept {
-  return self->element.tags & celement::request_strong_applyed;
+  // WRONG
+  return false;
 };
 }; // namespace iuic

@@ -14,6 +14,7 @@ option(IUIC_INFO "Вывод информации" ON)
 
 add_library(${PROJECT_NAME}_core STATIC)
 
+
 if(IUIC_INFO)
 message("iuic::core : static")
 endif()
@@ -31,6 +32,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-transform.cppm"
 	"src/iuic-box-layout.cppm"
 	"src/iuic-ctx.cppm"
+	"src/iuic-sig.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC

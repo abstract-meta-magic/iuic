@@ -21,10 +21,11 @@ struct box_layout final : public layout {
     std::println("My size : H-{},W-{}", style.shape.min_size.h,
                  style.shape.min_size.w);
 
-    for (; utils.has_request();) {
-      auto rq = utils.next_request();
+    auto requests = utils.get_requests();
 
-      std::println("request area size : {},{}", rq.value().h, rq.value().w);
+    for (auto &&rq : requests) {
+
+      std::println("Request area size - h:{},w:{}", rq.value().h, rq.value().w);
 
       res.h += rq.style_of().shape.margin.top;
       res.h += rq.value().h;
@@ -41,7 +42,10 @@ struct box_layout final : public layout {
       rq.apply();
     }
 
-    utils.request_size(minmax(utils.self_style(), res));
+    auto rq = minmax(utils.self_style(), res);
+
+    std::println("My area request - h:{},w:{}", rq.h, rq.w);
+    utils.request_size(rq);
 
     // мб сделать в стиле std::prindln ?
     utils.log("box - complite");
