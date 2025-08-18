@@ -10,20 +10,21 @@ module;
 
 export module iuic.core:event;
 import :base;
+import :fct;
 import :storage;
 
 namespace iuic {
 
-struct key_event_transfer_data {
+struct event_data {
   storage_registry_key srk;
   storage &storage;
 };
 
 // Может разделить на painter_event && key_event
 struct key_event {
-  using event_call_t = void (*)(key_event_transfer_data);
+  using event_call_t = void (*)(event_data);
   using trigger_call_t = bool (*)();
-  key_event_transfer_data data;
+  event_data data;
   size_t element_id;
   event_call_t call;
   trigger_call_t trigger;
@@ -40,6 +41,8 @@ class tmp_event_registry {
   //
 public:
   using ev = void (*)(storage &, std::any);
+
+  void reset() {};
 
   template <auto call>
   void registry_key_event(size_t id, key_code kc, KeyMod km, KeyAction ka) {
@@ -64,15 +67,11 @@ public:
 
   tmp_event_registry(storage &storage_) : storage{storage_} {}
 
+  void build_model(const FCTree &ctree) {};
+
 private:
   storage &storage;
   std::vector<key_event> events;
-
-  void (*captured_element)(void *);
-};
-
-struct hehe {
-  template <typename T> void operator()(T) {};
 };
 
 class event_reciver {

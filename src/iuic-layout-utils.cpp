@@ -4,7 +4,7 @@ module;
 #include <string_view>
 #include <vector>
 module iuic.core;
-import :ftc;
+import :fct;
 
 namespace iuic {
 void area_request::apply() {

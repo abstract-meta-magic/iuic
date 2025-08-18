@@ -13,7 +13,7 @@ module;
 #include <type_traits>
 #include <vector>
 
-export module iuic.core:ftc;
+export module iuic.core:fct;
 import :base;
 import :computing_context;
 import :layout.box;
@@ -72,7 +72,44 @@ public: // Public Interface
   /*
     Получение последнего элемента.
   */
-  computing_context &last();
+  computing_context &last() noexcept;
+
+  /*
+    Получение последнего элемента.
+    Может возвращать корневой элемент.
+  */
+  computing_context &last() const noexcept;
+
+  /*
+    Получение элемента по индексу.
+  */
+  computing_context &at(size_t);
+
+  /*
+    Получение элемента по индексу.
+  */
+  const computing_context &at(size_t) const;
+
+  /*
+    Получение корневого элемента.
+  */
+  computing_context &root() noexcept;
+
+  /*
+    Получение корневого элемента.
+  */
+  const computing_context &root() const noexcept;
+
+  /*
+    Размер дерева, без учета корневого элемента.
+  */
+  size_t size() const noexcept;
+
+  /*
+    Получение индекса последнего элемента.
+    Может возвращать индекс корневого элемента.
+  */
+  size_t index_at_last() const noexcept;
 
   /*
    for(auto&& cc : ctree.range_for()) { ... }.
@@ -106,8 +143,6 @@ public: // Public Interface
 public: // root style pubic interface
   void set_root_size(ui_size);
 
-  computing_context &get_root();
-
 private: // Private Hierarhy Interface
   computing_context *get_parent(computing_context *ctx) override;
 
@@ -128,7 +163,7 @@ private: // Data
     style style;           // можно унифицировать стиль
     size_t last_child;     // помошник в построении макета
     computing_context ctx; // сам контекст
-  } root{this};
+  } root_{this};
   std::vector<computing_context> nodes;
   // parent\last_brather
   std::stack<std::pair<size_t, size_t>> parent{};

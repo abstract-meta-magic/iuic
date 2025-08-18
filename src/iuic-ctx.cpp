@@ -39,11 +39,11 @@ void context::self_size() {
   }
 
   // отвратительно
-  ctree.get_root().get_layout().self_size({&ctree.get_root()});
+  ctree.root().get_layout().self_size({&ctree.root()});
 };
 void context::childs_position() {
   // TODO : PARALLEL
-  ctree.get_root().get_layout().set_childs_position({&ctree.get_root()});
+  ctree.root().get_layout().set_childs_position({&ctree.root()});
 
   for (auto &cc : ctree.range_for()) {
     if (cc.is_discarted()) {

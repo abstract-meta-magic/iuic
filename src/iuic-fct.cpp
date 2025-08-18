@@ -8,7 +8,7 @@ module;
 #include <vector>
 
 module iuic.core;
-import :ftc;
+import :fct;
 
 namespace iuic {
 
@@ -86,13 +86,13 @@ FCTree::const_reverse_range_based_for_proxy::
 void FCTree::reset() {
   nodes.clear();
   parent = {}; // ...
-  parent.push({root.id, root.id});
+  parent.push({root_.id, root_.id});
 };
 
 void FCTree::add(const style &style, const layout *layout) {
   // Проблемма с дочерними объектами root element
   // Может на stack сразу ложить root element ?
-  auto parent_id = not parent.empty() ? parent.top().first : root.id;
+  auto parent_id = not parent.empty() ? parent.top().first : root_.id;
 
   nodes.push_back({layout, &style, this, parent_id});
 
@@ -109,11 +109,11 @@ void FCTree::add(const style &style, const layout *layout) {
 
     famaly.second = id;
   } else {
-    if (root.last_child != root.id) {
-      nodes[root.last_child].set_brother(id);
+    if (root_.last_child != root_.id) {
+      nodes[root_.last_child].set_brother(id);
     }
 
-    root.last_child = id;
+    root_.last_child = id;
   }
 
   parent.push({id, id});
@@ -121,18 +121,36 @@ void FCTree::add(const style &style, const layout *layout) {
 
 void FCTree::up() { parent.pop(); };
 
-computing_context &FCTree::last() {
+computing_context &FCTree::last() noexcept {
   // REFACTOR THIS
   if (nodes.empty()) {
-    return root.ctx;
+    return root_.ctx;
   }
 
   return nodes.back();
 };
 
-computing_context &FCTree::get_root() { return root.ctx; }
+computing_context &FCTree::last() const noexcept { return last(); }
 
-void FCTree::set_root_size(ui_size sz) { root.style.shape.max_size = sz; };
+computing_context &FCTree::root() noexcept { return root_.ctx; }
+
+const computing_context &FCTree::root() const noexcept { return root_.ctx; }
+
+computing_context &FCTree::at(size_t id) { return nodes[id]; }
+
+const computing_context &FCTree::at(size_t id) const { return at(id); }
+
+size_t FCTree::size() const noexcept { return nodes.size(); };
+
+size_t FCTree::index_at_last() const noexcept {
+  if (nodes.empty()) {
+    return root_.id;
+  }
+
+  return size() - 1;
+};
+
+void FCTree::set_root_size(ui_size sz) { root_.style.shape.max_size = sz; };
 
 void FCTree::print_tree() const noexcept {
 
@@ -140,11 +158,11 @@ void FCTree::print_tree() const noexcept {
 
   std::println("------------------------------------------");
   for (auto &&node : nodes) {
-    auto parent = node.get_parent_id() == root.id
+    auto parent = node.get_parent_id() == root_.id
                       ? "root"
                       : std::to_string(node.get_parent_id());
     auto brother = (node.get_brother_id() == node.get_parent_id() ||
-                    node.get_brother_id() == root.id)
+                    node.get_brother_id() == root_.id)
                        ? "last"
                        : std::to_string(node.get_brother_id());
     auto &rect = node.get_rect();
@@ -173,7 +191,7 @@ void FCTree::print_tree() const noexcept {
 
 computing_context *FCTree::get_parent(computing_context *ctx) {
   if (ctx->get_parent_id() == std::numeric_limits<size_t>::max()) {
-    return &root.ctx;
+    return &root_.ctx;
   }
   return &nodes[ctx->get_parent_id()];
 };
@@ -187,7 +205,7 @@ std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
     return res;
   }
 
-  auto current = ctx == &root.ctx ? &nodes[0] : ctx + 1;
+  auto current = ctx == &root_.ctx ? &nodes[0] : ctx + 1;
 
   if (current == &nodes.back() + 1 || current->get_parent() != ctx) {
     return res;
@@ -208,7 +226,7 @@ std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
   return res;
 }
 
-computing_context *FCTree::get_root(computing_context *) { return &root.ctx; };
+computing_context *FCTree::get_root(computing_context *) { return &root_.ctx; };
 
 void FCTree::update_context_state(computing_context *ctx) {
 
@@ -216,12 +234,12 @@ void FCTree::update_context_state(computing_context *ctx) {
   if (ctx->element.state_tags & celement::state_tags_t::discarded) {
     computing_context *end{ctx};
 
-    if (ctx->parent == ctx->brother && not(ctx->parent == root.id)) {
+    if (ctx->parent == ctx->brother && not(ctx->parent == root_.id)) {
       computing_context *parent{&nodes[ctx->parent]};
 
       for (;;) {
         if (parent->brother == parent->parent) {
-          if (parent->parent == root.id) {
+          if (parent->parent == root_.id) {
             end = &nodes.back() + 1;
             break;
           } else {

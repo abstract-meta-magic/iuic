@@ -13,7 +13,7 @@ export module iuic.core;
 export import :base;
 import :layout.box;
 import :transform;
-import :ftc;
+import :fct;
 import :storage;
 import :animator;
 import :event;

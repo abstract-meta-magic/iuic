@@ -12,32 +12,6 @@ namespace iuic {
 template <typename T>
 concept layout_cpt = std::is_base_of_v<layout, T>;
 
-struct area_request {
-  constexpr area_request(computing_context *of_) noexcept : of{of_} {}
-
-  constexpr area_request(const area_request &) = default;
-
-  // применить текущее решение
-  void apply();
-
-  // применить измененное решение
-  void apply(ui_size);
-
-  // выкинуть элемент = игнорировать его
-  void discard();
-
-  // отложить разрешение до
-  // фазы балансировки
-  void defer();
-
-  const style &style_of() const;
-
-  const ui_size &value() const noexcept;
-
-private:
-  computing_context *of;
-};
-
 struct layout_utils_base {
   layout_utils_base(computing_context *ctx_) noexcept : ctx{ctx_} {};
   // Обычное сообщение для отладки
@@ -65,6 +39,31 @@ protected: // общие нужды
 private: // реализация базовых концепций логирования
 };
 
+struct area_request {
+  constexpr area_request(computing_context *of_) noexcept : of{of_} {}
+
+  constexpr area_request(const area_request &) = default;
+
+  // применить текущее решение
+  void apply();
+
+  // применить измененное решение
+  void apply(ui_size);
+
+  // выкинуть элемент = игнорировать его
+  void discard();
+
+  // отложить разрешение до
+  // фазы балансировки
+  void defer();
+
+  const style &style_of() const;
+
+  const ui_size &value() const noexcept;
+
+private:
+  computing_context *of;
+};
 // Структура которая помогает
 // при вычислении собственной позиции
 struct area_utils : layout_utils_base {
@@ -116,11 +115,13 @@ private:
 
 struct position_utils : layout_utils_base {
   position_utils(computing_context *ctx_) noexcept : layout_utils_base{ctx_} {};
-  ;
 
   const ui_position &self_position() const noexcept;
 
   std::vector<position_request> content();
+
+  // тут могут быть статические методы для
+  // помощи в вычислении позиций
 };
 
 // Набор команд и свойс
@@ -152,6 +153,14 @@ struct balancing_utils : layout_utils_base {
   // ... etc
 
 private: // контекст балансировки
+};
+
+// In version 0.2
+enum balancing_result {
+  SUCCES,
+  RE_ALL,
+  RE_PARENT,
+  RE_CHILDS,
 };
 
 export struct layout {
