@@ -3,9 +3,10 @@ module;
 #include <iostream>
 #include <print>
 #include <span>
+#include <vector>
 
 export module iuic.core:layout.box;
-import :base;
+export import :layout;
 
 namespace iuic {
 // базовый приватный layout для всех
@@ -23,7 +24,12 @@ struct box_layout final : public layout {
 
     auto requests = utils.get_requests();
 
+    bool end{false};
     for (auto &&rq : requests) {
+      if (end) {
+        rq.discard();
+        continue;
+      }
 
       std::println("Request area size - h:{},w:{}", rq.value().h, rq.value().w);
 
@@ -31,7 +37,8 @@ struct box_layout final : public layout {
       res.h += rq.value().h;
 
       if (style.shape.max_size.h != 0 && res.h > style.shape.max_size.h) {
-        break;
+        end = true;
+        continue;
       }
 
       upixel_t w = rq.value().w + rq.style_of().shape.margin.left;

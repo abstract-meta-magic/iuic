@@ -4,7 +4,6 @@ module;
 #include <string_view>
 #include <vector>
 module iuic.core;
-import :base;
 import :ftc;
 
 namespace iuic {
@@ -90,10 +89,6 @@ void area_utils::self_discard() {
   }
 
   ctx->discard();
-};
-
-void area_utils::discard_remaining_requiests() {
-  // WRONG
 };
 
 // POSITION

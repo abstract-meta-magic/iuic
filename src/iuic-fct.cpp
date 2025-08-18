@@ -12,86 +12,44 @@ import :ftc;
 
 namespace iuic {
 
-void computing_context::set_brother(size_t id) { brother = id; };
+void root_element_layout::self_size(area_utils utils) const noexcept {
+  auto &style = utils.self_style();
+  utils.set_hard_size(style.shape.max_size);
 
-void computing_context::unset_brother() { brother = parent; };
+  auto requests = utils.get_requests();
 
-size_t computing_context::get_parent_id() const { return parent; };
-
-size_t computing_context::get_brother_id() const { return brother; };
-
-computing_context *computing_context::get_parent() {
-  if (not hierarhy) {
-    std::cout << "null hi" << std::endl;
-    std::cout << "null hi" << std::endl;
-    return nullptr;
+  for (auto &&rq : requests) {
+    rq.apply();
   }
-  return hierarhy->get_parent(this);
+
+  std::println("Root size : w={},h={}", style.shape.max_size.w,
+               style.shape.max_size.h);
 };
 
-std::vector<computing_context *> computing_context::get_childs() {
-  return hierarhy->get_childs(this);
-};
+void root_element_layout::set_childs_position(
+    position_utils utils) const noexcept {
+  auto position = ui_position{0, 0};
 
-const style &computing_context::get_style() const noexcept { return *style; };
+  auto def = position;
 
-const layout &computing_context::get_layout() const noexcept {
-  return *layout;
-};
+  auto content = utils.content();
 
-// TODO : Rename
-const ui_rect &computing_context::get_rect() const noexcept {
-  return element.full_area;
-};
+  for (auto &&rq : content) {
+    auto &style = rq.style_of();
 
-bool computing_context::is_discarted() const noexcept {
-  return element.state_tags & celement::state_tags_t::discarded;
-};
+    position.y += style.shape.margin.top;
+    position.x += style.shape.margin.left;
+    rq.apply(position);
+    auto &size = rq.size_of();
+    position.y += size.h;
+    position.x = def.x;
 
-bool computing_context::is_area_request_dispatched() const noexcept {
-  return element.area_tags & celement::area_tags_t::area_request_dispatched;
-};
-
-void computing_context::set_area(ui_size size, celement::area_tags_t tag) {
-
-  if (tag & celement::area_tags_t::area_request_dispatched) {
-    if (element.area_tags & celement::area_tags_t::area_request_dispatched) {
-      // TODO : error ?
-    }
-    element.full_area.size = size;
-    element.area_tags += tag;
-  } else if (tag & celement::area_tags_t::area_request_deferred) {
-    element.area_tags += tag;
-  } else if (tag & celement::area_tags_t::area_request_strong_appyed) {
-    // нужно бы проверять был ли запрос
-    element.area_tags += tag;
-    element.area_tags -= celement::area_tags_t::area_request_dispatched;
-  } else if (tag & celement::area_tags_t::area_request_soft_appyed) {
-    // нужно бы проверять был ли запрос
-    element.full_area.size = size;
-    element.area_tags += tag;
-    element.area_tags -= celement::area_tags_t::area_request_dispatched;
+    std::println("Request at root : {}:{}", size.h, size.w);
   }
 };
 
-void computing_context::set_position(ui_position pos,
-                                     celement::position_tags_t tag) {
-  if (tag & celement::position_tags_t::set_position_is_applyed) {
-    if (element.position_tags & tag) {
-      // error ?
-    }
-
-    element.full_area.position = pos;
-
-    element.position_tags += tag;
-  } else if (tag & celement::position_tags_t::set_position_is_deferred) {
-    element.position_tags += tag;
-  }
-};
-
-void computing_context::discard() {
-  element.state_tags += celement::state_tags_t::discarded;
-  hierarhy->update_context_state(this);
+void root_element_layout::balancing(balancing_utils) const noexcept {
+    // ake box layout
 };
 
 FCTree::range_based_for_proxy FCTree::range_for() { return {*this}; };
@@ -191,12 +149,101 @@ void FCTree::print_tree() const noexcept {
                        : std::to_string(node.get_brother_id());
     auto &rect = node.get_rect();
 
+    auto ds = node.element.state_tags & celement::state_tags_t::discarded
+                  ? "discarted"
+                  : "ok";
+
+    auto mem = celement::state_tags_t::discarded;
+
+    mem += celement::state_tags_t::discarded;
+
+    //   if (mem & celement::state_tags_t::discarded) {
+    // std::println("hahahahahhh");
+    // }
+
     std::println("Id : {},Parent : {},Brother : {},Position : x:{},y:{},Size "
-                 ": w:{},h:{}  |",
+                 ": w:{},h:{} |",
                  id, parent, brother, rect.position.x, rect.position.y,
                  rect.size.w, rect.size.h);
+    std::println("State : {}", ds);
     ++id;
   }
   std::println("------------------------------------------");
 };
+
+computing_context *FCTree::get_parent(computing_context *ctx) {
+  if (ctx->get_parent_id() == std::numeric_limits<size_t>::max()) {
+    return &root.ctx;
+  }
+  return &nodes[ctx->get_parent_id()];
+};
+
+std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
+  // WARNING : Очень хрупко
+  // Требуеться рефакторинг
+  std::vector<computing_context *> res{};
+
+  if (nodes.empty()) {
+    return res;
+  }
+
+  auto current = ctx == &root.ctx ? &nodes[0] : ctx + 1;
+
+  if (current == &nodes.back() + 1 || current->get_parent() != ctx) {
+    return res;
+  }
+
+  for (;;) {
+    if (not current->is_discarted()) {
+      res.push_back(current);
+    }
+
+    if (current->get_parent_id() == current->get_brother_id()) {
+      break;
+    }
+
+    current = &nodes[current->get_brother_id()];
+  }
+
+  return res;
+}
+
+computing_context *FCTree::get_root(computing_context *) { return &root.ctx; };
+
+void FCTree::update_context_state(computing_context *ctx) {
+
+  // TODO : Refactor this
+  if (ctx->element.state_tags & celement::state_tags_t::discarded) {
+    computing_context *end{ctx};
+
+    if (ctx->parent == ctx->brother && not(ctx->parent == root.id)) {
+      computing_context *parent{&nodes[ctx->parent]};
+
+      for (;;) {
+        if (parent->brother == parent->parent) {
+          if (parent->parent == root.id) {
+            end = &nodes.back() + 1;
+            break;
+          } else {
+            parent = &nodes[parent->parent];
+          }
+        } else {
+          end = &nodes[parent->brother];
+        }
+      }
+    } else if (ctx->parent == ctx->brother) {
+      end = &nodes.back() + 1;
+    } else {
+      end = &nodes[ctx->brother];
+    };
+
+    auto current = ctx;
+
+    for (; current < end; ++current) {
+      current->element.state_tags += celement::state_tags_t::discarded;
+    }
+  }
+};
+
+computing_context *FCTree::get_context_by_id(size_t id) { return &nodes[id]; };
 }; // namespace iuic

@@ -31,12 +31,15 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-render.cppm"
 	"src/iuic-transform.cppm"
 	"src/iuic-box-layout.cppm"
+	"src/iuic-layout.cppm"
+	"src/iuic-computing-ctx.cppm"
 	"src/iuic-ctx.cppm"
 	"src/iuic-sig.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cpp"
+	"src/iuic-computing-ctx.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-fct.cpp"
 	"src/iuic-layout-utils.cpp"
