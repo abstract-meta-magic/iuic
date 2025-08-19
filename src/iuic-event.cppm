@@ -6,6 +6,7 @@ module;
 #include <functional>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 export module iuic.core:event;
@@ -13,76 +14,112 @@ import :base;
 import :fct;
 import :storage;
 
+export namespace iuic {
+
+struct event_type {
+  struct on_enter {
+    storage &storage;
+    storage_registry_key srk;
+  };
+
+  struct on_exit {
+    storage &storage;
+    storage_registry_key srk;
+  };
+
+  struct key {
+    storage &storage;
+    storage_registry_key srk;
+    key_code code;
+  };
+
+  struct key_selected : public key {};
+};
+
+}; // namespace iuic
+
 namespace iuic {
 
-struct event_data {
-  storage_registry_key srk;
-  storage &storage;
+using void_event_fpt = void (*)();
+using on_enter_event_fpt = void (*)(event_type::on_enter);
+using on_exit_event_fpt = void (*)(event_type::on_exit);
+using key_event_fpt = void (*)(event_type::key);
+using key_selected_event_fpt = void (*)(event_type::key_selected);
+
+void void_event_decoy() {};
+
+using variadic_callback =
+    std::variant<void_event_fpt, on_enter_event_fpt, on_exit_event_fpt,
+                 key_event_fpt, key_selected_event_fpt>;
+
+template <typename T>
+concept event_callback_cpt = requires(T &&call) { variadic_callback{call}; };
+
+struct event {
+  storage_registry_key data;
+  variadic_callback call{&void_event_decoy};
 };
 
-// Может разделить на painter_event && key_event
-struct key_event {
-  using event_call_t = void (*)(event_data);
-  using trigger_call_t = bool (*)();
-  event_data data;
-  size_t element_id;
-  event_call_t call;
-  trigger_call_t trigger;
-  enum property : std::uint8_t {
-    // ...
-  };
+struct hit_rect {
+  ui_rect rect;
+  std::vector<event> events;
 };
 
-// событие
-// привязанный элемент
-// данные для события
+struct hit_surface {
 
-class tmp_event_registry {
+  // смена поколений событий.
+  void change_generation(hit_surface &&);
+
+  void select_element(ui_position);
+
+  bool hit_test(ui_position);
+
+  void pointer_set(ui_position);
+
+  void pointer_move(ui_position);
+
+private:
+  std::vector<hit_rect> hits;
+  ui_position pointer_position;
+  // selected element
+  // key buffer
+  // capture element or event
+};
+
+// главная обязанность - сборка событий
+class event_collector {
   //
 public:
   using ev = void (*)(storage &, std::any);
 
   void reset() {};
 
-  template <auto call>
-  void registry_key_event(size_t id, key_code kc, KeyMod km, KeyAction ka) {
-    // TODO : Body
-    // TODO : REFACTOR
-    key_event ke{{{}, storage}};
-
-    ke.call = call;
+  void push(event e, size_t id) {
+    // TODO
   };
 
-  template <auto call>
-  void registry_key_event(size_t id, key_code kc, KeyMod km, KeyAction ka,
-                          storage_registry_key srk) {
-    // TODO : Body
-    // TODO : REFACTOR
-    key_event ke{{{}, storage}};
+  event_collector() {}
 
-    ke.call = call;
-
-    events.push_back(std::move(ke));
-  };
-
-  tmp_event_registry(storage &storage_) : storage{storage_} {}
-
-  void build_model(const FCTree &ctree) {};
+  hit_surface build_surface(const FCTree &ctree) { return {}; };
 
 private:
-  storage &storage;
-  std::vector<key_event> events;
+  // В теории можно сделать 2\3 буффиризацию
+  std::vector<event> events;
 };
 
 class event_reciver {
+  friend void apply_event_hit_surface(hit_surface &&);
+
 public:
   void key(key_code, KeyAction, KeyMod = KeyMod::None){};
   void pointer(ui_position){};
 
-  event_reciver(tmp_event_registry &r) : registry{r} {};
+  event_reciver() {};
 
 private:
-  tmp_event_registry &registry;
+  // хочется заменить на медод который
+  // будет получать уже готовый список
+  // событий
 };
 
 }; // namespace iuic

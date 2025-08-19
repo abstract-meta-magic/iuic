@@ -16,7 +16,7 @@ import :transform;
 import :fct;
 import :storage;
 import :animator;
-import :event;
+export import :event;
 
 // import :default
 
@@ -82,32 +82,10 @@ public:
     void surface(surface_create_info);
 
     // event
-    template <KeyAction ka, typename Call = void>
-    void event(key_code kc, KeyMod km, Call &&call) {
-      // Проверять на правельный тип вызова
-      // ctx.event_registry.registry_key_event<Call{}>(ctx.ctree.get_current_id(),
-      //                                             kc, km, ka);
+    template <event_callback_cpt Call>
+    void event(Call &&call, storage_registry_key key = {}) {
+      ctx.event_collector.push({key, {call}}, ctx.ctree.index_at_last());
     };
-
-    template <KeyAction key, typename Call = void>
-    void event(key_code kc, Call &&call) {
-      event<key, Call>(kc, KeyMod::None, std::forward<Call>(call));
-    };
-
-    template <KeyAction ka, std::invocable<key_event_transfer_data> Call = void>
-    void event(key_code kc, KeyMod km, Call &&call, storage_registry_key srk) {
-      // Проверять на правельный тип вызова
-      // ctx.event_registry.registry_key_event<Call{}>(ctx.ctree.get_current_id(),
-      //                                            kc, km, ka, srk);
-    };
-
-    template <KeyAction key,
-              std::invocable<key_event_transfer_data> Call = void>
-    void event(key_code kc, Call &&call, storage_registry_key srk) {
-      event<key, Call>(kc, KeyMod::None, std::forward<Call>(call), srk);
-    };
-
-    template <PointerAction, typename Call = void> void event(Call){};
 
     // использовать трансформатор для изменения
     // позиций, размеров и вращения элементов будет добавленно в
@@ -146,7 +124,7 @@ private:
 
 public:
   // event reciver
-  event_reciver event{event_registry};
+  event_reciver event;
   // store
   storage storage;
 
@@ -157,7 +135,7 @@ private:
   // плоское дерево вычислений
   FCTree ctree;
   // дерево событий
-  tmp_event_registry event_registry{storage};
+  event_collector event_collector;
   // плоский список отрисовки
   std::vector<relement> to_render;
   // ядро построения

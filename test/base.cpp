@@ -10,6 +10,7 @@
 #include <iostream>
 #include <print>
 #include <string_view>
+#include <strings.h>
 #include <type_traits>
 #include <variant>
 
@@ -39,6 +40,8 @@ SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
   return res;
 };
 
+void my_cb(iuic::event_type::key){};
+
 template <iuic::style style = iuic::def_style> void button(auto &b) {
   b.template frame<style>([](auto &b) {
     // events
@@ -52,38 +55,25 @@ constexpr inline void button(auto &b, std::string_view str) {
       auto &obj = ref.template unwrap<int>();
     };
 
-    b.template event<iuic::KeyAction::Down>(
-        iuic::keymap::en::qwerty("A", "B"),
-        [](auto sr) {
-          if (auto ref = sr.storage.get_ref(sr.srk); ref.template as<int>()) {
-            // do
-            auto &val = ref.template unwrap<int>();
+    b.event(
+        [](iuic::event_type::key e) {
+          auto ref = e.storage.get_ref(e.srk);
+          if (ref.as<int>()) {
+            auto &value = ref.unwrap<int>();
+            // do job
           }
-          std::cout << "EVENT DROP" << std::endl;
-          sr.storage.emplace("u-22-zv", std::string_view{"my val"});
         },
-        b.storage.get_key(220));
+        b.storage.get_key("unique-frame-ll2"));
 
-    b.template event<iuic::KeyAction::Up>(
-        iuic::keymap::en::qwerty("W"), iuic::KeyMod::Shift, [](auto data) {
-          if (auto ref = data.storage.get_ref(data.srk);
-              ref.template as<int>()) {
-            // do
-          }
-        });
+    b.event([](iuic::event_type::on_enter e) {}, {});
 
-    b.template event<iuic::KeyAction::Down>(iuic::keymap::en::qwerty("U"),
-                                            [](auto data) {});
-
-    b.template event<iuic::KeyAction::Down>(iuic::keymap::en::qwerty("X"),
-                                            [](auto data) {});
-
-    b.template event<iuic::PointerAction::Move>([](iuic::ui_position pos) {
-      // ...
+    // loop
+    b.event([]() {
+      // тут потенциально можно воздействовать на глобальное
+      // состояние
     });
-    b.template event<iuic::PointerAction::In>([]() {
-      // ...
-    });
+
+    b.event(&my_cb, {});
 
     // b.transform.position.shift_left(20);
     // b.transform.shape.scale(1.2);
