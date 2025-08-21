@@ -7,8 +7,10 @@ module;
 #include <vector>
 export module iuic.core:layout;
 import :base;
+import :computing_context;
 
 namespace iuic {
+
 template <typename T>
 concept layout_cpt = std::is_base_of_v<layout, T>;
 

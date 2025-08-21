@@ -4,6 +4,8 @@ module;
 #include <any>
 #include <cstdint>
 #include <functional>
+#include <map>
+#include <set>
 #include <string_view>
 #include <type_traits>
 #include <variant>
@@ -13,31 +15,38 @@ export module iuic.core:event;
 import :base;
 import :fct;
 import :storage;
+export import :key_code;
 
 export namespace iuic {
+struct element_state_selector {
+
+  void hovered() {};
+
+  void active() {};
+
+  void selected() {};
+
+  void hidden() {};
+};
 
 struct event_type {
-  struct on_enter {
+  struct event_base {
     storage &storage;
+    element_state_selector &selector;
     storage_registry_key srk;
   };
 
-  struct on_exit {
-    storage &storage;
-    storage_registry_key srk;
-  };
+  struct on_enter : public event_base {};
 
-  struct key {
-    storage &storage;
-    storage_registry_key srk;
+  struct on_exit : public event_base {};
+
+  struct key : public event_base {
     key_code code;
   };
 
   struct key_selected : public key {};
 };
-
 }; // namespace iuic
-
 namespace iuic {
 
 using void_event_fpt = void (*)();
@@ -55,20 +64,23 @@ using variadic_callback =
 template <typename T>
 concept event_callback_cpt = requires(T &&call) { variadic_callback{call}; };
 
+// хешировать
 struct event {
   storage_registry_key data;
   variadic_callback call{&void_event_decoy};
 };
-
-struct hit_rect {
-  ui_rect rect;
-  std::vector<event> events;
-};
-
 struct hit_surface {
+  using hit_map_t = std::map<ui_rect, std::vector<event>>;
+
+  hit_surface() {};
+  explicit hit_surface(hit_map_t &&hit_map_) : hit_map{std::move(hit_map_)} {};
+  explicit hit_surface(const hit_map_t &hit_map_) : hit_map{hit_map_} {};
 
   // смена поколений событий.
-  void change_generation(hit_surface &&);
+  void change_generation(hit_surface &&other) {
+    // TODO : update
+    std::swap(other.hit_map, hit_map);
+  };
 
   void select_element(ui_position);
 
@@ -78,8 +90,25 @@ struct hit_surface {
 
   void pointer_move(ui_position);
 
+  void key_pressed(key_code code) {
+    static storage st;
+    static element_state_selector sl;
+    for (auto &region : hit_map) {
+      for (auto &e : region.second) {
+        std::visit(
+            [&e, code](auto &&call) {
+              if constexpr (std::is_same_v<std::remove_cvref_t<decltype(call)>,
+                                           key_event_fpt>) {
+                call(event_type::key{st, sl, e.data, code});
+              }
+            },
+            e.call);
+      };
+    }
+  };
+
 private:
-  std::vector<hit_rect> hits;
+  hit_map_t hit_map;
   ui_position pointer_position;
   // selected element
   // key buffer
@@ -88,38 +117,59 @@ private:
 
 // главная обязанность - сборка событий
 class event_collector {
-  //
 public:
-  using ev = void (*)(storage &, std::any);
+  event_collector() {}
 
   void reset() {};
 
-  void push(event e, size_t id) {
-    // TODO
+  void push(const event &e, size_t id) { events[id].push_back(e); };
+
+  void push(event &&e, size_t id) { events[id].push_back(std::move(e)); };
+
+  hit_surface build_surface(const FCTree &ctree) {
+    hit_surface::hit_map_t res;
+
+    for (auto &&e : events) {
+      auto &rect = ctree.at(e.first).get_rect();
+      res[rect] = std::move(e.second);
+    }
+
+    return hit_surface{std::move(res)};
   };
-
-  event_collector() {}
-
-  hit_surface build_surface(const FCTree &ctree) { return {}; };
 
 private:
   // В теории можно сделать 2\3 буффиризацию
-  std::vector<event> events;
+  // промежуточное решение
+  std::map<size_t, std::vector<event>> events;
 };
 
 class event_reciver {
-  friend void apply_event_hit_surface(hit_surface &&);
+  friend void apply_event_hit_surface(event_reciver &, hit_surface &&);
 
 public:
-  void key(key_code, KeyAction, KeyMod = KeyMod::None){};
+  void key(key_code key) { surface.key_pressed(key); };
+
   void pointer(ui_position){};
+
+  // in version 0.2
+  void key_buff(key_code);
+
+  // in version 0.2
+  void key_buff_dispatch(key_code);
 
   event_reciver() {};
 
 private:
+  size_t active_id;
+  size_t action_id;
   // хочется заменить на медод который
   // будет получать уже готовый список
   // событий
+  hit_surface surface{};
 };
+
+void apply_event_hit_surface(event_reciver &er, hit_surface &&surface) {
+  er.surface.change_generation(std::move(surface));
+}
 
 }; // namespace iuic

@@ -155,7 +155,9 @@ void context::make(Call call) {
   childs_position();
   balancing();
 
-  ctree.print_tree();
+  // ctree.print_tree();
+
+  apply_event_hit_surface(event, event_collector.build_surface(ctree));
   // dop
   build_render_list();
 };

@@ -19,9 +19,6 @@ struct box_layout final : public layout {
 
     auto &style = utils.self_style();
 
-    std::println("My size : H-{},W-{}", style.shape.min_size.h,
-                 style.shape.min_size.w);
-
     auto requests = utils.get_requests();
 
     bool end{false};
@@ -30,8 +27,6 @@ struct box_layout final : public layout {
         rq.discard();
         continue;
       }
-
-      std::println("Request area size - h:{},w:{}", rq.value().h, rq.value().w);
 
       res.h += rq.style_of().shape.margin.top;
       res.h += rq.value().h;
@@ -51,7 +46,6 @@ struct box_layout final : public layout {
 
     auto rq = minmax(utils.self_style(), res);
 
-    std::println("My area request - h:{},w:{}", rq.h, rq.w);
     utils.request_size(rq);
 
     // мб сделать в стиле std::prindln ?
@@ -64,8 +58,6 @@ struct box_layout final : public layout {
 
     auto content = utils.content();
 
-    std::println("Start element position : x-{},y-{}", position.x, position.y);
-
     for (auto &&rq : content) {
       auto &style = rq.style_of();
 
@@ -75,7 +67,6 @@ struct box_layout final : public layout {
       auto &size = rq.size_of();
       position.y += size.h;
       position.x = def.x;
-      std::println("Child request size : h-{},w-{}", size.h, size.w);
     }
   };
 

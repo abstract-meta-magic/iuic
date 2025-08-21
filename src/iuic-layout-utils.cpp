@@ -112,10 +112,8 @@ std::vector<position_request> position_utils::content() {
 
   for (auto &&cc : ctx->get_childs()) {
     if (cc->is_discarted()) {
-      std::println("Position discard");
       continue;
     }
-    std::println("Position rq");
     res.push_back({cc});
   }
 

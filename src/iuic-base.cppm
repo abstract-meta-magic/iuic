@@ -2,6 +2,7 @@
 
 module;
 
+#include <array>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -10,6 +11,7 @@ module;
 #include <expected>
 #include <iostream>
 #include <list>
+#include <print>
 #include <queue>
 #include <span>
 #include <stack>
@@ -22,42 +24,12 @@ module;
 // Independ User Interface Core
 export module iuic.core:base;
 
-namespace iuic {
-// Контекст каждого элемента
-// используемый для вычисленией.
-struct computing_context;
-} // namespace iuic
-
 export namespace iuic {
 
 struct celement;
 struct relement;
 struct style;
 struct layout;
-
-enum class KeyMod {
-  None,
-  Alt,
-  Shift,
-  // ...
-};
-
-// Унифицированный код нажатых кнопок
-struct key_code {};
-namespace keymap::en {
-key_code qwerty(std::same_as<std::string_view> auto... args) {
-  // TODO : Make key_cade ctor
-  return {};
-};
-
-key_code qwerty(std::same_as<const char *> auto... args) {
-  return qwerty(std::string_view{args}...);
-};
-} // namespace keymap::en
-
-enum class KeyAction { Down, Up, Hold };
-
-enum class PointerAction { Move, In, Out };
 
 using pixel_t = int; // swap to int64_t
 using upixel_t = unsigned;

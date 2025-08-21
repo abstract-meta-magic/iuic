@@ -21,9 +21,6 @@ void root_element_layout::self_size(area_utils utils) const noexcept {
   for (auto &&rq : requests) {
     rq.apply();
   }
-
-  std::println("Root size : w={},h={}", style.shape.max_size.w,
-               style.shape.max_size.h);
 };
 
 void root_element_layout::set_childs_position(
@@ -43,8 +40,6 @@ void root_element_layout::set_childs_position(
     auto &size = rq.size_of();
     position.y += size.h;
     position.x = def.x;
-
-    std::println("Request at root : {}:{}", size.h, size.w);
   }
 };
 
@@ -138,7 +133,7 @@ const computing_context &FCTree::root() const noexcept { return root_.ctx; }
 
 computing_context &FCTree::at(size_t id) { return nodes[id]; }
 
-const computing_context &FCTree::at(size_t id) const { return at(id); }
+const computing_context &FCTree::at(size_t id) const { return nodes[id]; }
 
 size_t FCTree::size() const noexcept { return nodes.size(); };
 

@@ -15,6 +15,7 @@ option(IUIC_INFO "Вывод информации" ON)
 add_library(${PROJECT_NAME}_core STATIC)
 
 
+
 if(IUIC_INFO)
 message("iuic::core : static")
 endif()
@@ -27,6 +28,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-fct.cppm"
 	"src/iuic-storage.cppm"
 	"src/iuic-animator.cppm"
+	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
 	"src/iuic-render.cppm"
 	"src/iuic-transform.cppm"

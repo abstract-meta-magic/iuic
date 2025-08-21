@@ -5,6 +5,7 @@
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <iostream>
@@ -13,6 +14,7 @@
 #include <strings.h>
 #include <type_traits>
 #include <variant>
+#include <vector>
 
 import iuic.core;
 
@@ -42,6 +44,16 @@ SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
 
 void my_cb(iuic::event_type::key){};
 
+struct uuid {
+  // в строителе
+  // берется текущая глубина
+  // и уникальноей имя\hesh
+  // можно делать автоматически у
+  // элементов с собитиями
+  // В ОБЩЕМ
+  // у builder нужно сделать метод get_uuid();
+};
+
 template <iuic::style style = iuic::def_style> void button(auto &b) {
   b.template frame<style>([](auto &b) {
     // events
@@ -57,15 +69,11 @@ constexpr inline void button(auto &b, std::string_view str) {
 
     b.event(
         [](iuic::event_type::key e) {
-          auto ref = e.storage.get_ref(e.srk);
-          if (ref.as<int>()) {
-            auto &value = ref.unwrap<int>();
-            // do job
-          }
+          e.selector.active();
+          std::println("KEY_EVENT: {}", e.code[0]);
         },
+        // можно делать uuid + string
         b.storage.get_key("unique-frame-ll2"));
-
-    b.event([](iuic::event_type::on_enter e) {}, {});
 
     // loop
     b.event([]() {
@@ -83,6 +91,16 @@ constexpr inline void button(auto &b, std::string_view str) {
 int main() {
   using namespace iuic;
 
+  std::vector<iuic::key_t> kts{2, 4, 6};
+
+  std::array<iuic::key_t, 2> ar{2, 4};
+
+  constexpr auto ss = sizeof(ar);
+
+  iuic::key_code kcS{ar};
+
+  iuic::key_code kc{kts};
+
   context ctx;
 
   ui_size sz{1920, 1080};
@@ -96,8 +114,6 @@ int main() {
 
   std::cout << "complite" << std::endl;
 
-  ctx.event.key(iuic::keymap::en::qwerty("W"), KeyAction::Down);
-  ctx.event.key(iuic::keymap::en::qwerty("B"), KeyAction::Down);
   ctx.event.pointer({22, 44});
 
   // SDL BASE
@@ -120,15 +136,6 @@ int main() {
   bool quit{false};
 
   while (!quit) {
-    while (SDL_PollEvent(&e)) {
-      if (e.type == SDL_EVENT_QUIT) {
-        quit = true;
-      }
-    }
-
-    int w, h;
-    SDL_GetWindowSizeInPixels(window, &w, &h);
-    ctx.set_view_size({static_cast<upixel_t>(h), static_cast<upixel_t>(w)});
 
     ctx.make([](auto &b) {
       // frame(create_info,childs_lambda)
@@ -145,10 +152,23 @@ int main() {
       button(b, "touch me");
     });
 
+    // SDL
+    while (SDL_PollEvent(&e)) {
+      if (e.type == SDL_EVENT_QUIT) {
+        quit = true;
+      } else if (e.type == SDL_EVENT_KEY_DOWN) {
+        ctx.event.key(iuic::key_code{static_cast<iuic::key_t>(e.key.scancode)});
+      }
+    }
+
+    int w, h;
+    SDL_GetWindowSizeInPixels(window, &w, &h);
+    ctx.set_view_size({static_cast<upixel_t>(h), static_cast<upixel_t>(w)});
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    std::cout << "GO" << std::endl;
+    // std::cout << "GO" << std::endl;
     auto &tree = ctx.get_tree();
     for (auto &&r : tree) {
       auto rect = to_sdl_rect(r.area);
@@ -158,7 +178,7 @@ int main() {
                                        frame_render_data>) {
               iuic::color c = obj.background.color;
 
-              std::println("r:{}g:{}:b{}:a{}", c.r, c.g, c.b, c.a);
+              // std::println("r:{}g:{}:b{}:a{}", c.r, c.g, c.b, c.a);
 
               SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
               SDL_RenderFillRect(renderer, &rect);
@@ -167,7 +187,7 @@ int main() {
           r.data);
     }
 
-    std::cout << "GO" << std::endl;
+    // std::cout << "GO" << std::endl;
 
     SDL_RenderPresent(renderer);
   }
