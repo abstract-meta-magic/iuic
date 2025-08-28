@@ -2,24 +2,8 @@
 
 module;
 
-#include <array>
-#include <cassert>
-#include <concepts>
-#include <cstddef>
-#include <cstdint>
-#include <deque>
-#include <expected>
-#include <iostream>
-#include <list>
 #include <print>
-#include <queue>
-#include <span>
-#include <stack>
-#include <string>
 #include <string_view>
-#include <type_traits>
-#include <variant>
-#include <vector>
 
 // Independ User Interface Core
 export module iuic.core:base;
@@ -31,6 +15,7 @@ struct relement;
 struct style;
 struct layout;
 
+using uid_t = std::uint64_t;
 using pixel_t = int; // swap to int64_t
 using upixel_t = unsigned;
 

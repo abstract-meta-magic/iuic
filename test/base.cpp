@@ -60,20 +60,44 @@ template <iuic::style style = iuic::def_style> void button(auto &b) {
   });
 }
 template <iuic::style style = iuic::def_style>
-constexpr inline void button(auto &b, std::string_view str) {
+constexpr inline void button(iuic::context::builder &b,
+                             const std::string &str) {
+  static constexpr int address{2};
+
+  auto uid = b.make_uid(b.make_uid(&address), str);
+
   b.template frame<style>([=](auto &b) {
     b.text(str);
     if (auto ref = b.storage.get_ref(int{2}); ref.template as<int>()) {
       auto &obj = ref.template unwrap<int>();
     };
 
+    b.apply_uid(uid);
     b.event(
         [](iuic::event_type::key e) {
-          e.selector.active();
           std::println("KEY_EVENT: {}", e.code[0]);
         },
         // можно делать uuid + string
-        b.storage.get_key("unique-frame-ll2"));
+        b.storage.get_key(uid));
+
+    // если небыл вызван метод apply_uid(uid)
+    // то будет сгенерированн базовый uid + число++
+    b.event([](iuic::event_type::key e) {});
+
+    b.event([](iuic::event_type::key_u e) {
+      if (e.selector.is_hovered(e.uid)) {
+        e.selector.set_focused(e.uid);
+      } else if (e.selector.is_focused(e.uid) &&
+                 not e.selector.is_hovered(e.uid)) {
+        e.selector.unset_focused(e.uid);
+      }
+    });
+
+    b.event([](iuic::event_type::key_f e) {});
+
+    b.event([](iuic::event_type::key_a e) {
+
+    });
 
     // loop
     b.event([]() {

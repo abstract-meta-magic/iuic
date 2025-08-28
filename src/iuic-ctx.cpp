@@ -76,4 +76,37 @@ void context::build_render_list() {
          .data{frame_render_data{.background{cc.get_style().background}}}});
   }
 }
+
+// base uid + str.hash
+uid_t context::builder::make_uid(const std::string &str) const noexcept {
+  return factory.make(str.c_str(), str.size());
+};
+
+// base uid + other.uid.hash
+uid_t context::builder::make_uid(uid_t uid) const noexcept {
+  return factory.make(uid);
+};
+
+// base uid + other.uid.hash + str.hash
+uid_t context::builder::make_uid(uid_t uid,
+                                 const std::string &str) const noexcept {
+  return factory.merge(uid, make_uid(str));
+};
+
+uid_t context::builder::__make_uid_from_ptr(const void *ptr) const noexcept {
+  // ptr hash ?
+  if constexpr (sizeof(ptr) == sizeof(std::uint32_t)) {
+    // TODO : convert ptr to uid
+    return {};
+  } else if constexpr (sizeof(ptr) == sizeof(std::uint64_t)) {
+    // TODO : convert ptr to uid
+    return {};
+  } else {
+    throw "Unsupported pointer size";
+  };
+};
+
+uid_t context::builder::__make_base_uid() const noexcept { return {}; };
+
+void context::builder::apply_uid(uid_t uid) noexcept {};
 }; // namespace iuic

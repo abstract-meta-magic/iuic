@@ -25,6 +25,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"src/iuic-base.cppm"
+	"src/iuic-uid-factory.cppm"
 	"src/iuic-fct.cppm"
 	"src/iuic-storage.cppm"
 	"src/iuic-animator.cppm"
@@ -41,6 +42,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cpp"
+	"src/iuic-uid-factory.cpp"
 	"src/iuic-computing-ctx.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-fct.cpp"
@@ -49,6 +51,14 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 ## Main alias
 add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
 
+
+## WARNING - TMP SOLUTION
+## xxHash - START
+add_library(xxLib STATIC IMPORTED)
+set_target_properties(xxLib PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/src/tmp_solutions/hash/libxxhash.a)
+
+target_link_libraries(${PROJECT_NAME}_core xxLib)
+## xxHash - END
 
 if(IUIC_PRETTY)
 

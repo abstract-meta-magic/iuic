@@ -1,13 +1,7 @@
 
 module;
 
-#include <any>
-#include <cstdint>
-#include <functional>
 #include <map>
-#include <set>
-#include <string_view>
-#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -18,15 +12,27 @@ import :storage;
 export import :key_code;
 
 export namespace iuic {
+
+// in version 0.2
 struct element_state_selector {
 
-  void hovered() {};
+  bool is_hovered(uid_t uid) { return false; };
 
-  void active() {};
+  bool is_active(uid_t uid) { return false; };
 
-  void selected() {};
+  bool is_focused(uid_t uid) { return false; };
 
-  void hidden() {};
+  void set_active(uid_t uid) {};
+
+  void set_focused(uid_t uid) {};
+
+  void unset_focused(uid_t uid) {};
+
+  void unset_active(uid_t uid) {};
+
+  void unset_focused() {};
+
+  void unset_active() {};
 };
 
 struct event_type {
@@ -44,7 +50,13 @@ struct event_type {
     key_code code;
   };
 
-  struct key_selected : public key {};
+  struct key_u : public key {
+    uid_t uid;
+  };
+
+  struct key_f : public key_u {};
+
+  struct key_a : public key_u {};
 };
 }; // namespace iuic
 namespace iuic {
@@ -53,13 +65,16 @@ using void_event_fpt = void (*)();
 using on_enter_event_fpt = void (*)(event_type::on_enter);
 using on_exit_event_fpt = void (*)(event_type::on_exit);
 using key_event_fpt = void (*)(event_type::key);
-using key_selected_event_fpt = void (*)(event_type::key_selected);
+using key_unique_event_fpt = void (*)(event_type::key_u);
+using key_focused_event_fpt = void (*)(event_type::key_f);
+using key_active_event_fpt = void (*)(event_type::key_a);
 
 void void_event_decoy() {};
 
 using variadic_callback =
     std::variant<void_event_fpt, on_enter_event_fpt, on_exit_event_fpt,
-                 key_event_fpt, key_selected_event_fpt>;
+                 key_event_fpt, key_focused_event_fpt, key_unique_event_fpt,
+                 key_active_event_fpt>;
 
 template <typename T>
 concept event_callback_cpt = requires(T &&call) { variadic_callback{call}; };
@@ -69,6 +84,11 @@ struct event {
   storage_registry_key data;
   variadic_callback call{&void_event_decoy};
 };
+
+// Нужно проработать интерфейст
+// для удобства внутреннего использования
+// Нужно лучше продумать роль этого класса
+// в системе событий
 struct hit_surface {
   using hit_map_t = std::map<ui_rect, std::vector<event>>;
 
@@ -143,6 +163,11 @@ private:
   std::map<size_t, std::vector<event>> events;
 };
 
+// позже будет разработан uuid
+// он будет использоватся для сохранения
+// состояния между кадрами
+// ОСНОВНАЯ ОБЯЗАННОСТЬ :
+// корректная подготовка и отправка событий
 class event_reciver {
   friend void apply_event_hit_surface(event_reciver &, hit_surface &&);
 

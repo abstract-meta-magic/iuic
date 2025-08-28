@@ -11,6 +11,7 @@ module;
 
 export module iuic.core;
 export import :base;
+import :uid.factory;
 import :layout.box;
 import :transform;
 import :fct;
@@ -94,19 +95,41 @@ public:
     // transform.position
     void transform();
 
+    // base uid + str.hash
+    uid_t make_uid(const std::string &) const noexcept;
+
+    // base uid + other.uid.hash
+    uid_t make_uid(uid_t) const noexcept;
+
+    // base uid + other.uid.hash + str.hash
+    uid_t make_uid(uid_t, const std::string &) const noexcept;
+
+    // base uid + ptr.hash
+    template <typename T>
+      requires std::is_pointer_v<T>
+    uid_t make_uid(T ptr) const noexcept {
+      return __make_uid_from_ptr(static_cast<const void *>(ptr));
+    };
+
+    void apply_uid(uid_t uid) noexcept;
+
     const storage &storage;
 
   private:
+    uid_t __make_uid_from_ptr(const void *ptr) const noexcept;
+
+    uid_t __make_base_uid() const noexcept;
+
     builder(context &ctx_) : ctx{ctx_}, storage{ctx_.storage} {};
     // animator
     context &ctx;
+    uid::factory factory;
   };
 
 public: // api
   void set_view_size(ui_size sz);
 
-  template <UpdateType = UpdateType::Dynamic, typename Call = void>
-  void make(Call call);
+  template <typename Call = void> void make(Call call);
 
   // TODO : rename
   const std::vector<relement> &get_tree();
@@ -142,9 +165,11 @@ private:
   builder b{*this};
 };
 
+template <typename T>
+concept ctx_builder_cpt = std::same_as<std::remove_cvref<T>, context::builder>;
+
 // Contex Template Impl
-template <UpdateType = UpdateType::Dynamic, typename Call = void>
-void context::make(Call call) {
+template <typename Call = void> void context::make(Call call) {
   // step 1
   reset();
 
