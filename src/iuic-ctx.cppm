@@ -4,7 +4,9 @@ module;
 #include <concepts>
 #include <cstddef>
 #include <memory_resource>
+#include <stack>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -55,22 +57,27 @@ public:
   public:
     /*
       Базовая форма для всего.Стелизуемый рамка.
+      TODO : можно заменить на нешаблонный вызов
     */
-    template <style = def_style, layout_cpt layout = box_layout,
-              typename Call = void>
-    void frame(Call call);
+    void frame(std::invocable<builder &> auto &&call, const style & = def_style,
+               const layout & = layout::instance<box_layout>()) noexcept;
 
-    template <style = def_style, layout_cpt layout = box_layout> void frame();
+    void frame(std::invocable<builder &> auto &&call, const layout &) noexcept;
+
+    void frame(const style & = def_style,
+               const layout & = layout::instance<box_layout>()) noexcept;
+
+    void frame(const layout &) noexcept;
 
     /*
       Является конечной точкой.Отрисовка текста
     */
-    template <style = def_style> void text(std::string_view str);
+    void text(std::string_view str, const style & = def_style);
 
     /*
       Является конечной точкой.Отрисовка изображения
     */
-    template <style = def_style> void image(image_render_data);
+    void image(image_render_data, const style & = def_style);
 
     /*
       Пользовательская поверхность. Будет добавленно в v0.2
@@ -83,9 +90,21 @@ public:
     void surface(surface_create_info);
 
     // event
-    template <event_callback_cpt Call>
+    template <key_event_callback_cpt Call>
     void event(Call &&call, storage_registry_key key = {}) {
-      ctx.event_collector.push({key, {call}}, ctx.ctree.index_at_last());
+      if constexpr (std::invocable<decltype(call), iuic::event_type::key_g>) {
+        ctx.event_collector.push(
+            key_event{key, {call}, ctx.ctree.index_at_last(), 0});
+      } else {
+        ctx.event_collector.push(
+            key_event{key, {call}, ctx.ctree.index_at_last(), uid});
+      }
+    };
+
+    template <pointer_event_callback_cpt Call>
+    void event(Call &&call, storage_registry_key key = {}) {
+      ctx.event_collector.push(
+          pointer_event{key, {call}, ctx.ctree.index_at_last(), uid});
     };
 
     // использовать трансформатор для изменения
@@ -108,7 +127,12 @@ public:
     template <typename T>
       requires std::is_pointer_v<T>
     uid_t make_uid(T ptr) const noexcept {
-      return __make_uid_from_ptr(static_cast<const void *>(ptr));
+      return __make_uid_from_ptr(reinterpret_cast<const void *>(ptr));
+    };
+
+    template <typename T, typename... ARGS>
+    uid_t make_uid(T(ptr)(ARGS...)) const noexcept {
+      return __make_uid_from_ptr(reinterpret_cast<const void *>(ptr));
     };
 
     void apply_uid(uid_t uid) noexcept;
@@ -120,10 +144,16 @@ public:
 
     uid_t __make_base_uid() const noexcept;
 
+    void __prev() noexcept;
+
+    void __post() noexcept;
+
     builder(context &ctx_) : ctx{ctx_}, storage{ctx_.storage} {};
     // animator
     context &ctx;
-    uid::factory factory;
+    std::vector<size_t> id;
+    std::stack<size_t, std::vector<size_t>> seed;
+    uid_t uid{0};
   };
 
 public: // api
@@ -182,29 +212,37 @@ template <typename Call = void> void context::make(Call call) {
 
   // ctree.print_tree();
 
-  apply_event_hit_surface(event, event_collector.build_surface(ctree));
+  apply_event_hit_surface(event, event_collector.build_pack(ctree));
   // dop
   build_render_list();
 };
 
-// Builder Template Impl
-template <style st = def_style, layout_cpt Layout, typename Call = void>
-void context::builder::frame(Call call) {
+// --- Builder Template Impl ---
+void context::builder::frame(std::invocable<context::builder &> auto &&call,
+                             const style &style,
+                             const layout &layout) noexcept {
+  ctx.ctree.add(style, &layout);
 
-  // bg
-  // boreders
-  ctx.ctree.add(st, &layout::instance<Layout>());
+  builder::__prev();
   call(*this);
+  builder::__post();
+
   ctx.ctree.up();
 };
 
-template <style st = def_style, layout_cpt Layout>
-void context::builder::frame() {
+void context::builder::frame(std::invocable<context::builder &> auto &&call,
+                             const layout &layout) noexcept {
+  frame(std::forward<decltype(call)>(call), def_style, layout);
+};
 
-  // bg
-  // boreders
-  ctx.ctree.add(st, &layout::instance<Layout>());
+void context::builder::frame(const style &style,
+                             const layout &layout) noexcept {
+  ctx.ctree.add(style, &layout);
   ctx.ctree.up();
+};
+
+void context::builder::frame(const layout &layout) noexcept {
+  frame(def_style, layout);
 };
 
 template <style st = def_style, layout_cpt Layout, typename Call = void>
@@ -215,7 +253,9 @@ void context::builder::surface(Call call, surface_create_info sci) {
   surface_static_info s{};
   surface_render_data sr{s};
   // wrong
+  builder::__prev();
   call(*this, sr);
+  builder::__post();
   ctx.ctree.up();
 }
 
@@ -230,15 +270,13 @@ void context::builder::surface(surface_create_info sci) {
   ctx.ctree.up();
 }
 
-template <style st = def_style>
-void context::builder::text(std::string_view str) {
+void context::builder::text(std::string_view str, const style &st) {
   ctx.ctree.add(st, &layout::instance<box_layout>());
   // WARNING : установить данные для отрисовки текста
   ctx.ctree.up();
 }
 
-template <style st = def_style>
-void context::builder::image(image_render_data ird) {
+void context::builder::image(image_render_data ird, const style &st) {
   ctx.ctree.add(st, &layout::instance<box_layout>());
   // WARNING : установить данные для отрисовки картинки
   ctx.ctree.up();

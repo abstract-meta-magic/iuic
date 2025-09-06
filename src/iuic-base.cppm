@@ -6,8 +6,8 @@ module;
 #include <string_view>
 
 // Independ User Interface Core
-export module iuic.core:base;
 
+export module iuic.core:base;
 export namespace iuic {
 
 struct celement;
@@ -105,6 +105,9 @@ struct style_shape {
   } border_radius;
 };
 
+// absolute \ owner_of \ stinky
+using position_type = std::variant<int, int>;
+
 // base color is RGBA\16
 // также нужно будет написать API для
 // работы со стилями наследование,миксины,etc...
@@ -117,15 +120,6 @@ struct style {
   style_background background;
 
   align align;
-};
-
-// TOTO : in version 0.2
-struct styleset {
-  const style &base;
-  const style &hover{base};
-  const style &active{base};
-  const style &focus{base};
-  const style &disable{base};
 };
 
 struct text_render_data {

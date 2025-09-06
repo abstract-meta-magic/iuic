@@ -1,26 +1,33 @@
 
 module;
 #include <cstddef>
+#include <cstdint>
+#include <string>
 
 #include "tmp_solutions/hash/xxh3.h"
 
 module iuic.core;
 import :uid.factory;
 
-namespace iuic {
+namespace iuic::uid {
 
-uid_t uid::factory::make(uid_t) const noexcept {
-  XXH64_state_t *const st = XXH64_createState();
+static constexpr XXH64_hash_t static_seed{443573};
 
-  return {};
+uid_t make(uid_t uu) noexcept {
+  return XXH64(reinterpret_cast<const char *>(&uu), sizeof(uu), static_seed);
 };
 
-uid_t uid::factory::make(const char *, std::size_t) const noexcept {
-
-  return {};
+uid_t make(const char *c_ptr, std::size_t size) noexcept {
+  return XXH64(c_ptr, size, static_seed);
 };
 
-uid_t uid::factory::make() const noexcept { return {}; };
+uid_t make(uid_t seed, const char *c_ptr, std::size_t size) noexcept {
+  return XXH64(c_ptr, size, seed);
+};
 
-uid_t uid::factory::merge(uid_t, uid_t) const noexcept { return {}; };
-}; // namespace iuic
+uid_t merge(uid_t seed, uid_t val) noexcept {
+
+  return XXH64(reinterpret_cast<const char *>(&val), sizeof(val), seed);
+};
+
+}; // namespace iuic::uid

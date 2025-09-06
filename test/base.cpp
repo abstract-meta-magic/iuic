@@ -42,8 +42,6 @@ SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
   return res;
 };
 
-void my_cb(iuic::event_type::key){};
-
 struct uuid {
   // в строителе
   // берется текущая глубина
@@ -54,63 +52,118 @@ struct uuid {
   // у builder нужно сделать метод get_uuid();
 };
 
-template <iuic::style style = iuic::def_style> void button(auto &b) {
-  b.template frame<style>([](auto &b) {
-    // events
+using builder_ui = iuic::context::builder;
+
+void my_test(builder_ui &b) {
+  b.frame([](builder_ui &b) {
+    auto uid = b.make_uid(b.make_uid(&my_test), "suu");
   });
-}
-template <iuic::style style = iuic::def_style>
-constexpr inline void button(iuic::context::builder &b,
-                             const std::string &str) {
-  static constexpr int address{2};
+};
 
-  auto uid = b.make_uid(b.make_uid(&address), str);
+void game_view_instance();
 
-  b.template frame<style>([=](auto &b) {
-    b.text(str);
-    if (auto ref = b.storage.get_ref(int{2}); ref.template as<int>()) {
-      auto &obj = ref.template unwrap<int>();
-    };
+/*
+
+  msg[nil] My penis is big;
+
+  image[show] lower;
+
+*/
+
+void novel_text(builder_ui &b) {
+  auto uid_b = b.make_uid(&novel_text);
+
+  b.frame([](auto &b) {
+    // left side bar
+    // load\save
+    b.frame();
+
+    // middle text
+    b.frame();
+
+    // right side bar
+    b.frame();
+  });
+};
+
+void menu(builder_ui &b) {};
+
+void game(builder_ui &b) {};
+
+void save() {};
+
+void gallery(builder_ui &b);
+
+void button(iuic::context::builder &b,
+            std::invocable<iuic::event_type::key_h> auto call,
+            const iuic::style &style = iuic::def_style) {
+  static constexpr bool uid_seed{true};
+
+  iuic::uid_t uid;
+  b.frame([&](auto &b) {
+    // unique id
+    b.frame(
+        [&](auto &b) {
+          uid = b.make_uid(b.make_uid(&uid_seed));
+          b.apply_uid(uid);
+          b.event(std::forward<decltype(call)>(call));
+        },
+        style);
 
     b.apply_uid(uid);
-    b.event(
-        [](iuic::event_type::key e) {
-          std::println("KEY_EVENT: {}", e.code[0]);
-        },
-        // можно делать uuid + string
-        b.storage.get_key(uid));
 
-    // если небыл вызван метод apply_uid(uid)
-    // то будет сгенерированн базовый uid + число++
-    b.event([](iuic::event_type::key e) {});
-
-    b.event([](iuic::event_type::key_u e) {
-      if (e.selector.is_hovered(e.uid)) {
-        e.selector.set_focused(e.uid);
-      } else if (e.selector.is_focused(e.uid) &&
-                 not e.selector.is_hovered(e.uid)) {
-        e.selector.unset_focused(e.uid);
-      }
+    // to pseudo-classes :hover, use paren ui_rect
+    b.event([](iuic::event_type::pointer_enter e) {
+      e.selector.set_hovered(e.uid);
     });
-
-    b.event([](iuic::event_type::key_f e) {});
-
-    b.event([](iuic::event_type::key_a e) {
-
-    });
-
-    // loop
-    b.event([]() {
-      // тут потенциально можно воздействовать на глобальное
-      // состояние
-    });
-
-    b.event(&my_cb, {});
-
-    // b.transform.position.shift_left(20);
-    // b.transform.shape.scale(1.2);
   });
 }
+
+constexpr inline void button(iuic::context::builder &b, const std::string &str,
+                             const iuic::style &style = iuic::def_style) {
+  static constexpr bool uid_sub_seed{true};
+
+  auto uid = b.make_uid(b.make_uid(&uid_sub_seed), str);
+
+  b.frame(
+      [=](auto &b) {
+        b.text(str);
+        if (auto ref = b.storage.get_ref(int{2}); ref.template as<int>()) {
+          auto &obj = ref.template unwrap<int>();
+        };
+
+        b.apply_uid(uid);
+
+        b.event([](iuic::event_type::pointer_enter e) {
+          e.selector.set_hovered(e.uid);
+        });
+
+        b.event([](iuic::event_type::pointer_exit e) {
+          if (e.selector.is_hovered(e.uid)) {
+            e.selector.unset_hovered(e.uid);
+          }
+        });
+
+        b.event([](iuic::event_type::key_h e) {
+          if (e.code == iuic::key_code{(iuic::key_t)1}) {
+            if (not e.selector.is_focused(e.uid)) {
+              e.selector.set_focused(e.uid);
+            }
+          }
+        });
+
+        b.event([](iuic::event_type::key_f e) {
+          std::println("Text field press : {}", e.code[0]);
+          if (not e.selector.is_hovered(e.uid) &&
+              e.code == iuic::key_code{(iuic::key_t)1}) {
+            e.selector.unset_focused(e.uid);
+          }
+        });
+      },
+      style);
+}
+
+template <auto object> constexpr auto &static_ref() noexcept { return object; }
 
 int main() {
   using namespace iuic;
@@ -163,16 +216,14 @@ int main() {
 
     ctx.make([](auto &b) {
       // frame(create_info,childs_lambda)
-      b.frame(
-          [](auto &b) { b.template frame<s_1>([](auto &b) { b.frame(); }); });
-
+      b.frame([](auto &b) { b.frame([](auto &b) { b.frame(); }, s_1); });
       b.text("test text");
-      b.template text<style{.shape{.min_size{240, 400}},
-                            .background{.color{94, 104, 196, 255}}}>("ok");
+
+      b.text("ok");
       b.image({});
 
-      button(b);
-      button(b);
+      button(b, [](iuic::event_type::key_h e) {});
+      button(b, [](iuic::event_type::key_h e) {});
       button(b, "touch me");
     });
 
@@ -182,7 +233,13 @@ int main() {
         quit = true;
       } else if (e.type == SDL_EVENT_KEY_DOWN) {
         ctx.event.key(iuic::key_code{static_cast<iuic::key_t>(e.key.scancode)});
-      }
+      } else if (e.type == SDL_EVENT_MOUSE_MOTION) {
+        // test pointer event
+
+        ctx.event.pointer_move({(int)e.motion.x, (int)e.motion.y});
+      } else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+        ctx.event.key(key_code{e.button.button});
+      };
     }
 
     int w, h;
