@@ -221,7 +221,6 @@ class event_reciver final : private pseudo_selector {
 public:
   void key(key_code key) {
     // TOTO : storage access
-    storage st;
 
     for (auto &&e : event_pack.key[0]) {
       std::visit(
@@ -229,7 +228,7 @@ public:
             if constexpr (std::is_invocable_v<
                               std::remove_cvref_t<decltype(call)>,
                               iuic::event_type::key_g>) {
-              call(iuic::event_type::key_g{st, *this, e.data, key, 0});
+              call(iuic::event_type::key_g{storage, *this, e.data, key, 0});
             }
           },
           e.call);
@@ -242,7 +241,8 @@ public:
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::key_h>) {
-                call(iuic::event_type::key_h{st, *this, e.data, key, hovered});
+                call(iuic::event_type::key_h{storage, *this, e.data, key,
+                                             hovered});
               }
             },
             e.call);
@@ -257,7 +257,8 @@ public:
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::key_f>) {
-                call(iuic::event_type::key_f{st, *this, e.data, key, focused});
+                call(iuic::event_type::key_f{storage, *this, e.data, key,
+                                             focused});
               }
             },
             e.call);
@@ -271,7 +272,8 @@ public:
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::key_a>) {
-                call(iuic::event_type::key_a{st, *this, e.data, key, active});
+                call(iuic::event_type::key_a{storage, *this, e.data, key,
+                                             active});
               }
             },
             e.call);
@@ -280,7 +282,6 @@ public:
   };
 
   void pointer(ui_position position) {
-    storage st;
     for (auto &&[_, obj] : event_pack.pointer) {
       for (auto &&e : obj) {
         std::visit(
@@ -288,7 +289,7 @@ public:
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::pointer_move>) {
-                call(event_type::pointer_move{st, *this, e.data, e.uid});
+                call(event_type::pointer_move{storage, *this, e.data, e.uid});
               }
             },
             e.call);
@@ -306,7 +307,6 @@ public:
   };
 
   void on_enter__(std::vector<pointer_event> &events) {
-    storage st;
     for (auto &e : events) {
       std::visit(
           [&](auto &call) {
@@ -316,7 +316,7 @@ public:
               std::println("event {}", e.uid);
               if (e.uid != hovered) {
                 std::println("event go ");
-                call(event_type::pointer_enter{st, *this, e.data, e.uid});
+                call(event_type::pointer_enter{storage, *this, e.data, e.uid});
               }
             }
           },
@@ -324,7 +324,6 @@ public:
     }
   };
   void on_exit__(std::vector<pointer_event> &events) {
-    storage st;
     for (auto &e : events) {
       std::visit(
           [&](auto &call) {
@@ -334,7 +333,7 @@ public:
               std::println("event {}", e.uid);
               if (e.uid == hovered) {
                 std::println("event go ");
-                call(event_type::pointer_exit{st, *this, e.data, e.uid});
+                call(event_type::pointer_exit{storage, *this, e.data, e.uid});
               }
             }
           },
@@ -374,7 +373,7 @@ public:
   // in version 0.2
   void key_buff_dispatch(key_code);
 
-  event_reciver() {};
+  event_reciver(storage &storage_) : storage{storage_} {};
 
 private: // pseudo-selector impl
   bool is_hovered(uid_t uid) const noexcept override { return hovered == uid; };
@@ -402,6 +401,7 @@ private: // pseudo-selector impl
   void unset_active() noexcept override { active = 0; };
 
 private:
+  storage &storage;
   ui_position pointer_position;
 
   uid_t hovered{0}; // stack

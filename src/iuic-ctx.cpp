@@ -13,6 +13,7 @@ module;
 #include <vector>
 
 module iuic.core;
+import :hash;
 
 namespace iuic {
 
@@ -23,6 +24,7 @@ const std::vector<relement> &context::get_tree() { return to_render; }
 void context::reset() {
   ctree.reset();
   to_render.clear();
+  storage.advance_generation();
 };
 
 void context::self_size() {
@@ -79,18 +81,13 @@ void context::build_render_list() {
 
 // base uid + str.hash
 uid_t context::builder::make_uid(const std::string &str) const noexcept {
-  return uid::make(seed.top(), str.c_str(), str.size());
-};
-
-// base uid + other.uid.hash
-uid_t context::builder::make_uid(uid_t uid) const noexcept {
-  return uid::make(uid);
+  return hash::make(seed.top(), str.c_str(), str.size());
 };
 
 // base uid + other.uid.hash + str.hash
 uid_t context::builder::make_uid(uid_t uid,
                                  const std::string &str) const noexcept {
-  return uid::merge(uid, make_uid(str));
+  return hash::merge(uid, make_uid(str));
 };
 
 uid_t context::builder::__make_uid_from_ptr(const void *ptr) const noexcept {
@@ -99,7 +96,7 @@ uid_t context::builder::__make_uid_from_ptr(const void *ptr) const noexcept {
     // TODO : convert ptr to uid
   } else if constexpr (sizeof(ptr) == sizeof(std::uint64_t)) {
     // TODO : convert ptr to uid
-    return uid::make(reinterpret_cast<const char *>(ptr), sizeof(ptr));
+    return hash::make(reinterpret_cast<const char *>(ptr), sizeof(ptr));
   } else {
     throw "Unsupported pointer size";
   };
@@ -115,7 +112,7 @@ void context::builder::__prev() noexcept {
 
   auto data_len = sizeof(size_t) * id.size();
 
-  seed.push(uid::make(data_ptr, data_len));
+  seed.push(hash::make(data_ptr, data_len));
   // ...
 };
 

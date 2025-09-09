@@ -13,7 +13,6 @@ module;
 
 export module iuic.core;
 export import :base;
-import :uid.factory;
 import :layout.box;
 import :transform;
 import :fct;
@@ -39,9 +38,6 @@ constexpr style def_style = []() {
   return res;
 }();
 
-constexpr const auto def_layout = box_layout{};
-// constexpr const layout &def_layout = def_layout_val;
-
 // WARRNING : Not Impl eat
 enum class UpdateType { Dynamic, Static, DirtyFlag };
 
@@ -60,12 +56,11 @@ public:
       TODO : можно заменить на нешаблонный вызов
     */
     void frame(std::invocable<builder &> auto &&call, const style & = def_style,
-               const layout & = layout::instance<box_layout>()) noexcept;
+               const layout & = box_layout) noexcept;
 
     void frame(std::invocable<builder &> auto &&call, const layout &) noexcept;
 
-    void frame(const style & = def_style,
-               const layout & = layout::instance<box_layout>()) noexcept;
+    void frame(const style & = def_style, const layout & = box_layout) noexcept;
 
     void frame(const layout &) noexcept;
 
@@ -82,29 +77,26 @@ public:
     /*
       Пользовательская поверхность. Будет добавленно в v0.2
     */
-    template <style = def_style, layout_cpt layout = box_layout,
-              typename Call = void>
-    void surface(Call call, surface_create_info);
+    void surface(auto &&call, surface_create_info, const layout & = box_layout);
 
-    template <style = def_style, layout_cpt layout = box_layout>
-    void surface(surface_create_info);
+    void surface(surface_create_info, const layout & = box_layout);
 
     // event
     template <key_event_callback_cpt Call>
     void event(Call &&call, storage_registry_key key = {}) {
       if constexpr (std::invocable<decltype(call), iuic::event_type::key_g>) {
         ctx.event_collector.push(
-            key_event{key, {call}, ctx.ctree.index_at_last(), 0});
+            key_event{key, {call}, ctx.ctree.current_index(), 0});
       } else {
         ctx.event_collector.push(
-            key_event{key, {call}, ctx.ctree.index_at_last(), uid});
+            key_event{key, {call}, ctx.ctree.current_index(), uid});
       }
     };
 
     template <pointer_event_callback_cpt Call>
     void event(Call &&call, storage_registry_key key = {}) {
       ctx.event_collector.push(
-          pointer_event{key, {call}, ctx.ctree.index_at_last(), uid});
+          pointer_event{key, {call}, ctx.ctree.current_index(), uid});
     };
 
     // использовать трансформатор для изменения
@@ -116,9 +108,6 @@ public:
 
     // base uid + str.hash
     uid_t make_uid(const std::string &) const noexcept;
-
-    // base uid + other.uid.hash
-    uid_t make_uid(uid_t) const noexcept;
 
     // base uid + other.uid.hash + str.hash
     uid_t make_uid(uid_t, const std::string &) const noexcept;
@@ -137,7 +126,7 @@ public:
 
     void apply_uid(uid_t uid) noexcept;
 
-    const storage &storage;
+    mutable_storage &storage;
 
   private:
     uid_t __make_uid_from_ptr(const void *ptr) const noexcept;
@@ -176,10 +165,10 @@ private:
   void build_render_list();
 
 public:
+  managed_storage storage;
   // event reciver
-  event_reciver event;
+  event_reciver event{storage};
   // store
-  storage storage;
 
   // animator
   animator animator;
@@ -245,39 +234,14 @@ void context::builder::frame(const layout &layout) noexcept {
   frame(def_style, layout);
 };
 
-template <style st = def_style, layout_cpt Layout, typename Call = void>
-void context::builder::surface(Call call, surface_create_info sci) {
-  ctx.ctree.add(st, &layout::instance<Layout>());
-
-  // wrong
-  surface_static_info s{};
-  surface_render_data sr{s};
-  // wrong
-  builder::__prev();
-  call(*this, sr);
-  builder::__post();
-  ctx.ctree.up();
-}
-
-template <style st = def_style, layout_cpt Layout>
-void context::builder::surface(surface_create_info sci) {
-  ctx.ctree.add(st, &layout::instance<Layout>());
-
-  // wrong
-  surface_static_info s{};
-  surface_render_data sr{s};
-  // wrong
-  ctx.ctree.up();
-}
-
 void context::builder::text(std::string_view str, const style &st) {
-  ctx.ctree.add(st, &layout::instance<box_layout>());
+  ctx.ctree.add(st, &box_layout);
   // WARNING : установить данные для отрисовки текста
   ctx.ctree.up();
 }
 
 void context::builder::image(image_render_data ird, const style &st) {
-  ctx.ctree.add(st, &layout::instance<box_layout>());
+  ctx.ctree.add(st, &box_layout);
   // WARNING : установить данные для отрисовки картинки
   ctx.ctree.up();
 }

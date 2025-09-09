@@ -111,6 +111,8 @@ public: // Public Interface
   */
   size_t index_at_last() const noexcept;
 
+  size_t current_index() const noexcept;
+
   /*
    for(auto&& cc : ctree.range_for()) { ... }.
    Перебо всего дерева от начала до конца.
@@ -166,6 +168,7 @@ private: // Data
   } root_{this};
   std::vector<computing_context> nodes;
   // parent\last_brather
+  std::stack<size_t> current{};
   std::stack<std::pair<size_t, size_t>> parent{};
 };
 

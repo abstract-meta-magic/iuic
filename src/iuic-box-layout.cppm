@@ -12,7 +12,7 @@ namespace iuic {
 // базовый приватный layout для всех
 // если в стиле отсутствует layout
 // для вычислений используется этот
-struct box_layout final : public layout {
+struct final : public layout {
   void self_size(area_utils utils) const noexcept override {
 
     ui_size res{0, 0};
@@ -75,5 +75,5 @@ struct box_layout final : public layout {
       return;
     }
   };
-};
+} constexpr inline box_layout{};
 }; // namespace iuic

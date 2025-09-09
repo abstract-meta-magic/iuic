@@ -112,9 +112,13 @@ void FCTree::add(const style &style, const layout *layout) {
   }
 
   parent.push({id, id});
+  current.push(id);
 };
 
-void FCTree::up() { parent.pop(); };
+void FCTree::up() {
+  parent.pop();
+  current.pop();
+};
 
 computing_context &FCTree::last() noexcept {
   // REFACTOR THIS
@@ -143,6 +147,13 @@ size_t FCTree::index_at_last() const noexcept {
   }
 
   return size() - 1;
+};
+
+size_t FCTree::current_index() const noexcept {
+  if (current.empty()) {
+    return root_.id;
+  }
+  return current.top();
 };
 
 void FCTree::set_root_size(ui_size sz) { root_.style.shape.max_size = sz; };

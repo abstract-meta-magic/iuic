@@ -8,6 +8,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <print>
 #include <string_view>
@@ -18,6 +19,18 @@
 
 import iuic.core;
 
+namespace iuic::key_map {
+constexpr key_code mouse(std::string_view str) {
+  if (str == "left") {
+    return key_code{(key_t)1};
+  } else if (str == "mid") {
+    return key_code{(key_t)2};
+  } else if (str == "right") {
+    return key_code{(key_t)3};
+  }
+  return {};
+};
+}; // namespace iuic::key_map
 constexpr auto s_1 = []() {
   iuic::style res{};
 
@@ -94,28 +107,41 @@ void save() {};
 
 void gallery(builder_ui &b);
 
-void button(iuic::context::builder &b,
-            std::invocable<iuic::event_type::key_h> auto call,
+void button(iuic::context::builder &b, std::invocable<> auto &&call,
             const iuic::style &style = iuic::def_style) {
   static constexpr bool uid_seed{true};
 
   iuic::uid_t uid;
+
   b.frame([&](auto &b) {
-    // unique id
-    b.frame(
-        [&](auto &b) {
-          uid = b.make_uid(b.make_uid(&uid_seed));
-          b.apply_uid(uid);
-          b.event(std::forward<decltype(call)>(call));
-        },
-        style);
+    // just for uid
+    b.frame([&](auto &b) { uid = b.make_uid(&uid_seed); },
+            style); // hiden style
 
-    b.apply_uid(uid);
+    auto srk = b.storage.persist(uid, "callback");
 
-    // to pseudo-classes :hover, use paren ui_rect
+    b.storage.init_if_not(srk, [&]() { return call; });
+
+    b.apply_uid(uid); // event set
+
     b.event([](iuic::event_type::pointer_enter e) {
       e.selector.set_hovered(e.uid);
     });
+
+    b.event([](iuic::event_type::pointer_exit e) {
+      if (e.selector.is_hovered(e.uid)) {
+        e.selector.unset_hovered(e.uid);
+      }
+    });
+
+    using callback_t = std::remove_cvref_t<decltype(call)>;
+    b.event(
+        [](iuic::event_type::key_h e) {
+          if (e.code == iuic::key_map::mouse("left")) {
+            e.storage.try_visit(e.srk, [](callback_t &call) { call(); });
+          };
+        },
+        srk);
   });
 }
 
@@ -128,9 +154,6 @@ constexpr inline void button(iuic::context::builder &b, const std::string &str,
   b.frame(
       [=](auto &b) {
         b.text(str);
-        if (auto ref = b.storage.get_ref(int{2}); ref.template as<int>()) {
-          auto &obj = ref.template unwrap<int>();
-        };
 
         b.apply_uid(uid);
 
@@ -145,7 +168,7 @@ constexpr inline void button(iuic::context::builder &b, const std::string &str,
         });
 
         b.event([](iuic::event_type::key_h e) {
-          if (e.code == iuic::key_code{(iuic::key_t)1}) {
+          if (e.code == iuic::key_map::mouse("left")) {
             if (not e.selector.is_focused(e.uid)) {
               e.selector.set_focused(e.uid);
             }
@@ -155,7 +178,7 @@ constexpr inline void button(iuic::context::builder &b, const std::string &str,
         b.event([](iuic::event_type::key_f e) {
           std::println("Text field press : {}", e.code[0]);
           if (not e.selector.is_hovered(e.uid) &&
-              e.code == iuic::key_code{(iuic::key_t)1}) {
+              e.code == iuic::key_map::mouse("left")) {
             e.selector.unset_focused(e.uid);
           }
         });
@@ -184,11 +207,6 @@ int main() {
 
   ctx.set_view_size(sz);
 
-  auto ref = ctx.storage.get_ref(2);
-
-  ctx.storage.bind("CZ-2203", &sz);
-  ctx.storage.emplace("UUJ", int{22});
-
   std::cout << "complite" << std::endl;
 
   ctx.event.pointer({22, 44});
@@ -212,9 +230,11 @@ int main() {
 
   bool quit{false};
 
+  std::string msg{"Hello world"};
+
   while (!quit) {
 
-    ctx.make([](auto &b) {
+    ctx.make([&](auto &b) {
       // frame(create_info,childs_lambda)
       b.frame([](auto &b) { b.frame([](auto &b) { b.frame(); }, s_1); });
       b.text("test text");
@@ -222,8 +242,8 @@ int main() {
       b.text("ok");
       b.image({});
 
-      button(b, [](iuic::event_type::key_h e) {});
-      button(b, [](iuic::event_type::key_h e) {});
+      button(b, [&]() { std::println("yo {}", msg); });
+      button(b, []() { std::println("wrong"); });
       button(b, "touch me");
     });
 

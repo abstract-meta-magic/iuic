@@ -22,7 +22,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"src/iuic-base.cppm"
-	"src/iuic-uid-factory.cppm"
+	"src/iuic-hash.cppm"
 	"src/iuic-fct.cppm"
 	"src/iuic-storage.cppm"
 	"src/iuic-animator.cppm"
@@ -39,7 +39,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cpp"
-	"src/iuic-uid-factory.cpp"
+	"src/iuic-hash.cpp"
 	"src/iuic-computing-ctx.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-fct.cpp"

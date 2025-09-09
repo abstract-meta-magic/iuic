@@ -1,53 +1,71 @@
 
 module;
 
-#include <any>
-#include <concepts>
-#include <type_traits>
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <memory_resource>
+#include <print>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <utility>
 
 export module iuic.core:storage;
 import :base;
+import :hash;
 
 namespace iuic {
-struct storage_type {};
+struct storage_type {
+  using dector_t = void (*)(void *);
+  size_t size;
+  size_t align;
+  dector_t dector;
+};
 
 // Дешевый ключь для быстрого поиска значения
 // Должен мало весить
-struct storage_registry_key {};
+
+using storage_registry_key = std::uint64_t;
+// short alias
+using srk_t = storage_registry_key;
 
 template <typename T>
 concept pure_type = std::same_as<std::remove_cvref_t<T>, T> &&
                     not std::is_pointer_v<T> && not std::is_array_v<T>;
 
-template <typename T> constexpr inline const storage_type *instance_stt() {
-  static constexpr storage_type _{};
+template <typename T>
+constexpr inline const storage_type *instance_storage_type__() {
+  static constexpr storage_type _{
+      sizeof(T), alignof(T), [](void *obj) { static_cast<T *>(obj)->~T(); }};
   return &_;
 }
 
-template <pure_type T> constexpr inline const storage_type *get_stt() {
+// TODO : normal naming
+template <pure_type T> constexpr inline const storage_type *storage_type_of() {
   using clear_type = std::remove_cvref_t<T>;
 
-  return instance_stt<clear_type>();
+  return instance_storage_type__<clear_type>();
 };
 
 struct base_ref {
-  template <typename T> constexpr bool as() const {
-    return type == get_stt<T>();
-  };
-
-  template <pure_type T>
-  base_ref(T *object) : data{object}, type{get_stt<T>()} {}
-
-protected:
-  void *data;
-  const storage_type *type;
+  void *data{nullptr};
+  const storage_type *type{storage_type_of<std::nullptr_t>()};
 };
 } // namespace iuic
 export namespace iuic {
 
-struct storage_ref final : base_ref {
+struct storage_ref final : private base_ref {
+  storage_ref(base_ref &&ref) : base_ref{ref} {}
+  storage_ref(const base_ref &ref) : base_ref{ref} {}
+
+  template <typename T> constexpr bool as() const {
+    return type == storage_type_of<T>();
+  };
+
   template <pure_type T> storage_ref(T *object) : base_ref{object} {}
-  template <typename T> constexpr T &unwrap() const {
+
+  template <pure_type T> constexpr T &unwrap() const {
     if (data && as<T>()) {
       return *static_cast<T *>(data);
     }
@@ -56,9 +74,17 @@ struct storage_ref final : base_ref {
   };
 };
 
-struct storage_cref final : base_ref {
+struct storage_cref final : private base_ref {
+  storage_cref(base_ref &&ref) : base_ref{ref} {}
+  storage_cref(const base_ref &ref) : base_ref{ref} {}
+
+  template <typename T> constexpr bool as() const {
+    return type == storage_type_of<T>();
+  };
+
   template <pure_type T> storage_cref(T *object) : base_ref{object} {}
-  template <typename T> constexpr const T &unwrap() const {
+
+  template <pure_type T> constexpr const T &unwrap() const {
     if (data && as<T>()) {
       return *static_cast<T *>(data);
     }
@@ -66,48 +92,298 @@ struct storage_cref final : base_ref {
     throw "Inccorect type request";
   };
 };
-
-struct storage_val {};
 }; // namespace iuic
 
 namespace iuic {
 
+// декомпазировать на use и set части
 class storage {
+private: // visit help
+  template <typename T> static consteval void visit_arg_type__(T);
+
+  template <typename T, typename ARG>
+  static consteval ARG visit_arg_type__(std::function<T(ARG &)>);
+
+  template <typename T, typename ARG>
+  static consteval ARG visit_traits__(std::function<T(const ARG &)>);
+
 public:
-  template <typename Key> storage_ref get_ref(Key) { return {&empty}; };
+  bool exist(srk_t srk) const { return is_init__(srk); };
 
-  template <typename Key> storage_cref get_ref(Key) const { return {&empty}; };
-
-  storage_ref get_ref(storage_registry_key) { return {&empty}; };
-
-  storage_cref get_ref(storage_registry_key) const { return {&empty}; };
-
-  template <typename Key> storage_registry_key get_key(Key) const {
-    return {};
+  template <pure_type T> bool exist_as(srk_t srk) const {
+    if (exist(srk)) {
+      // return storage_ref{get_ref__(srk)}.as<T>();
+    }
+    return false;
   };
 
-  // Закрепление внешнего значения по текущему ключу
-  template <typename Key, pure_type Val> storage_registry_key bind(Key, Val *) {
-    return {};
+  constexpr bool try_visit(srk_t srk, auto &&call) {
+    auto ref = get_ref__(srk);
+
+    using type =
+        std::remove_cvref_t<decltype(visit_arg_type__(std::function{call}))>;
+
+    static_assert(not std::same_as<type, void>,
+                  "Invalide visit type. Please use void (*)(T&) for callback.");
+
+    if (ref.type == storage_type_of<type>()) {
+      return call(*static_cast<type *>(ref.data)), true;
+    }
+
+    return false;
   };
 
-  // Создание в хранилище нового значения
-  template <typename Key, pure_type Val>
-  storage_registry_key emplace(Key, Val &&) {
-    return {};
+  bool try_visit(srk_t srk, auto &&call) const {
+    // storage_cref ref{get_ref__(srk)};
+    base_ref ref{};
+
+    using type =
+        std::remove_cvref_t<decltype(visit_arg_type__(std::function{call}))>;
+
+    static_assert(
+        not std::same_as<type, void>,
+        "Invalide visit type. Please use void(const T&) for callback.");
+
+    if (ref.type == storage_type_of<type>()) {
+      return call(*static_cast<const type *>(ref.data)), true;
+    }
+
+    return false;
   };
 
-  // Ограниченный буфер для временных значений
-  template <pure_type Val> storage_registry_key tmp(Val &&) const;
+protected:
+  constexpr base_ref get_ref__(srk_t srk) {
+    switch (persistent_geniration_phase) {
+    case persistent_geniration_phase_e::phase__1: {
+      if (persistent__1.contains(srk)) {
+        return persistent__1[srk];
+      }
+      break;
+    };
+    case persistent_geniration_phase_e::phase__2: {
+      if (persistent__2.contains(srk)) {
+        return persistent__2[srk];
+      }
+      break;
+    }
+    }
 
-  // Удалить элимент по ключу
-  template <typename Key> void erase(Key){};
+    if (tmp__.contains(srk)) {
+      return tmp__[srk];
+    }
 
-  // Отчистка временного буфера
-  void clear_tmp();
+    // null
+    return base_ref{};
+  };
 
-private: // data
-  static inline int empty{2};
+  static constexpr hash::hash_t srk_hash_seed{445736667};
+
+  // magic number for tmp + uid + name
+  static srk_t make_tmp_srk__(uid_t uid, const std::string &name) noexcept {
+    static constexpr char tmp_magick{'T'};
+
+    std::stringstream ss;
+    ss << tmp_magick << uid;
+
+    if (name.empty()) {
+      ss << "__unnamed__";
+    } else {
+      ss << name;
+    }
+
+    auto str = ss.str();
+
+    return hash::make(srk_hash_seed, str.c_str(), str.length());
+  };
+
+  // magic number for persist + uid + name
+  static srk_t make_persist_srk__(uid_t uid, const std::string &name) noexcept {
+    static constexpr char persistent_magick{'P'};
+
+    std::stringstream ss;
+    ss << persistent_magick << uid;
+
+    if (name.empty()) {
+      ss << "__unnamed__";
+    } else {
+      ss << name;
+    }
+
+    auto str = ss.str();
+
+    return hash::make(srk_hash_seed, str.c_str(), str.length());
+    return 2;
+  };
+
+protected: // data
+  bool is_init__(srk_t srk) const { return false; };
+
+  struct raw_memory {
+    std::byte *begin;
+    size_t size;
+  };
+
+  // tmp managment
+  std::map<srk_t, base_ref> tmp__;
+
+  // persistent managment
+  enum class persistent_geniration_phase_e {
+    phase__1,
+    phase__2
+  } persistent_geniration_phase{persistent_geniration_phase_e::phase__1};
+
+  std::map<srk_t, base_ref> persistent__1;
+  std::map<srk_t, base_ref> persistent__2;
+  std::map<uid_t, srk_t> reg;
+  // buff's
+  raw_memory warning_persisten_memory__; // buff
+  raw_memory base_persisten_memory__;    // buff
+  raw_memory tmp_memory__;               // buff
+
+  // upsteam is null_memory_resource
+  std::pmr::monotonic_buffer_resource persistent_memory_warning__;
+  // upsteam is persisten_memory_warning__
+  std::pmr::monotonic_buffer_resource persistent_memory__;
+  // upsteam is persisten_memory__
+  std::pmr::unsynchronized_pool_resource persistent_resource;
+
+  std::pmr::monotonic_buffer_resource tmp_resource;
+};
+
+struct mutable_storage : public storage {
+  template <typename T> void set(srk_t, T &&);
+
+  storage_registry_key tmp(uid_t uid, const std::string &name) {
+    auto srk = make_tmp_srk__(uid, name);
+
+    tmp__.try_emplace(srk, base_ref{});
+
+    return srk;
+  };
+
+  storage_registry_key persist(uid_t uid, const std::string &name) {
+    auto srk = make_persist_srk__(uid, name);
+
+    switch (persistent_geniration_phase) {
+    case persistent_geniration_phase_e::phase__1: {
+      if (persistent__2.contains(srk)) {
+        auto swap_value = persistent__2.extract(srk);
+        persistent__1.insert(std::move(swap_value));
+      } else {
+        persistent__1.try_emplace(srk, base_ref{});
+      };
+      break;
+    }
+    case persistent_geniration_phase_e::phase__2: {
+      if (persistent__1.contains(srk)) {
+        auto swap_value = persistent__1.extract(srk);
+        persistent__2.insert(std::move(swap_value));
+      } else {
+        persistent__2.try_emplace(srk, base_ref{});
+      }
+      break;
+    }
+    }
+
+    return srk;
+  };
+
+  void init_if_not(srk_t srk, std::invocable<> auto &&call) {
+    using pure_type = std::remove_cvref_t<std::invoke_result_t<decltype(call)>>;
+
+    switch (persistent_geniration_phase) {
+    case persistent_geniration_phase_e::phase__1: {
+      if (persistent__1.contains(srk)) {
+        auto &ref = persistent__1[srk];
+        if (ref.type == storage_type_of<std::nullptr_t>()) {
+          ref.type = storage_type_of<pure_type>();
+          ref.data =
+              persistent_resource.allocate(ref.type->size, ref.type->align);
+          new (ref.data) pure_type{call()};
+
+          std::println("INIT OBJECT - srk {}", srk);
+        }
+        return;
+      }
+      break;
+    }
+    case persistent_geniration_phase_e::phase__2: {
+
+      if (persistent__2.contains(srk)) {
+        auto &ref = persistent__2[srk];
+        if (ref.type == storage_type_of<std::nullptr_t>()) {
+          ref.type = storage_type_of<pure_type>();
+          ref.data =
+              persistent_resource.allocate(ref.type->size, ref.type->align);
+          new (ref.data) pure_type{call()};
+
+          std::println("INIT OBJECT - srk {}", srk);
+        }
+        return;
+      }
+      break;
+    }
+    }
+
+    if (tmp__.contains(srk)) {
+      auto &ref = tmp__[srk];
+      if (ref.type == storage_type_of<std::nullptr_t>()) {
+        ref.type = storage_type_of<pure_type>();
+        ref.data = tmp_resource.allocate(ref.type->size, ref.type->align);
+        new (ref.data) pure_type{call()};
+      }
+    }
+  };
+};
+// module private класс используемый в context
+// для упровления хранилищем
+struct managed_storage final : public mutable_storage {
+  // удаление временных значений и проверка персистентных
+  void advance_generation() {
+
+    switch (persistent_geniration_phase) {
+    case persistent_geniration_phase_e::phase__1: {
+      for (auto &&[_, ref] : persistent__2) {
+        ref.type->dector(ref.data);
+        persistent_resource.deallocate(ref.data, ref.type->size,
+                                       ref.type->align);
+      };
+      persistent__2.clear();
+      persistent_geniration_phase = persistent_geniration_phase_e::phase__2;
+      break;
+    };
+
+    case persistent_geniration_phase_e::phase__2: {
+      for (auto &&[_, ref] : persistent__1) {
+        ref.type->dector(ref.data);
+        persistent_resource.deallocate(ref.data, ref.type->size,
+                                       ref.type->align);
+      };
+
+      persistent__1.clear();
+      persistent_geniration_phase = persistent_geniration_phase_e::phase__1;
+      break;
+    };
+    }
+
+    for (auto &&[_, ref] : tmp__) {
+      ref.type->dector(ref.data);
+    };
+
+    tmp_resource.release();
+  };
+
+  // удаление всех выделенных объектов
+  void clear() {};
+
+  // Медоды упровления буферами и другими опциями хранилища
+
+  // tmp memory limit
+
+  // persistent memory limit
+
+  // max objects
+  // max object size
 };
 
 // Что-то вроде view на значение в storage
