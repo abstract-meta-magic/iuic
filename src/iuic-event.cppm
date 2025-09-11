@@ -4,6 +4,7 @@ module;
 #include <map>
 #include <print>
 #include <type_traits>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -11,60 +12,10 @@ export module iuic.core:event;
 import :base;
 import :fct;
 import :storage;
+import :pseudo_selector;
 export import :key_code;
 
 export namespace iuic {
-
-// rename and make this interface
-struct element_state_selector {
-
-  bool is_hovered(uid_t uid) { return false; };
-
-  bool is_active(uid_t uid) { return false; };
-
-  bool is_focused(uid_t uid) { return false; };
-
-  void set_active(uid_t uid) {};
-
-  void set_focused(uid_t uid) {};
-
-  void set_hovered(uid_t uid) {};
-
-  void unset_focused(uid_t uid) {};
-
-  void unset_active(uid_t uid) {};
-
-  void unset_focused() {};
-
-  void unset_active() {};
-};
-
-// make this constexpr ???
-struct pseudo_selector {
-  virtual ~pseudo_selector() = default;
-
-  virtual bool is_hovered(uid_t uid) const noexcept = 0;
-
-  virtual bool is_active(uid_t uid) const noexcept = 0;
-
-  virtual bool is_focused(uid_t uid) const noexcept = 0;
-
-  virtual void set_active(uid_t uid) noexcept = 0;
-
-  virtual void set_focused(uid_t uid) noexcept = 0;
-
-  virtual void set_hovered(uid_t uid) noexcept = 0;
-
-  virtual void unset_focused(uid_t uid) noexcept = 0;
-
-  virtual void unset_active(uid_t uid) noexcept = 0;
-
-  virtual void unset_focused() noexcept = 0;
-
-  virtual void unset_active() noexcept = 0;
-
-  virtual void unset_hovered(uid_t uid) noexcept = 0;
-};
 
 struct event_type {
   struct event_base {
@@ -215,7 +166,7 @@ private:
 // состояния между кадрами
 // ОСНОВНАЯ ОБЯЗАННОСТЬ :
 // корректная подготовка и отправка событий
-class event_reciver final : private pseudo_selector {
+class event_reciver final {
   friend void apply_event_hit_surface(event_reciver &, event_pack &&);
 
 public:
@@ -228,52 +179,51 @@ public:
             if constexpr (std::is_invocable_v<
                               std::remove_cvref_t<decltype(call)>,
                               iuic::event_type::key_g>) {
-              call(iuic::event_type::key_g{storage, *this, e.data, key, 0});
+              call(iuic::event_type::key_g{storage, selector, e.data, key, 0});
             }
           },
           e.call);
     }
 
-    if (hovered != 0) {
-      for (auto &&e : event_pack.key[hovered]) {
+    for (auto &&uid : selector_snapshot.hovered) {
+      for (auto &&e : event_pack.key[uid]) {
         std::visit(
             [&](auto &call) {
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::key_h>) {
-                call(iuic::event_type::key_h{storage, *this, e.data, key,
-                                             hovered});
+                call(iuic::event_type::key_h{storage, selector, e.data, key,
+                                             uid});
               }
             },
             e.call);
       }
     }
 
-    if (focused != 0) {
-
-      for (auto &&e : event_pack.key[focused]) {
+    for (auto &&uid : selector_snapshot.focused) {
+      for (auto &&e : event_pack.key[uid]) {
         std::visit(
             [&](auto &call) {
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::key_f>) {
-                call(iuic::event_type::key_f{storage, *this, e.data, key,
-                                             focused});
+                call(iuic::event_type::key_f{storage, selector, e.data, key,
+                                             uid});
               }
             },
             e.call);
       }
     }
 
-    if (active != 0) {
-      for (auto &&e : event_pack.key[focused]) {
+    for (auto &&uid : selector_snapshot.active) {
+      for (auto &&e : event_pack.key[uid]) {
         std::visit(
             [&](auto &call) {
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::key_a>) {
-                call(iuic::event_type::key_a{storage, *this, e.data, key,
-                                             active});
+                call(iuic::event_type::key_a{storage, selector, e.data, key,
+                                             uid});
               }
             },
             e.call);
@@ -289,7 +239,8 @@ public:
               if constexpr (std::is_invocable_v<
                                 std::remove_cvref_t<decltype(call)>,
                                 iuic::event_type::pointer_move>) {
-                call(event_type::pointer_move{storage, *this, e.data, e.uid});
+                call(
+                    event_type::pointer_move{storage, selector, e.data, e.uid});
               }
             },
             e.call);
@@ -314,9 +265,10 @@ public:
                               std::remove_cvref_t<decltype(call)>,
                               event_type::pointer_enter>) {
               std::println("event {}", e.uid);
-              if (e.uid != hovered) {
+              if (not selector_snapshot.hovered.contains(e.uid)) {
                 std::println("event go ");
-                call(event_type::pointer_enter{storage, *this, e.data, e.uid});
+                call(event_type::pointer_enter{storage, selector, e.data,
+                                               e.uid});
               }
             }
           },
@@ -331,9 +283,10 @@ public:
                               std::remove_cvref_t<decltype(call)>,
                               event_type::pointer_exit>) {
               std::println("event {}", e.uid);
-              if (e.uid == hovered) {
+              if (selector_snapshot.hovered.contains(e.uid)) {
                 std::println("event go ");
-                call(event_type::pointer_exit{storage, *this, e.data, e.uid});
+                call(
+                    event_type::pointer_exit{storage, selector, e.data, e.uid});
               }
             }
           },
@@ -373,45 +326,21 @@ public:
   // in version 0.2
   void key_buff_dispatch(key_code);
 
-  event_reciver(storage &storage_) : storage{storage_} {};
-
-private: // pseudo-selector impl
-  bool is_hovered(uid_t uid) const noexcept override { return hovered == uid; };
-
-  bool is_active(uid_t uid) const noexcept override { return active == uid; };
-
-  bool is_focused(uid_t uid) const noexcept override { return focused == uid; };
-
-  void set_active(uid_t uid) noexcept override { active = uid; };
-
-  void set_focused(uid_t uid) noexcept override { focused = uid; };
-
-  void set_hovered(uid_t uid) noexcept override { hovered = uid; };
-
-  // TODO : future in set<uid_t>
-  void unset_focused(uid_t uid) noexcept override { focused = 0; };
-
-  void unset_hovered(uid_t uid) noexcept override { hovered = 0; };
-
-  // TODO : future in set<uid_t>
-  void unset_active(uid_t uid) noexcept override { active = 0; };
-
-  void unset_focused() noexcept override { focused = 0; };
-
-  void unset_active() noexcept override { active = 0; };
+  event_reciver(storage &storage_, advanced_pseudo_selector &selector_)
+      : storage{storage_}, selector{selector_} {};
 
 private:
   storage &storage;
+  advanced_pseudo_selector &selector;
+  pseudo_selector_snapshot selector_snapshot;
   ui_position pointer_position;
 
-  uid_t hovered{0}; // stack
-  uid_t focused{0}; // set
-  uid_t active{0};  // set
   event_pack event_pack{};
 };
 
 void apply_event_hit_surface(event_reciver &er, event_pack &&ep) {
   std::swap(er.event_pack, ep);
+  er.selector_snapshot = er.selector.snapshot();
 }
 
 }; // namespace iuic

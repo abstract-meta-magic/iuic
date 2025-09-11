@@ -14,7 +14,6 @@ module;
 export module iuic.core:storage;
 import :base;
 import :hash;
-
 namespace iuic {
 struct storage_type {
   using dector_t = void (*)(void *);
@@ -26,9 +25,9 @@ struct storage_type {
 // Дешевый ключь для быстрого поиска значения
 // Должен мало весить
 
-using storage_registry_key = std::uint64_t;
+export using storage_registry_key = hash::hash_t;
 // short alias
-using srk_t = storage_registry_key;
+export using srk_t = storage_registry_key;
 
 template <typename T>
 concept pure_type = std::same_as<std::remove_cvref_t<T>, T> &&
@@ -53,46 +52,6 @@ struct base_ref {
   const storage_type *type{storage_type_of<std::nullptr_t>()};
 };
 } // namespace iuic
-export namespace iuic {
-
-struct storage_ref final : private base_ref {
-  storage_ref(base_ref &&ref) : base_ref{ref} {}
-  storage_ref(const base_ref &ref) : base_ref{ref} {}
-
-  template <typename T> constexpr bool as() const {
-    return type == storage_type_of<T>();
-  };
-
-  template <pure_type T> storage_ref(T *object) : base_ref{object} {}
-
-  template <pure_type T> constexpr T &unwrap() const {
-    if (data && as<T>()) {
-      return *static_cast<T *>(data);
-    }
-    // TODO : normal exception
-    throw "Inccorect type request";
-  };
-};
-
-struct storage_cref final : private base_ref {
-  storage_cref(base_ref &&ref) : base_ref{ref} {}
-  storage_cref(const base_ref &ref) : base_ref{ref} {}
-
-  template <typename T> constexpr bool as() const {
-    return type == storage_type_of<T>();
-  };
-
-  template <pure_type T> storage_cref(T *object) : base_ref{object} {}
-
-  template <pure_type T> constexpr const T &unwrap() const {
-    if (data && as<T>()) {
-      return *static_cast<T *>(data);
-    }
-    // TODO : normal exception
-    throw "Inccorect type request";
-  };
-};
-}; // namespace iuic
 
 namespace iuic {
 

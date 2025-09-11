@@ -96,7 +96,8 @@ uid_t context::builder::__make_uid_from_ptr(const void *ptr) const noexcept {
     // TODO : convert ptr to uid
   } else if constexpr (sizeof(ptr) == sizeof(std::uint64_t)) {
     // TODO : convert ptr to uid
-    return hash::make(reinterpret_cast<const char *>(ptr), sizeof(ptr));
+    return hash::make(seed.top(), reinterpret_cast<const char *>(ptr),
+                      sizeof(ptr));
   } else {
     throw "Unsupported pointer size";
   };

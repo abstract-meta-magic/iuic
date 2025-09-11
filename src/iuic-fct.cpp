@@ -34,8 +34,8 @@ void root_element_layout::set_childs_position(
   for (auto &&rq : content) {
     auto &style = rq.style_of();
 
-    position.y += style.shape.margin.top;
-    position.x += style.shape.margin.left;
+    position.y += style.positioning.margin.top;
+    position.x += style.positioning.margin.left;
     rq.apply(position);
     auto &size = rq.size_of();
     position.y += size.h;

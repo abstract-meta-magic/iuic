@@ -7,6 +7,7 @@ module;
 #include <stack>
 #include <string_view>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -16,24 +17,68 @@ export import :base;
 import :layout.box;
 import :transform;
 import :fct;
-import :storage;
+export import :storage;
 import :animator;
+import :pseudo_selector;
 export import :event;
 
 // import :default
 
 export namespace iuic {
 
+// TOTO : replace
+struct pseudo_selector_impl__ : advanced_pseudo_selector {
+  bool is_hovered(uid_t uid) const noexcept override {
+    return hovered.contains(uid);
+  };
+
+  bool is_active(uid_t uid) const noexcept override {
+    return active.contains(uid);
+  };
+
+  bool is_focused(uid_t uid) const noexcept override {
+    return focused.contains(uid);
+  };
+
+  void set_active(uid_t uid) noexcept override { active.insert(uid); };
+
+  void set_focused(uid_t uid) noexcept override { focused.insert(uid); };
+
+  void set_hovered(uid_t uid) noexcept override { hovered.insert(uid); };
+
+  // TODO : future in set<uid_t>
+  void unset_focused(uid_t uid) noexcept override { focused.erase(uid); };
+
+  void unset_hovered(uid_t uid) noexcept override { hovered.erase(uid); };
+
+  // TODO : future in set<uid_t>
+  void unset_active(uid_t uid) noexcept override { active.erase(uid); };
+
+  void unset_focused() noexcept override { focused.clear(); };
+
+  void unset_active() noexcept override { active.clear(); };
+
+  pseudo_selector_snapshot snapshot() const noexcept override {
+    return {hovered, focused, active};
+  };
+
+private:
+  std::unordered_set<uid_t> hovered;
+
+  std::unordered_set<uid_t> focused;
+
+  std::unordered_set<uid_t> active;
+};
 // base stye
 constexpr style def_style = []() {
   style res{};
 
   res.shape.min_size = {120, 240};
 
-  res.shape.margin.top = 20;
-  res.shape.margin.left = 30;
+  res.positioning.margin.top = 20;
+  res.positioning.margin.left = 30;
 
-  res.background.color = {150, 11, 11, 255};
+  res.background = color::css::white{};
 
   return res;
 }();
@@ -167,13 +212,14 @@ private:
 public:
   managed_storage storage;
   // event reciver
-  event_reciver event{storage};
+  event_reciver event{storage, selector};
   // store
 
   // animator
   animator animator;
 
 private:
+  pseudo_selector_impl__ selector{};
   // плоское дерево вычислений
   FCTree ctree;
   // дерево событий

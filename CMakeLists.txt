@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.30)
 
-
+## wrong ?
 set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+## wrong ?
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(iuic LANGUAGES CXX)
@@ -34,7 +36,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-layout.cppm"
 	"src/iuic-computing-ctx.cppm"
 	"src/iuic-ctx.cppm"
-	"src/iuic-sig.cppm"
+	"src/iuic-pseudo-selector.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC
