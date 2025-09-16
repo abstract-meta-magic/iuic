@@ -2,17 +2,18 @@
 
 module;
 
+#include <expected>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 #include <vector>
+// TODO : может переименовать в layout.utils ?
 export module iuic.core:layout;
 import :base;
+import :layout.def;
 import :computing_context;
 
 namespace iuic {
-
-template <typename T>
-concept layout_cpt = std::is_base_of_v<layout, T>;
 
 struct layout_utils_base {
   layout_utils_base(computing_context *ctx_) noexcept : ctx{ctx_} {};
@@ -32,6 +33,14 @@ struct layout_utils_base {
   // получение ссылки на viewport стиль
   const style &root_style() const;
 
+  pixel_t rem_width(rem_t) const;
+
+  pixel_t rem_hieght(rem_t) const;
+
+  pixel_t vh(vh_t) const;
+
+  pixel_t vw(vw_t) const;
+
   // отложить
   void defer();
 
@@ -41,13 +50,31 @@ protected: // общие нужды
 private: // реализация базовых концепций логирования
 };
 
+struct measure_child_request {
+
+  constexpr measure_child_request(computing_context *of_) : of{of_} {}
+
+  request_size value() const noexcept;
+
+  const style &style_of() const noexcept;
+
+private:
+  computing_context *of;
+};
+
+// Структура которая помогает
+// при вычислении собственной позиции
+struct frame_measure_utils : layout_utils_base {
+
+  frame_measure_utils(computing_context *self) noexcept;
+
+  std::vector<measure_child_request> get_requests();
+};
+
 struct area_request {
   constexpr area_request(computing_context *of_) noexcept : of{of_} {}
 
   constexpr area_request(const area_request &) = default;
-
-  // применить текущее решение
-  void apply();
 
   // применить измененное решение
   void apply(ui_size);
@@ -55,48 +82,25 @@ struct area_request {
   // выкинуть элемент = игнорировать его
   void discard();
 
-  // отложить разрешение до
-  // фазы балансировки
-  void defer();
-
   const style &style_of() const;
 
-  const ui_size &value() const noexcept;
+  request_size value() const noexcept;
 
 private:
   computing_context *of;
 };
-// Структура которая помогает
-// при вычислении собственной позиции
-struct area_utils : layout_utils_base {
+// Набор команд и свойс
+// для точного определения позиций
+// и размеров
+struct frame_arrange_utils : layout_utils_base {
+  frame_arrange_utils(computing_context *ctx_) noexcept
+      : layout_utils_base{ctx_} {};
 
-  area_utils(computing_context *self) noexcept;
+  ui_size get_size() const noexcept;
 
-  // терминальный метод.
-  // потребовать позицию.
-  // требования могут быть отклонены,
-  // а элеимент помечен тегом [discardet]
-  void request_size(ui_size);
-
-  // терминальный метод.
-  // получение размеров для
-  // элиментов с абсалютным позиционированием,
-  // но иерархически пренадлижащим своим элементам.
-  void viewport_request_size(ui_size);
-
-  // терминальный метод.
-  // жестко задать размер,
-  // без запроса к родительскому элименту.
-  // Может привести к некоторым визуальным багам или
-  // к пометке элемента как discarded.
-  void set_hard_size(ui_size);
-
-  // запросы на выделение площади от дочерних объектов
   std::vector<area_request> get_requests();
 
-  // терминальный метод.
-  // помечает элемент и его детей как discarted
-  void self_discard();
+  // может еще обрезку тут делать ...
 };
 
 struct position_request {
@@ -109,52 +113,22 @@ struct position_request {
 
   const style &style_of() const noexcept;
 
-  const ui_size &size_of() const noexcept;
+  ui_size size_of() const noexcept;
 
 private:
   computing_context *owner;
 };
 
-struct position_utils : layout_utils_base {
-  position_utils(computing_context *ctx_) noexcept : layout_utils_base{ctx_} {};
+struct frame_position_utils : layout_utils_base {
+  frame_position_utils(computing_context *ctx_) noexcept
+      : layout_utils_base{ctx_} {};
 
-  const ui_position &self_position() const noexcept;
+  ui_position self_position() const noexcept;
 
   std::vector<position_request> content();
 
   // тут могут быть статические методы для
   // помощи в вычислении позиций
-};
-
-// Набор команд и свойс
-// для точного определения позиций
-// и размеров
-struct balancing_utils : layout_utils_base {
-  balancing_utils(computing_context *ctx_) noexcept
-      : layout_utils_base{ctx_} {};
-  ;
-  // Вернет запрашиваемый текущем элиментом
-  // размер
-  ui_size dispatched_requiest_size() const;
-
-  // Был ли выделен размер.
-  // Если элемент discarded, то
-  // метод вернет false.
-  bool is_requiest_applied() const noexcept;
-
-  // Был ли одобрен запрашиваемый размер.
-  // Если элемен discarded, то
-  // метод вернет false.
-  bool is_strong_applied() const noexcept;
-
-  // Вернет размер который одобрил родитель.
-  // Если элимент discarded, то
-  // метод вернет {0,0}
-  ui_size applied_requiest_size() const;
-
-  // ... etc
-
-private: // контекст балансировки
 };
 
 // In version 0.2
@@ -165,31 +139,4 @@ enum balancing_result {
   RE_CHILDS,
 };
 
-export struct layout {
-  // measure && layout
-
-  virtual ~layout() = default;
-
-  // примитивная оценка собственного размера
-  // можно подумать о предоставлении ограничителя на
-  // вычисления размеров относительно родителя
-  // process area
-  virtual void self_size(area_utils) const noexcept = 0;
-  // приблезительное расположение элементов
-  // process position
-  virtual void set_childs_position(position_utils) const noexcept = 0;
-
-  // Балансировка очень сложна
-  // тут сложно и нужно подумать
-  // Сверху приходит ваш ui_rect, а вы должны
-  // максимально точно вычислить ui_rect своих дитей
-  // может быть вызван более одного раза
-  // process balancing
-  virtual void balancing(balancing_utils) const noexcept = 0;
-
-  template <layout_cpt T> static constexpr const layout &instance() {
-    static constexpr T _{};
-    return _;
-  };
-};
 } // namespace iuic

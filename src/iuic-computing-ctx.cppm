@@ -3,40 +3,46 @@
 module;
 
 #include <cstdint>
+#include <exception>
+#include <expected>
 #include <stdexcept>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 export module iuic.core:computing_context;
 import :base;
+import :layout.def;
 
 namespace iuic {
 
-// Контекст каждого элемента
-// используемый для вычисленией.
+struct violated_computing_order : std::runtime_error {
+  violated_computing_order()
+      : std::runtime_error{
+            "The order of evaluation of iuic::text_layout or "
+            "iuic::frame_layout within iuic::computing_context for "
+            "iuic::celement is broken. This is a core library bug. If you see "
+            "this message, your release of the library is broken."} {}
+};
+
 struct computing_context;
 
 // Дле представления используется
 // Альтернативная блочная модель
 struct celement {
-  enum struct state_tags_t : std::uint8_t {
+  enum struct attribute_tags_t : std::uint8_t {
     null = 0,
     discarded = 1 << 1,
-    root = 1 << 4,
-  } state_tags;
-  enum struct area_tags_t : std::uint8_t {
-    null = 0,
-    area_request_dispatched = 1 << 0,
-    area_request_strong_appyed = 1 << 2,
-    area_request_soft_appyed = 1 << 2, // rename
-    area_request_deferred = 1 << 3,
-  } area_tags;
-  enum struct position_tags_t : std::uint8_t {
-    null = 0,
-    set_position_is_applyed = 1 << 0,
-    set_position_is_deferred = 1 << 1,
-    position_type_absolute = 1 << 2,
-  } position_tags;
+    text = 1 << 2,
+    root = 1 << 3,
+  } attribute_tags;
+  enum struct stage_t : std::uint8_t {
+    measure = 1,
+    arrange,
+    position, // text_layout skip this stage
+    complite,
+    undefined,
+  } stage{stage_t::measure};
   enum struct error_tags_t : std::uint8_t {
     null = 0,
     invalid = 1 << 1,
@@ -44,115 +50,51 @@ struct celement {
   } error_tags;
 
   // область которую занимает элемент
-  ui_rect full_area{};
+  // Разрешаю сам себе вплоть до 24-28
+  union {
+    request_size area_request;
+    ui_size applyed_size;
+    ui_rect full_area;
+    // err_handler
+    // text_request
+  };
 };
 
-constexpr celement::state_tags_t operator+(celement::state_tags_t lhs,
-                                           celement::state_tags_t rhs) {
-  return static_cast<celement::state_tags_t>(
-      static_cast<std::underlying_type_t<celement::state_tags_t>>(lhs) |
-      static_cast<std::underlying_type_t<celement::state_tags_t>>(rhs));
+constexpr celement::attribute_tags_t operator+(celement::attribute_tags_t lhs,
+                                               celement::attribute_tags_t rhs) {
+  return static_cast<celement::attribute_tags_t>(
+      static_cast<std::underlying_type_t<celement::attribute_tags_t>>(lhs) |
+      static_cast<std::underlying_type_t<celement::attribute_tags_t>>(rhs));
 }
 
-constexpr celement::state_tags_t &operator+=(celement::state_tags_t &lhs,
-                                             celement::state_tags_t rhs) {
+constexpr celement::attribute_tags_t &
+operator+=(celement::attribute_tags_t &lhs, celement::attribute_tags_t rhs) {
   lhs = lhs + rhs;
   return lhs;
 }
 
-constexpr celement::state_tags_t operator-(celement::state_tags_t lhs,
-                                           celement::state_tags_t rhs) {
+constexpr celement::attribute_tags_t operator-(celement::attribute_tags_t lhs,
+                                               celement::attribute_tags_t rhs) {
 
-  return static_cast<celement::state_tags_t>(
-      static_cast<std::underlying_type_t<celement::state_tags_t>>(lhs) &
-      ~static_cast<std::underlying_type_t<celement::state_tags_t>>(rhs));
+  return static_cast<celement::attribute_tags_t>(
+      static_cast<std::underlying_type_t<celement::attribute_tags_t>>(lhs) &
+      ~static_cast<std::underlying_type_t<celement::attribute_tags_t>>(rhs));
 }
 
-constexpr celement::state_tags_t &operator-=(celement::state_tags_t &lhs,
-                                             celement::state_tags_t rhs) {
+constexpr celement::attribute_tags_t &
+operator-=(celement::attribute_tags_t &lhs, celement::attribute_tags_t rhs) {
   lhs = lhs - rhs;
   return lhs;
 }
 
-constexpr bool operator&(celement::state_tags_t lhs,
-                         celement::state_tags_t rhs) {
+constexpr bool operator&(celement::attribute_tags_t lhs,
+                         celement::attribute_tags_t rhs) {
 
-  return static_cast<celement::state_tags_t>(
-             static_cast<std::underlying_type_t<celement::state_tags_t>>(lhs) &
-             static_cast<std::underlying_type_t<celement::state_tags_t>>(
-                 rhs)) != celement::state_tags_t::null;
-}
-
-constexpr celement::area_tags_t operator+(celement::area_tags_t lhs,
-                                          celement::area_tags_t rhs) {
-  return static_cast<celement::area_tags_t>(
-      static_cast<std::underlying_type_t<celement::area_tags_t>>(lhs) |
-      static_cast<std::underlying_type_t<celement::area_tags_t>>(rhs));
-}
-
-constexpr celement::area_tags_t &operator+=(celement::area_tags_t &lhs,
-                                            celement::area_tags_t rhs) {
-  lhs = lhs + rhs;
-  return lhs;
-}
-
-constexpr celement::area_tags_t operator-(celement::area_tags_t lhs,
-                                          celement::area_tags_t rhs) {
-
-  return static_cast<celement::area_tags_t>(
-      static_cast<std::underlying_type_t<celement::area_tags_t>>(lhs) &
-      ~static_cast<std::underlying_type_t<celement::area_tags_t>>(rhs));
-}
-
-constexpr celement::area_tags_t &operator-=(celement::area_tags_t &lhs,
-                                            celement::area_tags_t rhs) {
-  lhs = lhs - rhs;
-  return lhs;
-}
-
-constexpr bool operator&(celement::area_tags_t lhs, celement::area_tags_t rhs) {
-
-  return static_cast<celement::area_tags_t>(
-             static_cast<std::underlying_type_t<celement::area_tags_t>>(lhs) &
-             static_cast<std::underlying_type_t<celement::area_tags_t>>(rhs)) !=
-         celement::area_tags_t::null;
-}
-
-constexpr celement::position_tags_t operator+(celement::position_tags_t lhs,
-                                              celement::position_tags_t rhs) {
-  return static_cast<celement::position_tags_t>(
-      static_cast<std::underlying_type_t<celement::position_tags_t>>(lhs) |
-      static_cast<std::underlying_type_t<celement::position_tags_t>>(rhs));
-}
-
-constexpr celement::position_tags_t &operator+=(celement::position_tags_t &lhs,
-                                                celement::position_tags_t rhs) {
-  lhs = lhs + rhs;
-  return lhs;
-}
-
-constexpr celement::position_tags_t operator-(celement::position_tags_t lhs,
-                                              celement::position_tags_t rhs) {
-
-  return static_cast<celement::position_tags_t>(
-      static_cast<std::underlying_type_t<celement::position_tags_t>>(lhs) &
-      ~static_cast<std::underlying_type_t<celement::position_tags_t>>(rhs));
-}
-
-constexpr celement::position_tags_t &operator-=(celement::position_tags_t &lhs,
-                                                celement::position_tags_t rhs) {
-  lhs = lhs - rhs;
-  return lhs;
-}
-
-constexpr bool operator&(celement::position_tags_t lhs,
-                         celement::position_tags_t rhs) {
-
-  return static_cast<celement::position_tags_t>(
-             static_cast<std::underlying_type_t<celement::position_tags_t>>(
+  return static_cast<celement::attribute_tags_t>(
+             static_cast<std::underlying_type_t<celement::attribute_tags_t>>(
                  lhs) &
-             static_cast<std::underlying_type_t<celement::position_tags_t>>(
-                 rhs)) != celement::position_tags_t::null;
+             static_cast<std::underlying_type_t<celement::attribute_tags_t>>(
+                 rhs)) != celement::attribute_tags_t::null;
 }
 
 constexpr celement::error_tags_t operator+(celement::error_tags_t lhs,
@@ -211,10 +153,23 @@ struct computing_hierarchy {
 // а еще хочеться чтобы была попытка соблюдения SRP
 struct computing_context {
   friend class FCTree;
-  computing_context(const layout *layout_, const style *style_,
+
+  // конструктор для вычисления фрейма
+  computing_context(const frame_layout *layout_, const style *style_,
                     computing_hierarchy *hierarchy_, size_t parent_)
-      : layout{layout_}, style{style_}, hierarhy{hierarchy_}, parent{parent_},
-        brother{parent_} {
+      : frame_layout{layout_}, style{style_}, hierarhy{hierarchy_},
+        parent{parent_}, brother{parent_} {
+    if (not hierarhy) {
+      throw std::runtime_error{"Null hierarchy"};
+    }
+  };
+
+  // конструктор для вычисления текста
+  computing_context(const text_layout *layout_, const style *style_,
+                    computing_hierarchy *hierarchy_, size_t parent_)
+      : text_layout{layout_}, style{style_}, hierarhy{hierarchy_},
+        parent{parent_}, brother{parent_} {
+    element.attribute_tags += celement::attribute_tags_t::text;
     if (not hierarhy) {
       throw std::runtime_error{"Null hierarchy"};
     }
@@ -236,28 +191,35 @@ public: // hierarchy
 public: // get's
   const style &get_style() const noexcept;
 
-  const layout &get_layout() const noexcept;
+  std::variant<const frame_layout *, const text_layout *>
+  get_layout() const noexcept;
 
-  // TODO : Rename
-  const ui_rect &get_rect() const noexcept;
+  std::expected<request_size, celement::stage_t> get_request() const noexcept;
+
+  std::expected<ui_size, celement::stage_t> get_size() const noexcept;
+
+  std::expected<ui_rect, celement::stage_t> get_rect() const noexcept;
 
 public: // property's
   bool is_discarted() const noexcept;
 
-  bool is_area_request_dispatched() const noexcept;
-
 public: // modify
-  // для установки площади всегда должна быть причина
-  // можно переработать
-  void set_area(ui_size, celement::area_tags_t);
+  // first stage
+  void apply(request_size);
 
-  // для установки позиции всегда должна быть причина
-  void set_position(ui_position, celement::position_tags_t);
+  // second stage
+  void apply(ui_size);
+
+  // third stage
+  void apply(ui_position);
 
   void discard();
 
 private:
-  const layout *layout{nullptr};
+  union {
+    const frame_layout *frame_layout;
+    const text_layout *text_layout;
+  };
   const style *style{nullptr};
   computing_hierarchy *hierarhy{nullptr};
   size_t parent{std::numeric_limits<size_t>::max()};

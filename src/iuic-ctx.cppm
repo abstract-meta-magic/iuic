@@ -14,11 +14,10 @@ module;
 
 export module iuic.core;
 export import :base;
+export import :base.color;
 import :layout.box;
-import :transform;
 import :fct;
 export import :storage;
-import :animator;
 import :pseudo_selector;
 export import :event;
 
@@ -27,7 +26,7 @@ export import :event;
 export namespace iuic {
 
 // TOTO : replace
-struct pseudo_selector_impl__ : advanced_pseudo_selector {
+struct pseudo_selector_impl__ final : advanced_pseudo_selector {
   bool is_hovered(uid_t uid) const noexcept override {
     return hovered.contains(uid);
   };
@@ -73,10 +72,12 @@ private:
 constexpr style def_style = []() {
   style res{};
 
-  res.shape.min_size = {120, 240};
+  res.shape.min_size = {upixel_t{120}, upixel_t{240}};
 
   res.positioning.margin.top = 20;
   res.positioning.margin.left = 30;
+
+  res.shape.border.top = 20, res.shape.border.left = 40,
 
   res.background = color::css::white{};
 
@@ -101,30 +102,20 @@ public:
       TODO : можно заменить на нешаблонный вызов
     */
     void frame(std::invocable<builder &> auto &&call, const style & = def_style,
-               const layout & = box_layout) noexcept;
+               const frame_layout & = box_layout) noexcept;
 
-    void frame(std::invocable<builder &> auto &&call, const layout &) noexcept;
+    void frame(std::invocable<builder &> auto &&call,
+               const frame_layout &) noexcept;
 
-    void frame(const style & = def_style, const layout & = box_layout) noexcept;
+    void frame(const style & = def_style,
+               const frame_layout & = box_layout) noexcept;
 
-    void frame(const layout &) noexcept;
+    void frame(const frame_layout &) noexcept;
 
     /*
       Является конечной точкой.Отрисовка текста
     */
     void text(std::string_view str, const style & = def_style);
-
-    /*
-      Является конечной точкой.Отрисовка изображения
-    */
-    void image(image_render_data, const style & = def_style);
-
-    /*
-      Пользовательская поверхность. Будет добавленно в v0.2
-    */
-    void surface(auto &&call, surface_create_info, const layout & = box_layout);
-
-    void surface(surface_create_info, const layout & = box_layout);
 
     // event
     template <key_event_callback_cpt Call>
@@ -201,11 +192,11 @@ public: // api
 private:
   void reset();
   // первичное вычисление своего размера
-  void self_size();
+  void proccess_measure();
   // примерное расположение своих детей
-  void childs_position();
+  void proccess_arrange();
   // балансировка
-  void balancing();
+  void proccess_position();
   // построение списка отрисовки на основе FTC
   void build_render_list();
 
@@ -214,10 +205,6 @@ public:
   // event reciver
   event_reciver event{storage, selector};
   // store
-
-  // animator
-  animator animator;
-
 private:
   pseudo_selector_impl__ selector{};
   // плоское дерево вычислений
@@ -241,9 +228,9 @@ template <typename Call = void> void context::make(Call call) {
   // построение FCT
   call(b);
 
-  self_size();
-  childs_position();
-  balancing();
+  proccess_measure();
+  proccess_arrange();
+  proccess_position();
 
   // ctree.print_tree();
 
@@ -255,7 +242,7 @@ template <typename Call = void> void context::make(Call call) {
 // --- Builder Template Impl ---
 void context::builder::frame(std::invocable<context::builder &> auto &&call,
                              const style &style,
-                             const layout &layout) noexcept {
+                             const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
 
   builder::__prev();
@@ -266,29 +253,23 @@ void context::builder::frame(std::invocable<context::builder &> auto &&call,
 };
 
 void context::builder::frame(std::invocable<context::builder &> auto &&call,
-                             const layout &layout) noexcept {
+                             const frame_layout &layout) noexcept {
   frame(std::forward<decltype(call)>(call), def_style, layout);
 };
 
 void context::builder::frame(const style &style,
-                             const layout &layout) noexcept {
+                             const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
   ctx.ctree.up();
 };
 
-void context::builder::frame(const layout &layout) noexcept {
+void context::builder::frame(const frame_layout &layout) noexcept {
   frame(def_style, layout);
 };
 
 void context::builder::text(std::string_view str, const style &st) {
   ctx.ctree.add(st, &box_layout);
   // WARNING : установить данные для отрисовки текста
-  ctx.ctree.up();
-}
-
-void context::builder::image(image_render_data ird, const style &st) {
-  ctx.ctree.add(st, &box_layout);
-  // WARNING : установить данные для отрисовки картинки
   ctx.ctree.up();
 }
 } // namespace iuic

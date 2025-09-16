@@ -27,25 +27,24 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-hash.cppm"
 	"src/iuic-fct.cppm"
 	"src/iuic-storage.cppm"
-	"src/iuic-animator.cppm"
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
-	"src/iuic-render.cppm"
-	"src/iuic-transform.cppm"
 	"src/iuic-box-layout.cppm"
+	"src/iuic-layout.def.cppm"
 	"src/iuic-layout.cppm"
 	"src/iuic-computing-ctx.cppm"
 	"src/iuic-ctx.cppm"
 	"src/iuic-pseudo-selector.cppm"
+	"src/iuic-base-color.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cpp"
 	"src/iuic-hash.cpp"
-	"src/iuic-computing-ctx.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-fct.cpp"
 	"src/iuic-layout-utils.cpp"
+	"src/iuic-computing-ctx.cpp"
 )
 
 ## Main alias

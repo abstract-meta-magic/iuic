@@ -4,6 +4,7 @@ module;
 
 #include <cstdint>
 #include <print>
+#include <string>
 #include <string_view>
 #include <variant>
 
@@ -11,23 +12,104 @@ module;
 
 export module iuic.core:base;
 export namespace iuic {
-
-struct celement;
 struct relement;
 struct style;
-struct layout;
 
+// using hash_t
+// using srk
 using uid_t = std::uint64_t;
-using pixel_t = int; // swap to int64_t
-using upixel_t = unsigned;
+using pixel_t = std::int32_t;
+using upixel_t = std::uint32_t;
+// type for angl
+
+struct percent_t {
+  constexpr auto operator<=>(const percent_t &) const = default;
+
+  constexpr percent_t(float value_) noexcept
+      : value{value_ >= 0 ? (value_ < 300 ? value_ : 300) : 0} {}
+
+  constexpr operator float() const noexcept { return value * 0.01; }
+
+private:
+  float value;
+};
+
+struct vh_t {
+  percent_t value;
+  constexpr operator float() const noexcept { return value; }
+  constexpr auto operator<=>(const vh_t &) const = default;
+
+  constexpr vh_t(const percent_t &p) noexcept : value{p} {}
+  constexpr vh_t(percent_t &&p) noexcept : value{p} {}
+  constexpr vh_t &operator=(const percent_t &p) noexcept {
+    value = p;
+    return *this;
+  }
+  constexpr vh_t &operator=(percent_t &&p) noexcept {
+    value = p;
+    return *this;
+  }
+};
+struct vw_t {
+  percent_t value;
+  constexpr operator float() const noexcept { return value; }
+  constexpr auto operator<=>(const vw_t &) const = default;
+
+  constexpr vw_t(const percent_t &p) noexcept : value{p} {}
+  constexpr vw_t(percent_t &&p) noexcept : value{p} {}
+  constexpr vw_t &operator=(const percent_t &p) noexcept {
+    value = p;
+    return *this;
+  }
+  constexpr vw_t &operator=(percent_t &&p) noexcept {
+    value = p;
+    return *this;
+  }
+};
+
+struct em_t {
+  percent_t value;
+  constexpr operator float() const noexcept { return value; }
+  constexpr auto operator<=>(const em_t &) const = default;
+
+  constexpr em_t(const percent_t &p) noexcept : value{p} {}
+  constexpr em_t(percent_t &&p) noexcept : value{p} {}
+  constexpr em_t &operator=(const percent_t &p) noexcept {
+    value = p;
+    return *this;
+  }
+  constexpr em_t &operator=(percent_t &&p) noexcept {
+    value = p;
+    return *this;
+  }
+};
+
+struct rem_t {
+  percent_t value;
+  constexpr operator float() const noexcept { return value; }
+  constexpr auto operator<=>(const rem_t &) const = default;
+
+  constexpr rem_t(const percent_t &p) noexcept : value{p} {}
+  constexpr rem_t(percent_t &&p) noexcept : value{p} {}
+  constexpr rem_t &operator=(const percent_t &p) noexcept {
+    value = p;
+    return *this;
+  }
+  constexpr rem_t &operator=(percent_t &&p) noexcept {
+    value = p;
+    return *this;
+  }
+};
+// need px,%,rem,vh,vw
 
 struct ui_position {
   pixel_t x, y = 0;
   constexpr auto operator<=>(const ui_position &) const = default;
 };
 
+// width | hieght
 struct ui_size {
-  upixel_t h, w = 0;
+  upixel_t w, h = 0;
   constexpr auto operator<=>(const ui_size &) const = default;
 };
 
@@ -35,15 +117,6 @@ struct ui_rect {
   ui_position position;
   ui_size size;
   constexpr auto operator<=>(const ui_rect &) const = default;
-};
-
-struct indent {
-  upixel_t top, bottom, left, right;
-  // конструкторы и т.д.
-};
-
-struct border_radius {
-  // TODO : body
 };
 
 // top | bottom = horisontal center
@@ -142,112 +215,6 @@ public:
   uint8_t r{0}, g{0}, b{0}, a = {255};
 };
 
-// base color for style
-// TODO : replace in other fine and module partition
-namespace color::css {
-
-struct white : color_t {
-  constexpr white() : color_t{255, 255, 255, 255} {}
-  explicit constexpr white(std::uint8_t alpha)
-      : color_t{255, 255, 255, alpha} {}
-};
-
-struct black : color_t {
-  constexpr black() : color_t{0, 0, 0, 255} {}
-  explicit constexpr black(std::uint8_t alpha) : color_t{0, 0, 0, alpha} {}
-};
-
-struct red : color_t {
-  constexpr red() : color_t{255, 0, 0, 255} {}
-  explicit constexpr red(std::uint8_t alpha) : color_t{255, 0, 0, alpha} {}
-};
-
-struct green : color_t {
-  constexpr green() : color_t{0, 128, 0, 255} {}
-  explicit constexpr green(std::uint8_t alpha) : color_t{0, 128, 0, alpha} {}
-};
-
-struct blue : color_t {
-  constexpr blue() : color_t{0, 0, 255, 255} {}
-  explicit constexpr blue(std::uint8_t alpha) : color_t{0, 0, 255, alpha} {}
-};
-
-struct gray : color_t {
-  constexpr gray() : color_t{128, 128, 128, 255} {}
-  explicit constexpr gray(std::uint8_t alpha) : color_t{128, 128, 128, alpha} {}
-};
-
-struct lightgray : color_t {
-  constexpr lightgray() : color_t{211, 211, 211, 255} {}
-  explicit constexpr lightgray(std::uint8_t alpha)
-      : color_t{211, 211, 211, alpha} {}
-};
-
-struct darkgray : color_t {
-  constexpr darkgray() : color_t{169, 169, 169, 255} {}
-  explicit constexpr darkgray(std::uint8_t alpha)
-      : color_t{169, 169, 169, alpha} {}
-};
-
-struct yellow : color_t {
-  constexpr yellow() : color_t{255, 255, 0, 255} {}
-  explicit constexpr yellow(std::uint8_t alpha) : color_t{255, 255, 0, alpha} {}
-};
-
-struct cyan : color_t {
-  constexpr cyan() : color_t{0, 255, 255, 255} {}
-  explicit constexpr cyan(std::uint8_t alpha) : color_t{0, 255, 255, alpha} {}
-};
-
-struct magenta : color_t {
-  constexpr magenta() : color_t{255, 0, 255, 255} {}
-  explicit constexpr magenta(std::uint8_t alpha)
-      : color_t{255, 0, 255, alpha} {}
-};
-
-struct orange : color_t {
-  constexpr orange() : color_t{255, 165, 0, 255} {}
-  explicit constexpr orange(std::uint8_t alpha) : color_t{255, 165, 0, alpha} {}
-};
-
-struct purple : color_t {
-  constexpr purple() : color_t{128, 0, 128, 255} {}
-  explicit constexpr purple(std::uint8_t alpha) : color_t{128, 0, 128, alpha} {}
-};
-
-struct brown : color_t {
-  constexpr brown() : color_t{165, 42, 42, 255} {}
-  explicit constexpr brown(std::uint8_t alpha) : color_t{165, 42, 42, alpha} {}
-};
-
-struct pink : color_t {
-  constexpr pink() : color_t{255, 192, 203, 255} {}
-  explicit constexpr pink(std::uint8_t alpha) : color_t{255, 192, 203, alpha} {}
-};
-
-struct lime : color_t {
-  constexpr lime() : color_t{0, 255, 0, 255} {}
-  explicit constexpr lime(std::uint8_t alpha) : color_t{0, 255, 0, alpha} {}
-};
-
-struct teal : color_t {
-  constexpr teal() : color_t{0, 128, 128, 255} {}
-  explicit constexpr teal(std::uint8_t alpha) : color_t{0, 128, 128, alpha} {}
-};
-
-// use https://www.w3schools.com/cssref/css_colors.php
-}; // namespace color::css
-namespace color {
-struct hex : color_t {
-  explicit constexpr hex(std::string_view hex_code)
-      : color_t{0, 0, 0, 255} {
-          // TODO : IMPL ME
-        };
-};
-
-}; // namespace color
-// вынести
-
 struct ui_none {};
 template <typename T> struct ui_initial;
 
@@ -263,8 +230,22 @@ struct style_effects {};
 
 struct style_animations {};
 // вынести
+struct indent {
+  upixel_t top, bottom, left, right;
+  // конструкторы и т.д.
+};
+
+struct border_radius {
+  // TODO : body
+};
+
+struct ui_adaptive_size {
+  std::variant<upixel_t, vh_t, em_t, rem_t> h{upixel_t{0}};
+  std::variant<upixel_t, vw_t, em_t, rem_t> w{upixel_t{0}};
+};
+
 struct style_shape {
-  ui_size min_size, max_size;
+  ui_adaptive_size min_size, max_size;
 
   indent border;
 
@@ -289,9 +270,17 @@ struct style_positioning {
   align align;
 };
 
+// сделать нормальное наследование свойств ui_inherit<&style_font>...
+using ephemeral_value_t = std::variant<ui_inherit, ui_size>;
+
+template <auto ptr> struct hehe {};
+
 // https://html5book.ru/css-spravochnik.html#part1
 struct style {
-  // base
+  std::string stclass{"none"};
+
+  ephemeral_value_t ephemeral_value{ui_size{12, 24}};
+
   style_shape shape;
 
   style_positioning positioning;
@@ -363,29 +352,4 @@ struct relement {
   // WARNING : большой размер
   render_data data; // метаданные для отрисовки
 };
-
-ui_size minmax(const style &st, ui_size val) {
-
-  if (st.shape.max_size.w == 0) {
-  } else if (val.w > st.shape.max_size.w) {
-    val.w = st.shape.max_size.w;
-  }
-
-  if (st.shape.min_size.w == 0) {
-  } else if (val.w < st.shape.min_size.w) {
-    val.w = st.shape.min_size.w;
-  }
-
-  // max\min set
-  if (st.shape.max_size.h == 0) {
-  } else if (val.h > st.shape.max_size.h) {
-    val.h = st.shape.max_size.h;
-  }
-  if (st.shape.min_size.h == 0) {
-  } else if (val.h < st.shape.min_size.h) {
-    val.h = st.shape.min_size.h;
-  }
-  return val;
-};
-
 } // namespace iuic

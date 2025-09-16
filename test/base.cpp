@@ -36,7 +36,7 @@ constexpr key_code mouse(std::string_view str) {
 constexpr auto s_1 = []() {
   iuic::style res{};
 
-  res.shape.min_size = {120, 240};
+  res.shape.min_size = {iuic::upixel_t{120}, iuic::upixel_t{240}};
 
   res.positioning.margin.top = 20;
   res.positioning.margin.left = 30;
@@ -57,62 +57,12 @@ SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
   return res;
 };
 
-struct uuid {
-  // в строителе
-  // берется текущая глубина
-  // и уникальноей имя\hesh
-  // можно делать автоматически у
-  // элементов с собитиями
-  // В ОБЩЕМ
-  // у builder нужно сделать метод get_uuid();
-};
-
 using builder_ui = iuic::context::builder;
-
-void my_test(builder_ui &b) {
-  b.frame([](builder_ui &b) {
-    auto uid = b.make_uid(b.make_uid(&my_test), "suu");
-  });
-};
-
-void game_view_instance();
-
-/*
-
-  msg[nil] My penis is big;
-
-  image[show] lower;
-
-*/
-
-void novel_text(builder_ui &b) {
-  auto uid_b = b.make_uid(&novel_text);
-
-  b.frame([](auto &b) {
-    // left side bar
-    // load\save
-    b.frame();
-
-    // middle text
-    b.frame();
-
-    // right side bar
-    b.frame();
-  });
-};
-
-void menu(builder_ui &b) {};
-
-void game(builder_ui &b) {};
-
-void save() {};
-
-void gallery(builder_ui &b);
 
 constexpr auto none_style = []() {
   iuic::style res{};
 
-  res.shape.max_size = iuic::ui_size{0, 0};
+  res.shape.max_size = iuic::ui_adaptive_size{};
 
   return res;
 }();
@@ -165,7 +115,7 @@ constexpr inline void button(iuic::context::builder &b, const std::string &str,
 
   b.frame(
       [=](auto &b) {
-        b.text(str);
+        // b.text(str);
 
         b.apply_uid(uid);
 
@@ -235,20 +185,6 @@ struct base {
 
 }; // namespace iuic::kit
 
-// нужно что-то вроде структуры list_srk, который сам передается по srk(может
-// быть как временным, так и персистентным).
-// и именно list, потомучно нужно будет очень часто менять элементы местами.
-// может я даже напишу собственный list оптимезированный под srk
-// хотя по сути в vector<srk_t> можно спокойно свапать значения, но нет
-// гарантий что этот вектор не будет реаллоцирован при удалении srk объектов.
-
-using list_srk = std::list<iuic::srk_t>;
-
-// srk_list - это исключительно персистентный объект, хранящий в себе
-// список srk_t(по факту лист динамических объектов)
-// srkl_t == srk_t
-// srkl_index_t == size_t
-
 void test_list(iuic::context::builder &b, auto begin, auto end, auto call) {
   b.frame([&](auto &b) {
     for (; begin != end; ++begin) {
@@ -300,7 +236,7 @@ int main() {
       auto &style = static_ref<[]() {
         iuic::style res{};
 
-        res.shape.min_size = {200, 400};
+        res.shape.min_size = {upixel_t{200}, upixel_t{400}};
         res.background = iuic::color::css::lime{80};
         res.positioning.margin = {20, 20, 20, 20};
 
@@ -308,16 +244,9 @@ int main() {
       }>();
       // frame(create_info,childs_lambda)
       b.frame([](auto &b) { b.frame([](auto &b) { b.frame(); }, style); });
-      b.text("test text");
+      // b.text("test text");
 
-      b.text("ok");
-      b.image({});
-
-      constexpr auto uu = []() -> iuic::style {
-        iuic::style res{};
-
-        return res;
-      }();
+      // b.text("ok");
 
       button(b, [&]() { std::println("yo {}", msg); });
 

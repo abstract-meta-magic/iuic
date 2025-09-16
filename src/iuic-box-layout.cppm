@@ -1,59 +1,48 @@
 
 module;
+#include <expected>
 #include <iostream>
 #include <print>
 #include <span>
+#include <variant>
 #include <vector>
 
 export module iuic.core:layout.box;
+import :layout.def;
 export import :layout;
 
 namespace iuic {
 // базовый приватный layout для всех
 // если в стиле отсутствует layout
 // для вычислений используется этот
-struct final : public layout {
-  void self_size(area_utils utils) const noexcept override {
-
-    ui_size res{0, 0};
-
+struct final : public frame_layout {
+  measure_result measure(frame_measure_utils utils) const noexcept override {
     auto &style = utils.self_style();
+
+    measure_request res{};
+
+    ui_size vmargin{0};
+    ui_size hieght{0};
+    ui_size max_width{0};
 
     auto requests = utils.get_requests();
 
-    bool end{false};
-    for (auto &&rq : requests) {
-      if (end) {
-        rq.discard();
-        continue;
-      }
-
-      res.h += rq.style_of().positioning.margin.top;
-      res.h += rq.value().h;
-
-      if (style.shape.max_size.h != 0 && res.h > style.shape.max_size.h) {
-        end = true;
-        continue;
-      }
-
-      upixel_t w = rq.value().w + rq.style_of().positioning.margin.left;
-
-      if (w > res.w) {
-        res.w = w;
-      }
-
-      rq.apply();
-    }
-
-    auto rq = minmax(utils.self_style(), res);
-
-    utils.request_size(rq);
-
-    // мб сделать в стиле std::prindln ?
-    utils.log("box - complite");
+    return {{percent_t{20}, percent_t{20}}};
   };
 
-  void set_childs_position(position_utils utils) const noexcept override {
+  void arrange(frame_arrange_utils utils) const noexcept override {
+    auto requests = utils.get_requests();
+
+    auto self_size = utils.get_size();
+
+    for (auto &rq : requests) {
+      auto value = rq.value();
+
+      rq.apply({200, 100});
+    };
+  };
+
+  void position(frame_position_utils utils) const noexcept override {
     auto position = utils.self_position();
     auto def = position;
 
@@ -64,16 +53,10 @@ struct final : public layout {
 
       position.y += style.positioning.margin.top;
       position.x += style.positioning.margin.left;
+      auto size = rq.size_of();
       rq.apply(position);
-      auto &size = rq.size_of();
       position.y += size.h;
       position.x = def.x;
-    }
-  };
-
-  void balancing(balancing_utils utils) const noexcept override {
-    if (utils.is_strong_applied()) {
-      return;
     }
   };
 } constexpr inline box_layout{};

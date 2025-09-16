@@ -12,41 +12,6 @@ import :fct;
 
 namespace iuic {
 
-void root_element_layout::self_size(area_utils utils) const noexcept {
-  auto &style = utils.self_style();
-  utils.set_hard_size(style.shape.max_size);
-
-  auto requests = utils.get_requests();
-
-  for (auto &&rq : requests) {
-    rq.apply();
-  }
-};
-
-void root_element_layout::set_childs_position(
-    position_utils utils) const noexcept {
-  auto position = ui_position{0, 0};
-
-  auto def = position;
-
-  auto content = utils.content();
-
-  for (auto &&rq : content) {
-    auto &style = rq.style_of();
-
-    position.y += style.positioning.margin.top;
-    position.x += style.positioning.margin.left;
-    rq.apply(position);
-    auto &size = rq.size_of();
-    position.y += size.h;
-    position.x = def.x;
-  }
-};
-
-void root_element_layout::balancing(balancing_utils) const noexcept {
-    // ake box layout
-};
-
 FCTree::range_based_for_proxy FCTree::range_for() { return {*this}; };
 
 FCTree::const_range_based_for_proxy FCTree::range_for() const {
@@ -82,9 +47,43 @@ void FCTree::reset() {
   nodes.clear();
   parent = {}; // ...
   parent.push({root_.id, root_.id});
+  root_.ctx.element.stage = celement::stage_t::measure;
 };
 
-void FCTree::add(const style &style, const layout *layout) {
+void FCTree::add(const style &style, const frame_layout *layout) {
+  // Проблемма с дочерними объектами root element
+  // Может на stack сразу ложить root element ?
+  auto parent_id = not parent.empty() ? parent.top().first : root_.id;
+
+  nodes.push_back({layout, &style, this, parent_id});
+
+  auto &node = nodes.back();
+  auto id = nodes.size() - 1;
+
+  if (not parent.empty()) {
+
+    auto &famaly = parent.top();
+
+    if (famaly.first != famaly.second) {
+      nodes[famaly.second].set_brother(id);
+    }
+
+    famaly.second = id;
+  } else {
+    if (root_.last_child != root_.id) {
+      nodes[root_.last_child].set_brother(id);
+    }
+
+    root_.last_child = id;
+  }
+
+  parent.push({id, id});
+  current.push(id);
+};
+
+// TODO : fix this
+// it's text add, not frame == other algo
+void FCTree::add(const style &style, const text_layout *layout) {
   // Проблемма с дочерними объектами root element
   // Может на stack сразу ложить root element ?
   auto parent_id = not parent.empty() ? parent.top().first : root_.id;
@@ -156,7 +155,9 @@ size_t FCTree::current_index() const noexcept {
   return current.top();
 };
 
-void FCTree::set_root_size(ui_size sz) { root_.style.shape.max_size = sz; };
+void FCTree::set_root_size(ui_size sz) {
+  root_.style.shape.max_size = {sz.w, sz.h};
+};
 
 void FCTree::print_tree() const noexcept {
 
@@ -171,15 +172,20 @@ void FCTree::print_tree() const noexcept {
                     node.get_brother_id() == root_.id)
                        ? "last"
                        : std::to_string(node.get_brother_id());
-    auto &rect = node.get_rect();
+    auto rect_res = node.get_rect();
 
-    auto ds = node.element.state_tags & celement::state_tags_t::discarded
-                  ? "discarted"
-                  : "ok";
+    if (not rect_res) {
+      // err
+      continue;
+    }
 
-    auto mem = celement::state_tags_t::discarded;
+    auto rect = rect_res.value();
 
-    mem += celement::state_tags_t::discarded;
+    auto ds = node.is_discarted() ? "discarted" : "ok";
+
+    auto mem = celement::attribute_tags_t::discarded;
+
+    mem += celement::attribute_tags_t::discarded;
 
     //   if (mem & celement::state_tags_t::discarded) {
     // std::println("hahahahahhh");
@@ -237,7 +243,7 @@ computing_context *FCTree::get_root(computing_context *) { return &root_.ctx; };
 void FCTree::update_context_state(computing_context *ctx) {
 
   // TODO : Refactor this
-  if (ctx->element.state_tags & celement::state_tags_t::discarded) {
+  if (ctx->is_discarted()) {
     computing_context *end{ctx};
 
     if (ctx->parent == ctx->brother && not(ctx->parent == root_.id)) {
@@ -264,7 +270,7 @@ void FCTree::update_context_state(computing_context *ctx) {
     auto current = ctx;
 
     for (; current < end; ++current) {
-      current->element.state_tags += celement::state_tags_t::discarded;
+      current->element.attribute_tags += celement::attribute_tags_t::discarded;
     }
   }
 };

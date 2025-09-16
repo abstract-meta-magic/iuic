@@ -143,7 +143,10 @@ public:
             } else { // do pointer
               if (not ctree.at(obj.id).is_discarted()) {
                 auto &celement = ctree.at(obj.id);
-                res.pointer[celement.get_rect()].push_back(obj);
+                auto rect = celement.get_rect();
+                if (rect) {
+                  res.pointer[rect.value()].push_back(obj);
+                }
               }
             };
           },

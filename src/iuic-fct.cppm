@@ -11,25 +11,100 @@ module;
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 export module iuic.core:fct;
 import :base;
+import :layout;
 import :computing_context;
-import :layout.box;
 
 namespace iuic {
 
 /*
   Специайльный layout для корневого элемента.
  */
-struct root_element_layout : public layout {
-  void self_size(area_utils utils) const noexcept override;
+struct : public frame_layout {
+  measure_result measure(frame_measure_utils utils) const noexcept override {
+    return {{percent_t{100}, percent_t{100}}};
+  };
 
-  void set_childs_position(position_utils utils) const noexcept override;
+  void arrange(frame_arrange_utils utils) const noexcept override {
+    auto self_size = utils.get_size();
+    auto available_size = self_size;
 
-  void balancing(balancing_utils) const noexcept override;
-};
+    auto requests = utils.get_requests();
+
+    // что мне нужно для вычисление
+    // нужно не выйти за пределы от self_size
+    for (auto &&rq : requests) {
+      auto rq_value = rq.value();
+
+      ui_size res{0, 0};
+      bool valide{true};
+
+      std::visit(
+          [&](auto w) {
+            if constexpr (std::same_as<upixel_t, decltype(w)>) {
+              res.w = w;
+            } else if constexpr (std::same_as<percent_t, decltype(w)>) {
+              res.w = self_size.w * w;
+            } else if constexpr (std::same_as<vw_t, decltype(w)>) {
+              res.w = utils.vw(w);
+            } else if constexpr (std::same_as<em_t, decltype(w)>) {
+              // TODO : ???
+            } else if constexpr (std::same_as<rem_t, decltype(w)>) {
+              res.w = utils.rem_width(w);
+            }
+          },
+          rq_value.width);
+
+      std::visit(
+          [&](auto h) {
+            if constexpr (std::same_as<upixel_t, decltype(h)>) {
+              res.h = h;
+            } else if constexpr (std::same_as<percent_t, decltype(h)>) {
+              res.h = self_size.h * h;
+            } else if constexpr (std::same_as<vh_t, decltype(h)>) {
+              res.h = utils.vh(h);
+            } else if constexpr (std::same_as<em_t, decltype(h)>) {
+              // TODO : ???
+            } else if constexpr (std::same_as<rem_t, decltype(h)>) {
+              res.h = utils.rem_hieght(h);
+            }
+          },
+          rq_value.width);
+
+      // TODO : margin ?
+      if (res > available_size) {
+        rq.discard();
+        continue;
+      }
+
+      available_size.h -= res.h;
+
+      rq.apply(res);
+    }
+  };
+
+  void position(frame_position_utils utils) const noexcept override {
+    auto current_pos = utils.self_position();
+
+    auto content = utils.content();
+    for (auto &&rq : content) {
+      auto size = rq.size_of(); // ordered
+
+      current_pos.y += rq.style_of().shape.border.top;
+      current_pos.x += rq.style_of().shape.border.left;
+
+      rq.apply(current_pos);
+
+      current_pos.y += size.h;
+
+      current_pos.x = 0;
+    }
+  };
+} constexpr root_element_layout{};
 
 // с computing_context
 // Так как вычислительное дерево одно на контекст
@@ -62,7 +137,9 @@ public: // Public Interface
     Добовление нового элемента и вход в его контекст.
     Инвалидирует все итераторы и range_proxy.
   */
-  void add(const style &style, const layout *layout);
+  void add(const style &style, const frame_layout *layout);
+
+  void add(const style &style, const text_layout *layout);
 
   /*
     Выход из контекста родительского элемента.
@@ -160,8 +237,7 @@ private: // Data
   struct root_t {
     static constexpr auto id = std::numeric_limits<size_t>::max();
     root_t(FCTree *ctree)
-        : style{}, last_child{},
-          ctx{&layout::instance<root_element_layout>(), &style, ctree, id} {}
+        : style{}, last_child{}, ctx{&root_element_layout, &style, ctree, id} {}
     style style;           // можно унифицировать стиль
     size_t last_child;     // помошник в построении макета
     computing_context ctx; // сам контекст

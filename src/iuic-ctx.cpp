@@ -27,7 +27,7 @@ void context::reset() {
   storage.advance_generation();
 };
 
-void context::self_size() {
+void context::proccess_measure() {
 
   // warning
 
@@ -37,29 +37,91 @@ void context::self_size() {
     if (cc.is_discarted()) {
       continue;
     }
-    cc.get_layout().self_size({&cc});
+
+    std::visit(
+        [&](auto layout) {
+          if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+            auto res = layout->measure({&cc});
+
+            // TODO : fix me
+            if (res) {
+              cc.apply(res.value().rq); // this wrong. no check measure result
+            } else {
+              cc.discard();
+            }
+          }
+        },
+        cc.get_layout());
   }
 
-  // отвратительно
-  ctree.root().get_layout().self_size({&ctree.root()});
+  // mda root calc
+  std::visit(
+      [&](auto layout) {
+        if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+          auto res = layout->measure({&ctree.root()});
+
+          if (res) {
+            ctree.root().apply(res.value().rq);
+          } else {
+            ctree.root().discard();
+          };
+        }
+      },
+      ctree.root().get_layout());
 };
-void context::childs_position() {
+
+void context::proccess_position() {
   // TODO : PARALLEL
-  ctree.root().get_layout().set_childs_position({&ctree.root()});
+  ctree.root().apply(ui_position{0, 0});
+  std::visit(
+      [&](auto layout) {
+        if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+          layout->position({&ctree.root()});
+        }
+      },
+      ctree.root().get_layout());
 
   for (auto &cc : ctree.range_for()) {
     if (cc.is_discarted()) {
       continue;
     }
-    cc.get_layout().set_childs_position({&cc});
+
+    std::visit(
+        [&](auto layout) {
+          if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+            layout->position({&cc});
+          }
+        },
+        cc.get_layout());
   }
 }
 
-void context::balancing() {
+void context::proccess_arrange() {
   // TODO : PARALLEL
+  auto &max_size = ctree.root().get_style().shape.max_size;
+  ctree.root().apply(
+      ui_size{std::get<upixel_t>(max_size.w), std::get<upixel_t>(max_size.h)});
+
+  std::visit(
+      [&](auto layout) {
+        if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+          layout->arrange({&ctree.root()});
+        }
+      },
+      ctree.root().get_layout());
 
   for (auto &cc : ctree.range_for()) {
-    cc.get_layout().balancing({&cc});
+    if (cc.is_discarted()) {
+      continue;
+    }
+
+    std::visit(
+        [&](auto layout) {
+          if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+            layout->arrange({&cc});
+          }
+        },
+        cc.get_layout());
   }
 };
 
@@ -70,11 +132,14 @@ void context::build_render_list() {
   // отрисовки
 
   for (auto &cc : ctree.range_for()) {
-    if (cc.is_discarted()) {
+    auto rect = cc.get_rect();
+    if (not rect) {
+      // err ?
       continue;
     }
+
     to_render.push_back(
-        {.area{cc.get_rect()},
+        {.area{rect.value()},
          .data{frame_render_data{.background{cc.get_style().background}}}});
   }
 }
