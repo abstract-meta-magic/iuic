@@ -3,6 +3,7 @@
 module;
 
 #include <expected>
+#include <print>
 #include <string_view>
 #include <type_traits>
 #include <variant>
@@ -33,13 +34,13 @@ struct layout_utils_base {
   // получение ссылки на viewport стиль
   const style &root_style() const;
 
-  pixel_t rem_width(rem_t) const;
+  ui_size root_size() const;
 
-  pixel_t rem_hieght(rem_t) const;
+  upixel_t rem(rem_t) const noexcept;
 
-  pixel_t vh(vh_t) const;
+  upixel_t vh(vh_t) const noexcept;
 
-  pixel_t vw(vw_t) const;
+  upixel_t vw(vw_t) const noexcept;
 
   // отложить
   void defer();
@@ -69,6 +70,31 @@ struct frame_measure_utils : layout_utils_base {
   frame_measure_utils(computing_context *self) noexcept;
 
   std::vector<measure_child_request> get_requests();
+
+  enum err_r { AUTO, PERCENT, ERR };
+
+  // TODO : Rename
+  std::expected<upixel_t, err_r>
+  upixel_of(const ui_adaptive_unit &utils) const noexcept {
+    return std::visit(
+        [this](auto &value) -> std::expected<upixel_t, err_r> {
+          using type = std::remove_cvref_t<decltype(value)>;
+          if constexpr (std::same_as<type, upixel_t>) {
+            return value;
+          } else if constexpr (std::same_as<type, percent_t>) {
+            return std::unexpected{err_r::PERCENT};
+          } else if constexpr (std::same_as<type, vw_t>) {
+            return vw(value);
+          } else if constexpr (std::same_as<type, vh_t>) {
+            return vh(value);
+          } else if constexpr (std::same_as<type, rem_t>) {
+            return rem(value);
+          } else {
+            return std::unexpected{err_r::ERR};
+          };
+        },
+        utils);
+  };
 };
 
 struct area_request {
@@ -96,11 +122,55 @@ struct frame_arrange_utils : layout_utils_base {
   frame_arrange_utils(computing_context *ctx_) noexcept
       : layout_utils_base{ctx_} {};
 
-  ui_size get_size() const noexcept;
+  ui_size self_size() const noexcept;
 
   std::vector<area_request> get_requests();
 
-  // может еще обрезку тут делать ...
+  enum class side_e { WIDTH, HEIGHT };
+
+  upixel_t width_upixel_of(const ui_adaptive_unit &unit) const noexcept {
+    return std::visit(
+        [this](auto &value) -> upixel_t {
+          using type = std::remove_cvref_t<decltype(value)>;
+
+          if constexpr (std::same_as<type, upixel_t>) {
+            return value;
+          } else if constexpr (std::same_as<type, percent_t>) {
+            return self_size().w * value;
+          } else if constexpr (std::same_as<type, vh_t>) {
+            return vh(value);
+          } else if constexpr (std::same_as<type, vw_t>) {
+            return vw(value);
+          } else if constexpr (std::same_as<type, rem_t>) {
+            return rem(value);
+          } else {
+            return 0;
+          }
+        },
+        unit);
+  }
+
+  upixel_t height_upixel_of(const ui_adaptive_unit &value_) const noexcept {
+    return std::visit(
+        [this](auto &val) -> upixel_t {
+          using type = std::remove_cvref_t<decltype(val)>;
+
+          if constexpr (std::same_as<type, upixel_t>) {
+            return val;
+          } else if constexpr (std::same_as<type, percent_t>) {
+            return self_size().h * val;
+          } else if constexpr (std::same_as<type, vh_t>) {
+            return vh(val);
+          } else if constexpr (std::same_as<type, vw_t>) {
+            return vw(val);
+          } else if constexpr (std::same_as<type, rem_t>) {
+            return rem(val);
+          } else {
+            return 0;
+          }
+        },
+        value_);
+  }
 };
 
 struct position_request {
@@ -125,18 +195,11 @@ struct frame_position_utils : layout_utils_base {
 
   ui_position self_position() const noexcept;
 
+  ui_size self_size() const noexcept;
+
   std::vector<position_request> content();
 
   // тут могут быть статические методы для
   // помощи в вычислении позиций
 };
-
-// In version 0.2
-enum balancing_result {
-  SUCCES,
-  RE_ALL,
-  RE_PARENT,
-  RE_CHILDS,
-};
-
 } // namespace iuic

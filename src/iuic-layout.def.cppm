@@ -10,8 +10,8 @@ import :base;
 export namespace iuic {
 
 struct request_size {
-  std::variant<upixel_t, percent_t, vh_t, rem_t> height;
-  std::variant<upixel_t, percent_t, vw_t, rem_t> width;
+  ui_adaptive_unit width;
+  ui_adaptive_unit height;
 };
 
 struct measure_request {

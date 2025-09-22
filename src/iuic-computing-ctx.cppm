@@ -188,6 +188,8 @@ public: // hierarchy
 
   std::vector<computing_context *> get_childs();
 
+  computing_context *get_root();
+
 public: // get's
   const style &get_style() const noexcept;
 
@@ -225,6 +227,10 @@ private:
   size_t parent{std::numeric_limits<size_t>::max()};
   size_t brother{
       parent}; // ссылка на брата. Если равно parent, то элемент последний.
+  struct z_order_t {
+    std::int16_t group{0};
+    std::int16_t priority{0};
+  } z_order{};
   celement element{};
 };
 }; // namespace iuic

@@ -72,12 +72,12 @@ private:
 constexpr style def_style = []() {
   style res{};
 
-  res.shape.min_size = {upixel_t{120}, upixel_t{240}};
+  res.shape.min_size = {percent_t{16}, percent_t{24}};
 
-  res.positioning.margin.top = 20;
-  res.positioning.margin.left = 30;
+  res.positioning.margin.top = percent_t{4};
+  res.positioning.margin.left = upixel_t{30};
 
-  res.shape.border.top = 20, res.shape.border.left = 40,
+  res.shape.border.top = upixel_t{20}, res.shape.border.left = upixel_t{40};
 
   res.background = color::css::white{};
 

@@ -9,6 +9,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <list>
@@ -33,13 +34,14 @@ constexpr key_code mouse(std::string_view str) {
   return {};
 };
 }; // namespace iuic::key_map
+
 constexpr auto s_1 = []() {
   iuic::style res{};
 
   res.shape.min_size = {iuic::upixel_t{120}, iuic::upixel_t{240}};
 
-  res.positioning.margin.top = 20;
-  res.positioning.margin.left = 30;
+  res.positioning.margin.top = iuic::upixel_t{20};
+  res.positioning.margin.left = iuic::upixel_t{30};
 
   res.background = iuic::color::css::red{};
 
@@ -78,6 +80,15 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
         // just for uid
         b.frame([&](auto &b) { uid = b.make_uid(&uid_seed); },
                 none_style); // hiden style
+
+        /* Z ORDER
+        if(builder.selector.is_focused(uid)) {
+          b.z_order(2,3);
+          b.replace_style(style);
+        } else {
+          b.z_order(2,0);
+        }
+        */
 
         auto srk = b.storage.persist(uid, "callback");
 
@@ -238,7 +249,8 @@ int main() {
 
         res.shape.min_size = {upixel_t{200}, upixel_t{400}};
         res.background = iuic::color::css::lime{80};
-        res.positioning.margin = {20, 20, 20, 20};
+        res.positioning.margin = {upixel_t{20}, upixel_t{20}, upixel_t{20},
+                                  upixel_t{20}};
 
         return res;
       }>();
@@ -272,7 +284,7 @@ int main() {
 
     int w, h;
     SDL_GetWindowSizeInPixels(window, &w, &h);
-    ctx.set_view_size({static_cast<upixel_t>(h), static_cast<upixel_t>(w)});
+    ctx.set_view_size({static_cast<upixel_t>(w), static_cast<upixel_t>(h)});
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);

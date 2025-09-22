@@ -1,9 +1,18 @@
 cmake_minimum_required(VERSION 3.30)
 
-
 find_package(SDL3 REQUIRED)
 
 add_executable(te base.cpp)
+
+
+## xxHash - START
+add_library(xxLib STATIC IMPORTED)
+
+set_target_properties(xxLib PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/tmp_solutions/hash/libxxhash.a)
+
+
+target_link_libraries(te xxLib)
+## xxHash - END
 
 target_link_libraries(te iuic::core SDL3::SDL3)
 

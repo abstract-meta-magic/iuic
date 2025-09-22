@@ -30,8 +30,10 @@ struct : public frame_layout {
   };
 
   void arrange(frame_arrange_utils utils) const noexcept override {
-    auto self_size = utils.get_size();
+    auto self_size = utils.self_size();
     auto available_size = self_size;
+
+    std::println("root size : w:{},h:{}", self_size.w, self_size.h);
 
     auto requests = utils.get_requests();
 
@@ -39,54 +41,72 @@ struct : public frame_layout {
     // нужно не выйти за пределы от self_size
     for (auto &&rq : requests) {
       auto rq_value = rq.value();
+      auto &min = rq.style_of().shape.min_size;
 
-      ui_size res{0, 0};
       bool valide{true};
 
-      std::visit(
-          [&](auto w) {
-            if constexpr (std::same_as<upixel_t, decltype(w)>) {
-              res.w = w;
-            } else if constexpr (std::same_as<percent_t, decltype(w)>) {
-              res.w = self_size.w * w;
-            } else if constexpr (std::same_as<vw_t, decltype(w)>) {
-              res.w = utils.vw(w);
-            } else if constexpr (std::same_as<em_t, decltype(w)>) {
-              // TODO : ???
-            } else if constexpr (std::same_as<rem_t, decltype(w)>) {
-              res.w = utils.rem_width(w);
-            }
-          },
-          rq_value.width);
+      ui_size res = {.w = utils.width_upixel_of(rq_value.width),
+                     .h = utils.height_upixel_of(rq_value.height)};
 
-      std::visit(
-          [&](auto h) {
-            if constexpr (std::same_as<upixel_t, decltype(h)>) {
-              res.h = h;
-            } else if constexpr (std::same_as<percent_t, decltype(h)>) {
-              res.h = self_size.h * h;
-            } else if constexpr (std::same_as<vh_t, decltype(h)>) {
-              res.h = utils.vh(h);
-            } else if constexpr (std::same_as<em_t, decltype(h)>) {
-              // TODO : ???
-            } else if constexpr (std::same_as<rem_t, decltype(h)>) {
-              res.h = utils.rem_hieght(h);
-            }
-          },
-          rq_value.width);
-
-      // TODO : margin ?
-      if (res > available_size) {
-        rq.discard();
-        continue;
+      auto style_min_width = utils.width_upixel_of(min.w);
+      if (style_min_width > res.w) {
+        res.w = style_min_width;
       }
 
-      available_size.h -= res.h;
+      auto style_min_height = utils.height_upixel_of(min.h);
+      if (style_min_height > res.h) {
+        res.h = style_min_height;
+      }
 
       rq.apply(res);
     }
   };
 
+  static upixel_t margin_top(frame_position_utils &utils,
+                             position_request &rq) noexcept {
+    return std::visit(
+        [&](auto &margin_top) -> upixel_t {
+          using type = std::remove_cvref_t<decltype(margin_top)>;
+          if constexpr (std::same_as<type, upixel_t>) {
+            return margin_top;
+          } else if constexpr (std::same_as<type, percent_t>) {
+            return utils.self_size().h * margin_top;
+          } else if constexpr (std::same_as<type, vh_t>) {
+            return utils.root_size().h * margin_top;
+          } else if constexpr (std::same_as<type, vh_t>) {
+            return utils.root_size().w * margin_top;
+          } else if constexpr (std::same_as<type, rem_t>) {
+            return utils.rem(margin_top);
+          } else {
+            return {};
+          }
+        },
+        rq.style_of().positioning.margin.top);
+  };
+
+  static upixel_t margin_left(frame_position_utils &utils,
+                              position_request &rq) noexcept {
+    return std::visit(
+        [&](auto &margin_left) -> upixel_t {
+          using type = std::remove_cvref_t<decltype(margin_left)>;
+          if constexpr (std::same_as<type, upixel_t>) {
+            return margin_left;
+          } else if constexpr (std::same_as<type, ui_auto>) {
+            return upixel_t{};
+          } else if constexpr (std::same_as<type, percent_t>) {
+            return utils.self_size().w * margin_left;
+          } else if constexpr (std::same_as<type, vh_t>) {
+            return utils.root_size().h * margin_left;
+          } else if constexpr (std::same_as<type, vh_t>) {
+            return utils.root_size().w * margin_left;
+          } else if constexpr (std::same_as<type, rem_t>) {
+            return utils.rem(margin_left);
+          } else {
+            return {};
+          }
+        },
+        rq.style_of().positioning.margin.left);
+  };
   void position(frame_position_utils utils) const noexcept override {
     auto current_pos = utils.self_position();
 
@@ -94,8 +114,9 @@ struct : public frame_layout {
     for (auto &&rq : content) {
       auto size = rq.size_of(); // ordered
 
-      current_pos.y += rq.style_of().shape.border.top;
-      current_pos.x += rq.style_of().shape.border.left;
+      // fix me
+      current_pos.y += margin_top(utils, rq);
+      current_pos.x += margin_left(utils, rq);
 
       rq.apply(current_pos);
 

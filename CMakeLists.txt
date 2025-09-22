@@ -40,27 +40,41 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cpp"
-	"src/iuic-hash.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-fct.cpp"
 	"src/iuic-layout-utils.cpp"
 	"src/iuic-computing-ctx.cpp"
 )
 
+## set hash
+
+if(IUIC_HASH_TYPE STREQUAL "xxHash3")
+if(DEFINED IUIC_HASH_INCLUDE_DIR)
+message("iuic::core xxHash3 added")
+message("Hash dir "${IUIC_HASH_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME}_core
+	PRIVATE ${IUIC_HASH_INCLUDE_DIR})
+target_sources(${PROJECT_NAME}_core 
+	PRIVATE "src/iuic-hash.xxhash.cpp")
+else()
+message(SEND_ERROR "iuic::core : not set IUIC_HASH_INCLUDE_DIR")
+endif()
+
+elseif(IUIC_HASH_TYPE STREQUAL "CityHash")
+if(IUIC_HASH_INCLUDE_DIR)
+target_include_directories(${PROJECT_NAME}_core ${IUIC_HASH_INCLUDE_DIR})
+target_sources(${PROJECT_NAME}_core 
+	PRIVATE "src/iuic-hash.cityhash.cpp")
+else()
+message(SEND_ERROR "iuic::core : not set IUIC_HASH_INCLUDE_DIR")
+endif()
+endif()
+
 ## Main alias
 add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
 
-
-## WARNING - TMP SOLUTION
-## xxHash - START
-add_library(xxLib STATIC IMPORTED)
-set_target_properties(xxLib PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/src/tmp_solutions/hash/libxxhash.a)
-
-target_link_libraries(${PROJECT_NAME}_core xxLib)
-## xxHash - END
-
+## Ppetty module
 if(IUIC_PRETTY)
-
 ## Простое сообщение
 if(IUIC_INFO)
 message("iuic::pretty : static")
@@ -82,5 +96,5 @@ target_sources(${PROJECT_NAME}_pretty PUBLIC
 add_library(${PROJECT_NAME}::pretty ALIAS ${PROJECT_NAME}_pretty)
 endif()
 
-## Tests
+
 add_subdirectory(test)

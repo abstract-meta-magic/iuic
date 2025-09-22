@@ -29,6 +29,11 @@ std::vector<computing_context *> computing_context::get_childs() {
   return hierarhy->get_childs(this);
 };
 
+computing_context *computing_context::get_root() {
+
+  return hierarhy->get_root(this);
+}
+
 const style &computing_context::get_style() const noexcept { return *style; };
 
 std::variant<const frame_layout *, const text_layout *>

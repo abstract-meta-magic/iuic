@@ -23,6 +23,19 @@ request_size area_request::value() const noexcept {
   }
 }
 
+request_size measure_child_request::value() const noexcept {
+  auto rq_size = of->get_request();
+  if (rq_size) {
+    return rq_size.value();
+  } else {
+    throw violated_computing_order{};
+  }
+};
+
+const style &measure_child_request::style_of() const noexcept {
+  return of->get_style();
+}
+
 std::vector<measure_child_request> frame_measure_utils::get_requests() {
   std::vector<measure_child_request> res;
 
@@ -47,25 +60,23 @@ const style &layout_utils_base::parent_style() const {
 };
 
 const style &layout_utils_base::root_style() const {
-  // TODO : Сделать viewport style ref
-  static style _;
-
-  return _;
+  return ctx->get_root()->get_style();
 };
 
-pixel_t layout_utils_base::rem_width(rem_t rem) const {
-  return std::get<ui_size>(root_style().ephemeral_value).w * rem;
+ui_size layout_utils_base::root_size() const {
+  return {std::get<upixel_t>(root_style().shape.max_size.w),
+          std::get<upixel_t>(root_style().shape.max_size.h)};
 };
 
-pixel_t layout_utils_base::rem_hieght(rem_t rem) const {
-  return std::get<ui_size>(root_style().ephemeral_value).h * rem;
+upixel_t layout_utils_base::rem(rem_t rem) const noexcept {
+  return root_style().ephemeral_value * rem;
 };
 
-pixel_t layout_utils_base::vh(vh_t vh) const {
+upixel_t layout_utils_base::vh(vh_t vh) const noexcept {
   return std::get<upixel_t>(root_style().shape.max_size.h) * vh;
 }
 
-pixel_t layout_utils_base::vw(vw_t vw) const {
+upixel_t layout_utils_base::vw(vw_t vw) const noexcept {
   return std::get<upixel_t>(root_style().shape.max_size.h) * vw;
 }
 
@@ -111,9 +122,18 @@ std::vector<position_request> frame_position_utils::content() {
 };
 
 ui_position frame_position_utils::self_position() const noexcept {
-  auto position = ctx->get_rect();
-  if (position) {
-    return position.value().position;
+  auto rect = ctx->get_rect();
+  if (rect) {
+    return rect.value().position;
+  } else {
+    throw violated_computing_order{};
+  }
+};
+
+ui_size frame_position_utils::self_size() const noexcept {
+  auto rect = ctx->get_rect();
+  if (rect) {
+    return rect.value().size;
   } else {
     throw violated_computing_order{};
   }
@@ -138,7 +158,8 @@ std::vector<area_request> frame_arrange_utils::get_requests() {
   }
   return res;
 }
-ui_size frame_arrange_utils::get_size() const noexcept {
+
+ui_size frame_arrange_utils::self_size() const noexcept {
   auto size = ctx->get_size();
   if (size) {
     return size.value();

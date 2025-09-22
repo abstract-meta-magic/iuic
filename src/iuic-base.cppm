@@ -229,10 +229,13 @@ using style_background = std::variant<ui_none, color_t, ui_background_image>;
 struct style_effects {};
 
 struct style_animations {};
-// вынести
+
+using ui_adaptive_unit =
+    std::variant<ui_auto, upixel_t, percent_t, vw_t, vh_t, rem_t>;
+
 struct indent {
-  upixel_t top, bottom, left, right;
-  // конструкторы и т.д.
+  ui_adaptive_unit top{upixel_t{0}}, bottom{upixel_t{0}}, left{upixel_t{0}},
+      right{upixel_t{0}};
 };
 
 struct border_radius {
@@ -240,14 +243,24 @@ struct border_radius {
 };
 
 struct ui_adaptive_size {
-  std::variant<upixel_t, vh_t, em_t, rem_t> h{upixel_t{0}};
-  std::variant<upixel_t, vw_t, em_t, rem_t> w{upixel_t{0}};
+  ui_adaptive_unit w{upixel_t{0}};
+  ui_adaptive_unit h{upixel_t{0}};
+};
+
+struct aspect_ratio {
+  std::uint8_t width{0};
+  std::uint8_t height{0};
+  enum dominant_side_e { AUTO, WIDTH, HEIGHT } dominant_side{AUTO};
 };
 
 struct style_shape {
   ui_adaptive_size min_size, max_size;
 
   indent border;
+
+  indent padding;
+
+  aspect_ratio aspect_patio;
 
   struct {
     struct {
@@ -259,27 +272,33 @@ struct style_shape {
       border_radius right;
     } bottom;
   } border_radius;
+
+  float grow{0};
+
+  float shrink{0};
 };
 
 struct style_positioning {
 
   indent margin;
 
-  indent padding;
-
   align align;
+
+  enum position_type_e { STATIC, RELATIVE, ABSOLUTE, FIXED } type;
+
+  // TODO : добавить адаптив
+  ui_position offset{0, 0};
+
+  using enum position_type_e;
 };
 
 // сделать нормальное наследование свойств ui_inherit<&style_font>...
-using ephemeral_value_t = std::variant<ui_inherit, ui_size>;
-
-template <auto ptr> struct hehe {};
 
 // https://html5book.ru/css-spravochnik.html#part1
 struct style {
   std::string stclass{"none"};
 
-  ephemeral_value_t ephemeral_value{ui_size{12, 24}};
+  upixel_t ephemeral_value{14};
 
   style_shape shape;
 
@@ -315,20 +334,6 @@ struct surface_static_info {
   SurfaceDataType data_type;
 };
 
-struct surface_create_info {};
-
-/*
-  Простой набор из информации о поверхности и
-  прекрипленных к ней данных.
-*/
-struct surface_render_data {
-  const surface_static_info &info;
-  // тут должен быть референс
-  // так как эта структура пересоздается
-  // каждый кадр
-  std::string data;
-};
-
 struct frame_render_data {
   const style_background &background;
   // ... etc
@@ -337,8 +342,7 @@ struct frame_render_data {
 // изображение которые сложнее простого квадрата(background)
 struct image_render_data {};
 
-using render_data = std::variant<frame_render_data, surface_render_data,
-                                 text_render_data, image_render_data>;
+using render_data = std::variant<frame_render_data, text_render_data>;
 
 // рисуемый элемент
 // relement и некоторые его зависимости
