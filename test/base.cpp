@@ -6,23 +6,26 @@
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
-#include <array>
 #include <concepts>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
 #include <iostream>
-#include <list>
 #include <print>
 #include <string_view>
 #include <strings.h>
+#include <sys/types.h>
 #include <type_traits>
 #include <variant>
-#include <vector>
 
 import iuic.core;
 
 namespace iuic::key_map {
+
+struct flex_event {
+  enum class type {
+    sshh,
+  } type;
+  char data[];
+};
+
 constexpr key_code mouse(std::string_view str) {
   if (str == "left") {
     return key_code{(key_t)1};
@@ -44,7 +47,6 @@ constexpr auto s_1 = []() {
   res.positioning.margin.left = iuic::upixel_t{30};
 
   res.background = iuic::color::css::red{};
-
   return res;
 }();
 
@@ -75,42 +77,127 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
 
   iuic::uid_t uid;
 
-  b.frame(
+  b.unit.frame(
       [&](auto &b) {
         // just for uid
-        b.frame([&](auto &b) { uid = b.make_uid(&uid_seed); },
-                none_style); // hiden style
+        b.unit.frame([&](auto &b) { uid = b.uid.make(&uid_seed); },
+                     none_style); // hiden style
+
+        // iuic::animation hovered_anim{ ... };
+        // begin -- delta -- end
+
+        /* STATE
+        // consteval ctor
+        static constexp iuic::pseudo_state btn_active{};
+
+        if (b.state.pseudo(uid) == btn_active) {
+          ...
+        }
+
+        iuic::event::global::key {}; по всей площади
+        iuic::event::local::key {};  в рамках площади элемента
+        */
+
+        /* text
+           auto trk = b.storage.text.persist(uid,"lable");
+           b.unit.text(tkr);
+
+           ...
+           e.utils.text.try_visit(e.trk,[](iuic::text_buffer& tb) {
+             ...
+             tb.replace("my");
+             ...
+           });
+
+           alternative
+
+           создание текста из одного токена
+           для коротких строк
+           b.unit.text(iuic::text::token{"window"});
+        */
+
+        /* UID
+        // ввести понятия наследования uid изночально от root
+        // ответвления uid
+        b.uid.branch(uid);
+        */
+
+        /* POLICY
+
+
+        // включает возможность hovered и закрепляет uid
+        b.policy.hovered(iuic::policy::hovered::propagate);
+        // включает события и закрепляет uid
+        b.policy.event(iuic::policy::event::consume);
+
+        b.event([](auto& r) {
+          // ...
+          r.key()
+          // ...
+        });
+
+        // true и продолжить распространение
+        b.policy.hovered(e.uid) = iuic::event::hovered::propagate;
+        // true и прекратить распространение
+        b.policy.hovered(e.uid) = iuic::event::hovered::consume;
+        // сбросить предыдущие, установить терущий в true и продолжить
+        распространение b.policy.hovered(e.uid) =
+        iuic::event::hovered::scope_propagate;
+        // сбросить предыдущие, установить терущий в true и прекратить
+        распространение b.policy.hovered(e.uid) =
+        iuic::event::hovered::scope_consume;
+        // сбросить предыдущие, прекратить распространение
+        b.policy.hovered(e.uid) = iuic::event::hovered::block;
+        */
 
         /* Z ORDER
-        if(builder.selector.is_focused(uid)) {
-          b.z_order(2,3);
-          b.replace_style(style);
-        } else {
-          b.z_order(2,0);
+        b.order.group(4); // 4:0
+
+        if(builder.state.pseude(uid) == focused) {
+          b.order.up(); // 4:0->1
+          b.oredr.down(); // 4:1->0
+          b.order.set(6); // 4:6
+          b.order.top(); // 4:(max)
         }
         */
 
-        auto srk = b.storage.persist(uid, "callback");
+        // TODO : замена b.selector.* -> b.state.*
 
-        b.storage.init_if_not(srk, [&]() { return call; });
+        // e.utils.state.hovered(uid) = true;
+        // e.utils.state.hovered(uid) == true;
 
-        b.apply_uid(uid); // event set
+        /* Dynamic style
+           if(e.utils.state.hovered(e.uid)) {
+              e.uitls.state.hovered(e.uid) = false;
+           }
 
-        b.event([](iuic::event_type::pointer_enter e) {
-          e.selector.set_hovered(e.uid);
-        });
 
-        b.event([](iuic::event_type::pointer_exit e) {
-          if (e.selector.is_hovered(e.uid)) {
-            e.selector.unset_hovered(e.uid);
+          if(b.state.is_hovered()) {
+             замена
+             b.style.override(b.style.sheet("button-def:hovered"));
+          } else if(b.selector.is_selected()) {
+             наследование
+             b.style.extend(b.style.sheet("button-def:selected"));
           }
-        });
+        */
+
+        auto srk = b.storage.object.persist(uid, "callback");
+        auto trk = b.storage.text.persist(uid, "lable");
+
+        b.unit.text(trk);
+
+        b.storage.object.init_if_not(srk, [&]() { return call; });
+
+        b.uid.branch(uid); // event set
+
+        b.policy.hovered(iuic::policy::hovered::propagate);
 
         using callback_t = std::remove_cvref_t<decltype(call)>;
         b.event(
-            [](iuic::event_type::key_h e) {
+            [](iuic::event::local::key e) {
               if (e.code == iuic::key_map::mouse("left")) {
-                e.storage.try_visit(e.srk, [](callback_t &call) { call(); });
+                e.utils.object.try_visit(e.ork,
+                                         [](callback_t &call) { call(); });
               };
             },
             srk);
@@ -122,37 +209,33 @@ constexpr inline void button(iuic::context::builder &b, const std::string &str,
                              const iuic::style &style = iuic::def_style) {
   static constexpr bool uid_sub_seed{true};
 
-  auto uid = b.make_uid(b.make_uid(&uid_sub_seed), str);
+  auto uid = b.uid.make(b.uid.make(&uid_sub_seed), str);
 
-  b.frame(
+  static auto focused = iuic::pseudo_state::make<struct focused>();
+  static auto idle = iuic::pseudo_state::make<struct idle>();
+
+  b.unit.frame(
       [=](auto &b) {
         // b.text(str);
 
-        b.apply_uid(uid);
+        b.uid.branch(uid);
+        b.storage.object.persist(uid, "hh");
 
-        b.event([](iuic::event_type::pointer_enter e) {
-          e.selector.set_hovered(e.uid);
-        });
+        b.policy.hovered(iuic::policy::hovered::propagate);
 
-        b.event([](iuic::event_type::pointer_exit e) {
-          if (e.selector.is_hovered(e.uid)) {
-            e.selector.unset_hovered(e.uid);
-          }
-        });
-
-        b.event([](iuic::event_type::key_h e) {
+        b.event([](iuic::event::local::key e) {
           if (e.code == iuic::key_map::mouse("left")) {
-            if (not e.selector.is_focused(e.uid)) {
-              e.selector.set_focused(e.uid);
+            if (e.utils.state.pseudo(e.uid) != focused) {
+              e.utils.state.pseudo(e.uid) = focused;
             }
           }
         });
 
-        b.event([](iuic::event_type::key_f e) {
+        b.event([](iuic::event::global::key e) {
           std::println("Text field press : {}", e.code[0]);
-          if (not e.selector.is_hovered(e.uid) &&
+          if (e.utils.state.pseudo(e.uid) == focused &&
               e.code == iuic::key_map::mouse("left")) {
-            e.selector.unset_focused(e.uid);
+            e.utils.state.pseudo(e.uid) = idle;
           }
         });
       },
@@ -181,9 +264,9 @@ struct base {
 
   static constexpr void lable(std::string text) noexcept;
 
-  static constexpr srk_t text_field() noexcept;
+  static constexpr trk_t text_field() noexcept;
 
-  static constexpr srk_t text_field(std::string) noexcept;
+  static constexpr trk_t text_field(std::string) noexcept;
 
   struct color {
     static constexpr color_t text;
@@ -255,7 +338,9 @@ int main() {
         return res;
       }>();
       // frame(create_info,childs_lambda)
-      b.frame([](auto &b) { b.frame([](auto &b) { b.frame(); }, style); });
+      b.unit.frame([](auto &b) {
+        b.unit.frame([](auto &b) { b.unit.frame(); }, style);
+      });
       // b.text("test text");
 
       // b.text("ok");

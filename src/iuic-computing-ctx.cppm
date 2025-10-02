@@ -5,6 +5,7 @@ module;
 #include <cstdint>
 #include <exception>
 #include <expected>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 #include <variant>
@@ -43,11 +44,8 @@ struct celement {
     complite,
     undefined,
   } stage{stage_t::measure};
-  enum struct error_tags_t : std::uint8_t {
-    null = 0,
-    invalid = 1 << 1,
-    broken = 1 << 2,
-  } error_tags;
+  policy::hovered hovered_p{policy::hovered::none};
+  policy::event event_p;
 
   // область которую занимает элемент
   // Разрешаю сам себе вплоть до 24-28
@@ -97,42 +95,6 @@ constexpr bool operator&(celement::attribute_tags_t lhs,
                  rhs)) != celement::attribute_tags_t::null;
 }
 
-constexpr celement::error_tags_t operator+(celement::error_tags_t lhs,
-                                           celement::error_tags_t rhs) {
-  return static_cast<celement::error_tags_t>(
-      static_cast<std::underlying_type_t<celement::error_tags_t>>(lhs) |
-      static_cast<std::underlying_type_t<celement::error_tags_t>>(rhs));
-}
-
-constexpr celement::error_tags_t &operator+=(celement::error_tags_t &lhs,
-                                             celement::error_tags_t rhs) {
-  lhs = lhs + rhs;
-  return lhs;
-}
-
-constexpr celement::error_tags_t operator-(celement::error_tags_t lhs,
-                                           celement::error_tags_t rhs) {
-
-  return static_cast<celement::error_tags_t>(
-      static_cast<std::underlying_type_t<celement::error_tags_t>>(lhs) &
-      ~static_cast<std::underlying_type_t<celement::error_tags_t>>(rhs));
-}
-
-constexpr celement::error_tags_t &operator-=(celement::error_tags_t &lhs,
-                                             celement::error_tags_t rhs) {
-  lhs = lhs - rhs;
-  return lhs;
-}
-
-constexpr bool operator&(celement::error_tags_t lhs,
-                         celement::error_tags_t rhs) {
-
-  return static_cast<celement::error_tags_t>(
-             static_cast<std::underlying_type_t<celement::error_tags_t>>(lhs) &
-             static_cast<std::underlying_type_t<celement::error_tags_t>>(
-                 rhs)) != celement::error_tags_t::null;
-}
-
 // Это интерфейс отвечает за возможность
 // взаимодействия с иерархией
 struct computing_hierarchy {
@@ -153,6 +115,10 @@ struct computing_hierarchy {
 // а еще хочеться чтобы была попытка соблюдения SRP
 struct computing_context {
   friend class FCTree;
+  struct z_order_t {
+    std::int16_t group{0};
+    std::int16_t priority{0};
+  };
 
   // конструктор для вычисления фрейма
   computing_context(const frame_layout *layout_, const style *style_,
@@ -191,6 +157,14 @@ public: // hierarchy
   computing_context *get_root();
 
 public: // get's
+  z_order_t &get_order() { return order; };
+
+  const z_order_t &get_order() const { return order; };
+
+  void set_policy(policy::hovered p) { element.hovered_p = p; };
+
+  void set_policy(policy::event p) { element.event_p = p; };
+
   const style &get_style() const noexcept;
 
   std::variant<const frame_layout *, const text_layout *>
@@ -227,10 +201,7 @@ private:
   size_t parent{std::numeric_limits<size_t>::max()};
   size_t brother{
       parent}; // ссылка на брата. Если равно parent, то элемент последний.
-  struct z_order_t {
-    std::int16_t group{0};
-    std::int16_t priority{0};
-  } z_order{};
+  z_order_t order;
   celement element{};
 };
 }; // namespace iuic

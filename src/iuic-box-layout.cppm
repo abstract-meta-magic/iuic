@@ -52,9 +52,6 @@ struct final : public frame_layout {
       if (horisontal_size > max_width) {
         max_width = horisontal_size;
       }
-
-      std::println("chaild : w:{},h:{}", max_width, max_height);
-      // do
     }
 
     measure_request res{};
@@ -105,8 +102,6 @@ struct final : public frame_layout {
       if (style_min_height > res.h) {
         res.h = style_min_height;
       }
-
-      std::println("apply : w:{},h:{}", res.w, res.h);
 
       rq.apply(res);
     };

@@ -11,10 +11,13 @@ module;
 #include <string_view>
 #include <utility>
 
-export module iuic.core:storage;
+export module iuic.core:storage.object;
 import :base;
 import :hash;
+import :storage.def;
+
 namespace iuic {
+
 struct storage_type {
   using dector_t = void (*)(void *);
   size_t size;
@@ -24,10 +27,6 @@ struct storage_type {
 
 // Дешевый ключь для быстрого поиска значения
 // Должен мало весить
-
-export using storage_registry_key = hash::hash_t;
-// short alias
-export using srk_t = storage_registry_key;
 
 template <typename T>
 concept pure_type = std::same_as<std::remove_cvref_t<T>, T> &&
@@ -56,7 +55,7 @@ struct base_ref {
 namespace iuic {
 
 // декомпазировать на use и set части
-class storage {
+class object_storage {
 private: // visit help
   template <typename T> static consteval void visit_arg_type__(T);
 
@@ -67,16 +66,16 @@ private: // visit help
   static consteval ARG visit_traits__(std::function<T(const ARG &)>);
 
 public:
-  bool exist(srk_t srk) const { return is_init__(srk); };
+  bool exist(ork_t srk) const { return is_init__(srk); };
 
-  template <pure_type T> bool exist_as(srk_t srk) const {
+  template <pure_type T> bool exist_as(ork_t srk) const {
     if (exist(srk)) {
       // return storage_ref{get_ref__(srk)}.as<T>();
     }
     return false;
   };
 
-  constexpr bool try_visit(srk_t srk, auto &&call) {
+  constexpr bool try_visit(ork_t srk, auto &&call) {
     auto ref = get_ref__(srk);
 
     using type =
@@ -92,7 +91,7 @@ public:
     return false;
   };
 
-  bool try_visit(srk_t srk, auto &&call) const {
+  bool try_visit(ork_t srk, auto &&call) const {
     // storage_cref ref{get_ref__(srk)};
     base_ref ref{};
 
@@ -111,7 +110,7 @@ public:
   };
 
 protected:
-  constexpr base_ref get_ref__(srk_t srk) {
+  constexpr base_ref get_ref__(ork_t srk) {
     switch (persistent_geniration_phase) {
     case persistent_geniration_phase_e::phase__1: {
       if (persistent__1.contains(srk)) {
@@ -138,7 +137,7 @@ protected:
   static constexpr hash::hash_t srk_hash_seed{445736667};
 
   // magic number for tmp + uid + name
-  static srk_t make_tmp_srk__(uid_t uid, const std::string &name) noexcept {
+  static ork_t make_tmp_srk__(uid_t uid, const std::string &name) noexcept {
     static constexpr char tmp_magick{'T'};
 
     std::stringstream ss;
@@ -156,7 +155,7 @@ protected:
   };
 
   // magic number for persist + uid + name
-  static srk_t make_persist_srk__(uid_t uid, const std::string &name) noexcept {
+  static ork_t make_persist_srk__(uid_t uid, const std::string &name) noexcept {
     static constexpr char persistent_magick{'P'};
 
     std::stringstream ss;
@@ -175,7 +174,7 @@ protected:
   };
 
 protected: // data
-  bool is_init__(srk_t srk) const { return false; };
+  bool is_init__(ork_t srk) const { return false; };
 
   struct raw_memory {
     std::byte *begin;
@@ -183,7 +182,7 @@ protected: // data
   };
 
   // tmp managment
-  std::map<srk_t, base_ref> tmp__;
+  std::map<ork_t, base_ref> tmp__;
 
   // persistent managment
   enum class persistent_geniration_phase_e {
@@ -191,9 +190,9 @@ protected: // data
     phase__2
   } persistent_geniration_phase{persistent_geniration_phase_e::phase__1};
 
-  std::map<srk_t, base_ref> persistent__1;
-  std::map<srk_t, base_ref> persistent__2;
-  std::map<uid_t, srk_t> reg;
+  std::map<ork_t, base_ref> persistent__1;
+  std::map<ork_t, base_ref> persistent__2;
+  std::map<uid_t, ork_t> reg;
   // buff's
   raw_memory warning_persisten_memory__; // buff
   raw_memory base_persisten_memory__;    // buff
@@ -209,10 +208,10 @@ protected: // data
   std::pmr::monotonic_buffer_resource tmp_resource;
 };
 
-struct mutable_storage : public storage {
-  template <typename T> void set(srk_t, T &&);
+struct mutable_object_storage : public object_storage {
+  template <typename T> void set(ork_t, T &&);
 
-  storage_registry_key tmp(uid_t uid, const std::string &name) {
+  object_registry_key tmp(uid_t uid, const std::string &name) {
     auto srk = make_tmp_srk__(uid, name);
 
     tmp__.try_emplace(srk, base_ref{});
@@ -220,7 +219,7 @@ struct mutable_storage : public storage {
     return srk;
   };
 
-  storage_registry_key persist(uid_t uid, const std::string &name) {
+  object_registry_key persist(uid_t uid, const std::string &name) {
     auto srk = make_persist_srk__(uid, name);
 
     switch (persistent_geniration_phase) {
@@ -247,7 +246,7 @@ struct mutable_storage : public storage {
     return srk;
   };
 
-  void init_if_not(srk_t srk, std::invocable<> auto &&call) {
+  void init_if_not(ork_t srk, std::invocable<> auto &&call) {
     using pure_type = std::remove_cvref_t<std::invoke_result_t<decltype(call)>>;
 
     switch (persistent_geniration_phase) {
@@ -260,7 +259,7 @@ struct mutable_storage : public storage {
               persistent_resource.allocate(ref.type->size, ref.type->align);
           new (ref.data) pure_type{call()};
 
-          std::println("INIT OBJECT - srk {}", srk);
+          std::println("INIT OBJECT - srk {}", srk.value);
         }
         return;
       }
@@ -276,7 +275,7 @@ struct mutable_storage : public storage {
               persistent_resource.allocate(ref.type->size, ref.type->align);
           new (ref.data) pure_type{call()};
 
-          std::println("INIT OBJECT - srk {}", srk);
+          std::println("INIT OBJECT - srk {}", srk.value);
         }
         return;
       }
@@ -296,7 +295,7 @@ struct mutable_storage : public storage {
 };
 // module private класс используемый в context
 // для упровления хранилищем
-struct managed_storage final : public mutable_storage {
+struct managed_object_storage final : public mutable_object_storage {
   // удаление временных значений и проверка персистентных
   void advance_generation() {
 

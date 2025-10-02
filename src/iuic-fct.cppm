@@ -33,8 +33,6 @@ struct : public frame_layout {
     auto self_size = utils.self_size();
     auto available_size = self_size;
 
-    std::println("root size : w:{},h:{}", self_size.w, self_size.h);
-
     auto requests = utils.get_requests();
 
     // что мне нужно для вычисление
@@ -176,7 +174,11 @@ public: // Public Interface
     Получение последнего элемента.
     Может возвращать корневой элемент.
   */
-  computing_context &last() const noexcept;
+  const computing_context &last() const noexcept;
+
+  computing_context &current() noexcept;
+
+  const computing_context &current() const noexcept;
 
   /*
     Получение элемента по индексу.
@@ -265,7 +267,7 @@ private: // Data
   } root_{this};
   std::vector<computing_context> nodes;
   // parent\last_brather
-  std::stack<size_t> current{};
+  std::stack<size_t> current_{};
   std::stack<std::pair<size_t, size_t>> parent{};
 };
 

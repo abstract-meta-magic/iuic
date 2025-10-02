@@ -3,9 +3,7 @@
 module;
 
 #include <cstdint>
-#include <print>
 #include <string>
-#include <string_view>
 #include <variant>
 
 // Independ User Interface Core
@@ -356,4 +354,16 @@ struct relement {
   // WARNING : большой размер
   render_data data; // метаданные для отрисовки
 };
+namespace policy {
+enum class hovered : std::uint8_t {
+  none,
+  propagate, // true -> go
+  scope,     // reset -> true -> go
+  block,     // true -> stop
+  term,      // stop
+};
+
+enum class event : std::uint8_t { propagate, block };
+}; // namespace policy
+
 } // namespace iuic

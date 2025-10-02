@@ -24,7 +24,8 @@ const std::vector<relement> &context::get_tree() { return to_render; }
 void context::reset() {
   ctree.reset();
   to_render.clear();
-  storage.advance_generation();
+  object.advance_generation();
+  text.advance_generation();
 };
 
 void context::proccess_measure() {
@@ -143,52 +144,4 @@ void context::build_render_list() {
          .data{frame_render_data{.background{cc.get_style().background}}}});
   }
 }
-
-// base uid + str.hash
-uid_t context::builder::make_uid(const std::string &str) const noexcept {
-  return hash::make(seed.top(), str.c_str(), str.size());
-};
-
-// base uid + other.uid.hash + str.hash
-uid_t context::builder::make_uid(uid_t uid,
-                                 const std::string &str) const noexcept {
-  return hash::merge(uid, make_uid(str));
-};
-
-uid_t context::builder::__make_uid_from_ptr(const void *ptr) const noexcept {
-  // ptr hash ?
-  if constexpr (sizeof(ptr) == sizeof(std::uint32_t)) {
-    // TODO : convert ptr to uid
-  } else if constexpr (sizeof(ptr) == sizeof(std::uint64_t)) {
-    // TODO : convert ptr to uid
-    return hash::make(seed.top(), reinterpret_cast<const char *>(ptr),
-                      sizeof(ptr));
-  } else {
-    throw "Unsupported pointer size";
-  };
-};
-
-uid_t context::builder::__make_base_uid() const noexcept { return {}; };
-
-void context::builder::__prev() noexcept {
-  id.push_back(ctx.ctree.index_at_last());
-
-  // ...
-  const char *data_ptr = reinterpret_cast<const char *>(&id[0]);
-
-  auto data_len = sizeof(size_t) * id.size();
-
-  seed.push(hash::make(data_ptr, data_len));
-  // ...
-};
-
-void context::builder::__post() noexcept {
-
-  id.pop_back();
-
-  seed.pop();
-  uid = 0;
-};
-
-void context::builder::apply_uid(uid_t nuid) noexcept { uid = nuid; };
 }; // namespace iuic

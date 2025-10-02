@@ -3,13 +3,12 @@ module;
 
 #include <concepts>
 #include <cstddef>
-#include <memory_resource>
+#include <cstdint>
 #include <stack>
+#include <string>
 #include <string_view>
 #include <type_traits>
-#include <unordered_set>
 #include <utility>
-#include <variant>
 #include <vector>
 
 export module iuic.core;
@@ -17,57 +16,16 @@ export import :base;
 export import :base.color;
 import :layout.box;
 import :fct;
-export import :storage;
-import :pseudo_selector;
+export import :storage.def;
+export import :storage.object;
+export import :storage.text;
+export import :state;
 export import :event;
 
 // import :default
 
 export namespace iuic {
 
-// TOTO : replace
-struct pseudo_selector_impl__ final : advanced_pseudo_selector {
-  bool is_hovered(uid_t uid) const noexcept override {
-    return hovered.contains(uid);
-  };
-
-  bool is_active(uid_t uid) const noexcept override {
-    return active.contains(uid);
-  };
-
-  bool is_focused(uid_t uid) const noexcept override {
-    return focused.contains(uid);
-  };
-
-  void set_active(uid_t uid) noexcept override { active.insert(uid); };
-
-  void set_focused(uid_t uid) noexcept override { focused.insert(uid); };
-
-  void set_hovered(uid_t uid) noexcept override { hovered.insert(uid); };
-
-  // TODO : future in set<uid_t>
-  void unset_focused(uid_t uid) noexcept override { focused.erase(uid); };
-
-  void unset_hovered(uid_t uid) noexcept override { hovered.erase(uid); };
-
-  // TODO : future in set<uid_t>
-  void unset_active(uid_t uid) noexcept override { active.erase(uid); };
-
-  void unset_focused() noexcept override { focused.clear(); };
-
-  void unset_active() noexcept override { active.clear(); };
-
-  pseudo_selector_snapshot snapshot() const noexcept override {
-    return {hovered, focused, active};
-  };
-
-private:
-  std::unordered_set<uid_t> hovered;
-
-  std::unordered_set<uid_t> focused;
-
-  std::unordered_set<uid_t> active;
-};
 // base stye
 constexpr style def_style = []() {
   style res{};
@@ -91,12 +49,29 @@ enum class UpdateType { Dynamic, Static, DirtyFlag };
 // данные можно сохранять в store
 // и даже изменять между обновлениями
 class context {
-public:
-  class builder {
-    friend context;
+public: // public forward decl
+  struct builder;
 
-    // TOTO : добавить layout's
-  public:
+private: // builder.def
+  struct builder_base {
+    builder_base(context &ctx_) : ctx{ctx_} {
+      static std::string root_uid{"root-uid-hash-str-4467532667"};
+      uids.push(hash::make(4474444, root_uid.c_str(), root_uid.size()));
+    };
+
+  protected:
+    void __prev() noexcept { uids.push(uids.top()); };
+
+    void __post() noexcept { uids.pop(); };
+
+  protected: // builder unit stack
+    context &ctx;
+    std::stack<uid_t> uids;
+  };
+
+  struct builder_unit_interface : protected virtual builder_base {
+    builder_unit_interface(builder_base &&bb) : builder_base{bb} {};
+
     /*
       Базовая форма для всего.Стелизуемый рамка.
       TODO : можно заменить на нешаблонный вызов
@@ -115,70 +90,120 @@ public:
     /*
       Является конечной точкой.Отрисовка текста
     */
-    void text(std::string_view str, const style & = def_style);
+    void text(text_registry_key, const style & = def_style);
+  };
 
-    // event
-    template <key_event_callback_cpt Call>
-    void event(Call &&call, storage_registry_key key = {}) {
-      if constexpr (std::invocable<decltype(call), iuic::event_type::key_g>) {
-        ctx.event_collector.push(
-            key_event{key, {call}, ctx.ctree.current_index(), 0});
-      } else {
-        ctx.event_collector.push(
-            key_event{key, {call}, ctx.ctree.current_index(), uid});
-      }
+  struct builder_order_interface : protected virtual builder_base {
+    builder_order_interface(builder_base &&bb) : builder_base{bb} {}
+
+    void group(std::uint16_t value) {
+      ctx.ctree.current().get_order().group = value;
     };
 
-    template <pointer_event_callback_cpt Call>
-    void event(Call &&call, storage_registry_key key = {}) {
-      ctx.event_collector.push(
-          pointer_event{key, {call}, ctx.ctree.current_index(), uid});
+    void up() { ctx.ctree.current().get_order().priority += 1; };
+
+    void set(std::uint16_t value) {
+      ctx.ctree.current().get_order().priority += value;
     };
+  };
 
-    // использовать трансформатор для изменения
-    // позиций, размеров и вращения элементов будет добавленно в
-    // следующих версиях
-    // transform.shape
-    // transform.position
-    void transform();
+  struct builder_policy_interface : protected virtual builder_base {
+    builder_policy_interface(builder_base &&bb) : builder_base{bb} {};
 
+    void hovered(policy::hovered p) { ctx.ctree.current().set_policy(p); };
+
+    void event(policy::event p) { ctx.ctree.current().set_policy(p); };
+  };
+
+  struct builder_uid_interface : protected virtual builder_base {
+    builder_uid_interface(builder_base &&bb) : builder_base{bb} {};
     // base uid + str.hash
-    uid_t make_uid(const std::string &) const noexcept;
+    uid_t make(const std::string &str) const noexcept {
+      return hash::make(uids.top(), str.c_str(), str.size());
+    };
 
     // base uid + other.uid.hash + str.hash
-    uid_t make_uid(uid_t, const std::string &) const noexcept;
+    uid_t make(uid_t uid, const std::string &str) const noexcept {
+      return hash::make(uid, str.c_str(), str.size());
+    };
 
     // base uid + ptr.hash
     template <typename T>
       requires std::is_pointer_v<T>
-    uid_t make_uid(T ptr) const noexcept {
+    uid_t make(T ptr) const noexcept {
       return __make_uid_from_ptr(reinterpret_cast<const void *>(ptr));
     };
 
     template <typename T, typename... ARGS>
-    uid_t make_uid(T(ptr)(ARGS...)) const noexcept {
+    uid_t make(T(ptr)(ARGS...)) const noexcept {
       return __make_uid_from_ptr(reinterpret_cast<const void *>(ptr));
     };
 
-    void apply_uid(uid_t uid) noexcept;
-
-    mutable_storage &storage;
+    void branch(uid_t uid) { uids.top() = uid; };
 
   private:
-    uid_t __make_uid_from_ptr(const void *ptr) const noexcept;
+    uid_t __make_uid_from_ptr(const void *ptr) const noexcept {
+      auto str = std::to_string((size_t)ptr);
+      return hash::make(str.c_str(), str.size());
+    };
+  };
 
-    uid_t __make_base_uid() const noexcept;
+  struct builder_storage_interface : protected virtual builder_base {
+    builder_storage_interface(builder_base &&bb) : builder_base{bb} {};
+    mutable_object_storage &object{ctx.object};
+    mutable_text_storage &text{ctx.text};
+  };
 
-    void __prev() noexcept;
+  struct builder_event_interface : protected virtual builder_base {
+    builder_event_interface(builder_base &&bb) : builder_base{bb} {};
 
-    void __post() noexcept;
+    void operator()(event_callback_cpt auto &&call, object_registry_key ork = 0,
+                    text_registry_key trk = 0) {
+      attach(std::forward<decltype(call)>(call), ork, trk);
+    };
 
-    builder(context &ctx_) : ctx{ctx_}, storage{ctx_.storage} {};
-    // animator
-    context &ctx;
-    std::vector<size_t> id;
-    std::stack<size_t, std::vector<size_t>> seed;
-    uid_t uid{0};
+    void operator()(event_callback_cpt auto &&call, text_registry_key trk) {
+      attach(std::forward<decltype(call)>(call), trk);
+    };
+
+    // event
+    template <event_callback_cpt Call>
+    void attach(Call &&call, object_registry_key ork = 0,
+                text_registry_key trk = 0) {
+      ctx.event_collector.push(revent{std::forward<Call>(call), ork, trk,
+                                      ctx.ctree.current_index(), 0});
+    };
+
+    template <event_callback_cpt Call>
+    void attach(Call &&call, text_registry_key trk) {
+      attach<Call>(std::forward<Call>(call), 0, trk);
+    }
+  };
+
+public:
+  struct builder final : public virtual builder_base,
+                         private builder_unit_interface,
+                         private builder_uid_interface,
+                         private builder_policy_interface,
+                         private builder_storage_interface,
+                         private builder_event_interface {
+    builder(builder_base &&bb) noexcept
+        : builder_base{bb}, builder_unit_interface{std::move(bb)},
+          builder_uid_interface{std::move(bb)},
+          builder_policy_interface{std::move(bb)},
+          builder_storage_interface{std::move(bb)},
+          builder_event_interface{std::move(bb)} {};
+    builder_unit_interface &unit{*this};
+    builder_uid_interface &uid{*this};
+    builder_policy_interface &policy{*this};
+    builder_storage_interface &storage{*this};
+    builder_event_interface &event{*this};
+    const_state_holder &state{ctx.state};
+
+    builder(const builder &) = delete;
+    builder &operator=(const builder &) = delete;
+    builder(builder &&) = delete;
+    builder &operator=(builder &&) = delete;
   };
 
 public: // api
@@ -201,12 +226,17 @@ private:
   void build_render_list();
 
 public:
-  managed_storage storage;
+  managed_object_storage object;
+
+  managed_text_storage text;
   // event reciver
-  event_reciver event{storage, selector};
+  event_reciver event{object, text, state};
   // store
+
+  // context() noexcept;
+
 private:
-  pseudo_selector_impl__ selector{};
+  managed_state_holder state{};
   // плоское дерево вычислений
   FCTree ctree;
   // дерево событий
@@ -214,7 +244,7 @@ private:
   // плоский список отрисовки
   std::vector<relement> to_render;
   // ядро построения
-  builder b{*this};
+  builder b{builder_base{*this}};
 };
 
 template <typename T>
@@ -240,36 +270,42 @@ template <typename Call = void> void context::make(Call call) {
 };
 
 // --- Builder Template Impl ---
-void context::builder::frame(std::invocable<context::builder &> auto &&call,
-                             const style &style,
-                             const frame_layout &layout) noexcept {
+
+void context::builder_unit_interface::frame(
+    std::invocable<context::builder &> auto &&call, const style &style,
+    const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
 
-  builder::__prev();
-  call(*this);
-  builder::__post();
+  this->__prev();
+  call((builder &)*this);
+  this->__post();
 
   ctx.ctree.up();
 };
 
-void context::builder::frame(std::invocable<context::builder &> auto &&call,
-                             const frame_layout &layout) noexcept {
+void context::builder_unit_interface::frame(
+    std::invocable<context::builder &> auto &&call,
+    const frame_layout &layout) noexcept {
   frame(std::forward<decltype(call)>(call), def_style, layout);
 };
 
-void context::builder::frame(const style &style,
-                             const frame_layout &layout) noexcept {
+void context::builder_unit_interface::frame(
+    const style &style, const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
   ctx.ctree.up();
 };
 
-void context::builder::frame(const frame_layout &layout) noexcept {
+void context::builder_unit_interface::frame(
+    const frame_layout &layout) noexcept {
   frame(def_style, layout);
 };
 
-void context::builder::text(std::string_view str, const style &st) {
+void context::builder_unit_interface::text(text_registry_key key,
+                                           const style &st) {
+
   ctx.ctree.add(st, &box_layout);
   // WARNING : установить данные для отрисовки текста
   ctx.ctree.up();
 }
+
 } // namespace iuic

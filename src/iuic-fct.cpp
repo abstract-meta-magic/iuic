@@ -78,7 +78,7 @@ void FCTree::add(const style &style, const frame_layout *layout) {
   }
 
   parent.push({id, id});
-  current.push(id);
+  current_.push(id);
 };
 
 // TODO : fix this
@@ -111,12 +111,12 @@ void FCTree::add(const style &style, const text_layout *layout) {
   }
 
   parent.push({id, id});
-  current.push(id);
+  current_.push(id);
 };
 
 void FCTree::up() {
   parent.pop();
-  current.pop();
+  current_.pop();
 };
 
 computing_context &FCTree::last() noexcept {
@@ -128,7 +128,15 @@ computing_context &FCTree::last() noexcept {
   return nodes.back();
 };
 
-computing_context &FCTree::last() const noexcept { return last(); }
+const computing_context &FCTree::last() const noexcept { return last(); }
+
+computing_context &FCTree::current() noexcept {
+  if (current_.empty()) {
+    return root_.ctx;
+  }
+  return nodes[current_.top()];
+}
+const computing_context &FCTree::current() const noexcept { return current(); }
 
 computing_context &FCTree::root() noexcept { return root_.ctx; }
 
@@ -149,10 +157,10 @@ size_t FCTree::index_at_last() const noexcept {
 };
 
 size_t FCTree::current_index() const noexcept {
-  if (current.empty()) {
+  if (current_.empty()) {
     return root_.id;
   }
-  return current.top();
+  return current_.top();
 };
 
 void FCTree::set_root_size(ui_size sz) {
