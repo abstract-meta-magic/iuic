@@ -105,6 +105,11 @@ struct ui_position {
   constexpr auto operator<=>(const ui_position &) const = default;
 };
 
+struct z_order_t {
+  std::uint16_t group;
+  std::uint16_t priority;
+};
+
 // width | hieght
 struct ui_size {
   upixel_t w, h = 0;

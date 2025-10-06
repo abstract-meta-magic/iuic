@@ -29,7 +29,7 @@ struct : public frame_layout {
     return {{percent_t{100}, percent_t{100}}};
   };
 
-  void arrange(frame_arrange_utils utils) const noexcept override {
+  bool arrange(frame_arrange_utils utils) const noexcept override {
     auto self_size = utils.self_size();
     auto available_size = self_size;
 
@@ -58,6 +58,8 @@ struct : public frame_layout {
 
       rq.apply(res);
     }
+
+    return true;
   };
 
   static upixel_t margin_top(frame_position_utils &utils,
@@ -256,6 +258,8 @@ private: // Private Hierarhy Interface
 
   computing_context *get_context_by_id(size_t id) override;
 
+  size_t get_id(computing_context *) override;
+
 private: // Data
   struct root_t {
     static constexpr auto id = std::numeric_limits<size_t>::max();
@@ -295,7 +299,7 @@ struct FCTree::range_based_for_proxy {
 
     computing_context &operator*() { return *ptr; };
 
-    bool is_valide() { return ptr != nullptr && ptr < end; };
+    bool is_valide() const { return ptr != nullptr && ptr < end; };
 
   private:
     computing_context *ptr;
@@ -331,7 +335,7 @@ struct FCTree::const_range_based_for_proxy {
 
     const computing_context &operator*() { return *ptr; };
 
-    bool is_valide() { return ptr != nullptr && ptr < end; };
+    bool is_valide() const { return ptr != nullptr && ptr < end; };
 
   private:
     const computing_context *ptr;
@@ -367,7 +371,7 @@ struct FCTree::reverse_range_based_for_proxy {
 
     computing_context &operator*() { return *ptr; };
 
-    bool is_valide() { return ptr != nullptr && ptr > end; };
+    bool is_valide() const { return ptr != nullptr && ptr > end; };
 
   private:
     computing_context *ptr;
@@ -402,7 +406,7 @@ struct FCTree::const_reverse_range_based_for_proxy {
 
     const computing_context &operator*() { return *ptr; };
 
-    bool is_valide() { return ptr != nullptr && ptr > end; };
+    bool is_valide() const { return ptr != nullptr && ptr > end; };
 
   private:
     const computing_context *ptr;
@@ -417,25 +421,27 @@ private:
   const_reverse_iterator begin_;
 };
 
-constexpr bool operator==(FCTree::range_based_for_proxy::iterator &it,
-                          FCTree::sentinel &s) {
+constexpr bool operator==(const FCTree::range_based_for_proxy::iterator &it,
+                          const FCTree::sentinel &s) {
   return not it.is_valide();
 };
 
-constexpr bool operator!=(FCTree::range_based_for_proxy::iterator &it,
-                          FCTree::sentinel &s) {
+constexpr bool
+operator!=(const FCTree::const_range_based_for_proxy::const_iterator &it,
+           const FCTree::sentinel &s) {
   return it.is_valide();
 };
 
 constexpr bool
-operator==(FCTree::reverse_range_based_for_proxy::reverse_iterator &it,
-           FCTree::sentinel &s) {
+operator==(const FCTree::reverse_range_based_for_proxy::reverse_iterator &it,
+           const FCTree::sentinel &s) {
   return not it.is_valide();
 };
 
-constexpr bool
-operator!=(FCTree::reverse_range_based_for_proxy::reverse_iterator &it,
-           FCTree::sentinel &s) {
+constexpr bool operator!=(
+    const FCTree::const_reverse_range_based_for_proxy::const_reverse_iterator
+        &it,
+    const FCTree::sentinel &s) {
   return it.is_valide();
 };
 

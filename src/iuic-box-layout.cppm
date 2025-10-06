@@ -9,7 +9,7 @@ module;
 #include <variant>
 #include <vector>
 
-export module iuic.core:layout.box;
+export module iuic.core:layout.frame.box;
 import :layout.def;
 export import :layout;
 
@@ -81,7 +81,7 @@ struct final : public frame_layout {
     return res;
   };
 
-  void arrange(frame_arrange_utils utils) const noexcept override {
+  bool arrange(frame_arrange_utils utils) const noexcept override {
     auto requests = utils.get_requests();
 
     auto self_size = utils.self_size();
@@ -105,6 +105,8 @@ struct final : public frame_layout {
 
       rq.apply(res);
     };
+
+    return true;
   };
 
   static upixel_t margin_top(frame_position_utils &utils,

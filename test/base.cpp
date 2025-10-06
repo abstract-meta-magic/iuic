@@ -219,7 +219,9 @@ constexpr inline void button(iuic::context::builder &b, const std::string &str,
         // b.text(str);
 
         b.uid.branch(uid);
-        b.storage.object.persist(uid, "hh");
+        auto trk = b.storage.text.persist(uid, "haha");
+
+        b.unit.text(trk);
 
         b.policy.hovered(iuic::policy::hovered::propagate);
 
@@ -341,7 +343,6 @@ int main() {
       b.unit.frame([](auto &b) {
         b.unit.frame([](auto &b) { b.unit.frame(); }, style);
       });
-      // b.text("test text");
 
       // b.text("ok");
 

@@ -35,6 +35,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
 	"src/iuic-box-layout.cppm"
+	"src/iuic-text-box-layout.cppm"
 	"src/iuic-layout.def.cppm"
 	"src/iuic-layout.cppm"
 	"src/iuic-computing-ctx.cppm"

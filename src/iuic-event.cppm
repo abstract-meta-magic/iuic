@@ -73,7 +73,6 @@ struct revent {
   object_registry_key ork;
   text_registry_key trk;
   size_t id;
-  uid_t uid;
 };
 
 // Нужно проработать интерфейст
@@ -103,8 +102,57 @@ public:
     // Bag тут не пропускаются discarded элементы
     event_pack res;
 
+    struct hovered_test {
+      ui_rect rect;
+      z_order_t order;
+      policy::hovered policy;
+      uid_t uid;
+    };
+
+    std::vector<hovered_test> htest;
+
+    for (auto &cc : ctree.range_for()) {
+      if (cc.get_info().hovered_p != policy::hovered::none) {
+        if (auto rect = cc.get_rect()) {
+          auto &info = cc.get_info();
+          htest.push_back(hovered_test{.rect = rect.value(),
+                                       .order = info.order,
+                                       .policy = info.hovered_p,
+                                       .uid = info.uid});
+        }
+      }
+    }
+
+    // sort htest by order
+
+    struct event {
+      variadic_callback call;
+      policy::event policy;
+      ork_t ork;
+      trk_t trk;
+      uid_t uid;
+    };
+
+    std::vector<event> pack;
+
     for (auto &e : events) {
       // TODO : Make pack
+      auto &element = ctree.at(e.id);
+
+      auto &info = element.get_info();
+
+      if (auto policy = info.hovered_p;
+          policy == policy::hovered::term || policy == policy::hovered::none) {
+        continue;
+      }
+
+      pack.push_back({
+          .call = e.call,
+          .policy = info.event_p,
+          .ork = e.ork,
+          .trk = e.trk,
+          .uid = info.uid,
+      });
     };
 
     events.clear();
@@ -137,7 +185,7 @@ public:
                   extern_component,
                   e.ork,
                   e.trk,
-                  e.uid,
+                  0,
                   key,
               });
             }

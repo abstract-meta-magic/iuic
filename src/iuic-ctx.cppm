@@ -14,11 +14,13 @@ module;
 export module iuic.core;
 export import :base;
 export import :base.color;
-import :layout.box;
+import :layout.frame.box;
+import :layout.text.box;
 import :fct;
 export import :storage.def;
 export import :storage.object;
 export import :storage.text;
+export import :text.present;
 export import :state;
 export import :event;
 
@@ -97,22 +99,24 @@ private: // builder.def
     builder_order_interface(builder_base &&bb) : builder_base{bb} {}
 
     void group(std::uint16_t value) {
-      ctx.ctree.current().get_order().group = value;
+      ctx.ctree.current().get_info().order.group = value;
     };
 
-    void up() { ctx.ctree.current().get_order().priority += 1; };
+    void up() { ctx.ctree.current().get_info().order.priority += 1; };
 
     void set(std::uint16_t value) {
-      ctx.ctree.current().get_order().priority += value;
+      ctx.ctree.current().get_info().order.priority += value;
     };
   };
 
   struct builder_policy_interface : protected virtual builder_base {
     builder_policy_interface(builder_base &&bb) : builder_base{bb} {};
 
-    void hovered(policy::hovered p) { ctx.ctree.current().set_policy(p); };
+    void hovered(policy::hovered p) {
+      ctx.ctree.current().get_info().hovered_p = p;
+    };
 
-    void event(policy::event p) { ctx.ctree.current().set_policy(p); };
+    void event(policy::event p) { ctx.ctree.current().get_info().event_p = p; };
   };
 
   struct builder_uid_interface : protected virtual builder_base {
@@ -171,7 +175,7 @@ private: // builder.def
     void attach(Call &&call, object_registry_key ork = 0,
                 text_registry_key trk = 0) {
       ctx.event_collector.push(revent{std::forward<Call>(call), ork, trk,
-                                      ctx.ctree.current_index(), 0});
+                                      ctx.ctree.current_index()});
     };
 
     template <event_callback_cpt Call>
@@ -229,14 +233,13 @@ public:
   managed_object_storage object;
 
   managed_text_storage text;
-  // event reciver
-  event_reciver event{object, text, state};
-  // store
 
-  // context() noexcept;
+  event_reciver event{object, text, state};
 
 private:
   managed_state_holder state{};
+
+  text::text_present_aggregator tpa{};
   // плоское дерево вычислений
   FCTree ctree;
   // дерево событий
@@ -303,7 +306,9 @@ void context::builder_unit_interface::frame(
 void context::builder_unit_interface::text(text_registry_key key,
                                            const style &st) {
 
-  ctx.ctree.add(st, &box_layout);
+  ctx.ctree.add(st, &text_def_layout);
+
+  ctx.tpa.attach_present(key, ctx.ctree.current_index());
   // WARNING : установить данные для отрисовки текста
   ctx.ctree.up();
 }

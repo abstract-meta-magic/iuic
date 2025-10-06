@@ -12,6 +12,9 @@ module;
 export module iuic.core:layout;
 import :base;
 import :layout.def;
+import :text.token;
+import :text.buff;
+import :text.present;
 import :computing_context;
 
 namespace iuic {
@@ -201,5 +204,31 @@ struct frame_position_utils : layout_utils_base {
 
   // тут могут быть статические методы для
   // помощи в вычислении позиций
+};
+
+struct text_measure_utils : layout_utils_base {
+  text_measure_utils(computing_context *ctx_, text::buffer *buff_)
+      : layout_utils_base{ctx_}, buff{buff_} {};
+
+  const std::vector<text::token> &tokens() const;
+
+private:
+  text::buffer *buff;
+};
+
+struct text_arrange_utils : layout_utils_base {
+  text_arrange_utils(computing_context *ctx_, text::present *present_)
+      : layout_utils_base{ctx_}, present{present_} {}
+
+  ui_size self_size() const noexcept;
+
+  void apply();
+
+  // mb take present_node ???
+  text::present &get_present();
+  // make present ...
+private:
+  text::present *present;
+  static constexpr std::string_view err_token{"err..."};
 };
 } // namespace iuic

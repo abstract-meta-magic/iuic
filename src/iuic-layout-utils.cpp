@@ -33,13 +33,13 @@ request_size measure_child_request::value() const noexcept {
 };
 
 const style &measure_child_request::style_of() const noexcept {
-  return of->get_style();
+  return *of->get_info().style;
 }
 
 std::vector<measure_child_request> frame_measure_utils::get_requests() {
   std::vector<measure_child_request> res;
 
-  for (auto &&cc : ctx->get_childs()) {
+  for (auto &&cc : ctx->get_hierarchy().interface->get_childs(ctx)) {
     if (cc->is_discarted())
       continue;
 
@@ -51,16 +51,20 @@ std::vector<measure_child_request> frame_measure_utils::get_requests() {
 
 void area_request::discard() { of->discard(); };
 
-const style &area_request::style_of() const { return of->get_style(); }
+const style &area_request::style_of() const { return *of->get_info().style; }
 
-const style &layout_utils_base::self_style() const { return ctx->get_style(); };
+const style &layout_utils_base::self_style() const {
+  return *ctx->get_info().style;
+};
 
 const style &layout_utils_base::parent_style() const {
-  return ctx->get_parent()->get_style();
+  auto parent = ctx->get_hierarchy().interface->get_parent(ctx);
+  return *parent->get_info().style;
 };
 
 const style &layout_utils_base::root_style() const {
-  return ctx->get_root()->get_style();
+  auto root = ctx->get_hierarchy().interface->get_root(ctx);
+  return *root->get_info().style;
 };
 
 ui_size layout_utils_base::root_size() const {
@@ -96,7 +100,7 @@ void position_request::apply(ui_position pos) { owner->apply(pos); };
 void position_request::discard() { owner->discard(); };
 
 const style &position_request::style_of() const noexcept {
-  return owner->get_style();
+  return *owner->get_info().style;
 };
 
 ui_size position_request::size_of() const noexcept {
@@ -111,7 +115,7 @@ ui_size position_request::size_of() const noexcept {
 std::vector<position_request> frame_position_utils::content() {
   std::vector<position_request> res{};
 
-  for (auto &&cc : ctx->get_childs()) {
+  for (auto &&cc : ctx->get_hierarchy().interface->get_childs(ctx)) {
     if (cc->is_discarted()) {
       continue;
     }
@@ -144,7 +148,7 @@ ui_size frame_position_utils::self_size() const noexcept {
 std::vector<area_request> frame_arrange_utils::get_requests() {
   std::vector<area_request> res{};
 
-  auto childs = ctx->get_childs();
+  auto childs = ctx->get_hierarchy().interface->get_childs(ctx);
 
   for (auto &&ch : childs) {
     // TODO : Refactor

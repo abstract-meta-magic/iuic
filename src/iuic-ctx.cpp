@@ -50,6 +50,18 @@ void context::proccess_measure() {
             } else {
               cc.discard();
             }
+          } else if constexpr (std::same_as<decltype(layout),
+                                            const text_layout *>) {
+            if (auto tp = tpa.get_present(
+                    cc.get_hierarchy().interface->get_id(&cc))) {
+              if (auto buff = text.get(tp->second)) {
+                if (auto res = layout->measure({&cc, buff})) {
+                  cc.apply(res.value().rq);
+                } else {
+                  cc.discard();
+                };
+              }
+            }
           }
         },
         cc.get_layout());
@@ -99,7 +111,7 @@ void context::proccess_position() {
 
 void context::proccess_arrange() {
   // TODO : PARALLEL
-  auto &max_size = ctree.root().get_style().shape.max_size;
+  auto &max_size = ctree.root().get_info().style->shape.max_size;
   ctree.root().apply(
       ui_size{std::get<upixel_t>(max_size.w), std::get<upixel_t>(max_size.h)});
 
@@ -119,7 +131,25 @@ void context::proccess_arrange() {
     std::visit(
         [&](auto layout) {
           if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
-            layout->arrange({&cc});
+            if (not layout->arrange({&cc})) {
+              cc.discard();
+            }
+          } else if constexpr (std::same_as<decltype(layout),
+                                            const text_layout *>) {
+            if (auto tp = tpa.get_present(
+                    cc.get_hierarchy().interface->get_id(&cc))) {
+              auto &text_present = tp->first;
+
+              // can discart
+              if (layout->arrange({&cc, &tp->first})) {
+                if (auto asize = cc.get_size()) {
+                  text_present.rect.size = asize.value();
+                }
+                cc.apply(&text_present);
+              } else {
+                cc.discard();
+              }
+            }
           }
         },
         cc.get_layout());
@@ -139,9 +169,9 @@ void context::build_render_list() {
       continue;
     }
 
-    to_render.push_back(
-        {.area{rect.value()},
-         .data{frame_render_data{.background{cc.get_style().background}}}});
+    to_render.push_back({.area{rect.value()},
+                         .data{frame_render_data{
+                             .background{cc.get_info().style->background}}}});
   }
 }
 }; // namespace iuic

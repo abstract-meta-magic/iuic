@@ -109,6 +109,21 @@ struct mutable_text_storage : text_storage {
 };
 
 struct managed_text_storage : mutable_text_storage {
+
+  text::buffer *get(trk_t trk) {
+    if (stage == __1) {
+      if (stage_1__.contains(trk)) {
+        return &stage_1__.at(trk);
+      }
+    } else {
+      if (stage_2__.contains(trk)) {
+        return &stage_2__.at(trk);
+      }
+    }
+
+    return nullptr;
+  }
+
   void advance_generation() {
     if (stage == __1) {
       for (auto &[_, buff] : stage_2__) {

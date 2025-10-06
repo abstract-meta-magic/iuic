@@ -27,6 +27,9 @@ struct violated_computing_order : std::runtime_error {
 };
 
 struct computing_context;
+namespace text {
+struct present;
+};
 
 // Дле представления используется
 // Альтернативная блочная модель
@@ -39,13 +42,14 @@ struct celement {
   } attribute_tags;
   enum struct stage_t : std::uint8_t {
     measure = 1,
-    arrange,
-    position, // text_layout skip this stage
+    frame_arrange,
+    frame_position, // text_layout skip this stage
+    text_arrange,
+    text_present,
+    text_position,
     complite,
     undefined,
   } stage{stage_t::measure};
-  policy::hovered hovered_p{policy::hovered::none};
-  policy::event event_p;
 
   // область которую занимает элемент
   // Разрешаю сам себе вплоть до 24-28
@@ -53,8 +57,13 @@ struct celement {
     request_size area_request;
     ui_size applyed_size;
     ui_rect full_area;
+    text::present *applyed_text_present;
     // err_handler
     // text_request
+  };
+  union {
+    const frame_layout *frame_layout;
+    const text_layout *text_layout;
   };
 };
 
@@ -109,23 +118,35 @@ struct computing_hierarchy {
   virtual void update_context_state(computing_context *) = 0;
 
   virtual computing_context *get_context_by_id(size_t) = 0;
+
+  virtual size_t get_id(computing_context *) = 0;
 };
 
 // а еще хочеться нормальные интерфейс
 // а еще хочеться чтобы была попытка соблюдения SRP
 struct computing_context {
-  friend class FCTree;
-  struct z_order_t {
-    std::int16_t group{0};
-    std::int16_t priority{0};
+  struct hierarchy_t {
+    computing_hierarchy *interface{nullptr};
+    size_t parent{std::numeric_limits<size_t>::max()};
+    size_t brother{
+        parent}; // ссылка на брата. Если равно parent, то элемент последний.
   };
+
+  struct info_t {
+    const style *style{nullptr};
+    uid_t uid;
+    z_order_t order;
+    policy::hovered hovered_p{policy::hovered::none};
+    policy::event event_p;
+  };
+  friend class FCTree;
 
   // конструктор для вычисления фрейма
   computing_context(const frame_layout *layout_, const style *style_,
                     computing_hierarchy *hierarchy_, size_t parent_)
-      : frame_layout{layout_}, style{style_}, hierarhy{hierarchy_},
-        parent{parent_}, brother{parent_} {
-    if (not hierarhy) {
+      : hierarchy{hierarchy_, parent_}, info{style_} {
+    element.frame_layout = layout_;
+    if (not hierarchy_) {
       throw std::runtime_error{"Null hierarchy"};
     }
   };
@@ -133,58 +154,45 @@ struct computing_context {
   // конструктор для вычисления текста
   computing_context(const text_layout *layout_, const style *style_,
                     computing_hierarchy *hierarchy_, size_t parent_)
-      : text_layout{layout_}, style{style_}, hierarhy{hierarchy_},
-        parent{parent_}, brother{parent_} {
+      : hierarchy{hierarchy_, parent_}, info{style_} {
     element.attribute_tags += celement::attribute_tags_t::text;
-    if (not hierarhy) {
+    element.text_layout = layout_;
+    if (not hierarchy_) {
       throw std::runtime_error{"Null hierarchy"};
     }
   };
 
-public: // hierarchy
-  void set_brother(size_t id);
-
-  void unset_brother();
-
-  size_t get_parent_id() const;
-
-  size_t get_brother_id() const;
-
-  computing_context *get_parent();
-
-  std::vector<computing_context *> get_childs();
-
-  computing_context *get_root();
-
-public: // get's
-  z_order_t &get_order() { return order; };
-
-  const z_order_t &get_order() const { return order; };
-
-  void set_policy(policy::hovered p) { element.hovered_p = p; };
-
-  void set_policy(policy::event p) { element.event_p = p; };
-
-  const style &get_style() const noexcept;
-
-  std::variant<const frame_layout *, const text_layout *>
-  get_layout() const noexcept;
-
+public: // get's ordered
   std::expected<request_size, celement::stage_t> get_request() const noexcept;
 
   std::expected<ui_size, celement::stage_t> get_size() const noexcept;
 
   std::expected<ui_rect, celement::stage_t> get_rect() const noexcept;
 
-public: // property's
-  bool is_discarted() const noexcept;
+public: // get's free
+  std::variant<const frame_layout *, const text_layout *>
+  get_layout() const noexcept;
+
+  info_t &get_info();
+
+  const info_t &get_info() const;
+
+  hierarchy_t &get_hierarchy();
+
+  const hierarchy_t &get_hierarchy() const;
+
+public:                               // setters ordered
+  bool is_discarted() const noexcept; // ???
 
 public: // modify
   // first stage
   void apply(request_size);
 
-  // second stage
+  // only for frame
   void apply(ui_size);
+
+  // only for text
+  void apply(text::present *);
 
   // third stage
   void apply(ui_position);
@@ -192,16 +200,9 @@ public: // modify
   void discard();
 
 private:
-  union {
-    const frame_layout *frame_layout;
-    const text_layout *text_layout;
-  };
-  const style *style{nullptr};
-  computing_hierarchy *hierarhy{nullptr};
-  size_t parent{std::numeric_limits<size_t>::max()};
-  size_t brother{
-      parent}; // ссылка на брата. Если равно parent, то элемент последний.
-  z_order_t order;
   celement element{};
+  hierarchy_t hierarchy;
+  info_t info;
 };
+
 }; // namespace iuic

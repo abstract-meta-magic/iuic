@@ -65,13 +65,13 @@ void FCTree::add(const style &style, const frame_layout *layout) {
     auto &famaly = parent.top();
 
     if (famaly.first != famaly.second) {
-      nodes[famaly.second].set_brother(id);
+      nodes[famaly.second].get_hierarchy().brother = id;
     }
 
     famaly.second = id;
   } else {
     if (root_.last_child != root_.id) {
-      nodes[root_.last_child].set_brother(id);
+      nodes[root_.last_child].get_hierarchy().brother = id;
     }
 
     root_.last_child = id;
@@ -98,13 +98,13 @@ void FCTree::add(const style &style, const text_layout *layout) {
     auto &famaly = parent.top();
 
     if (famaly.first != famaly.second) {
-      nodes[famaly.second].set_brother(id);
+      nodes[famaly.second].get_hierarchy().brother = id;
     }
 
     famaly.second = id;
   } else {
     if (root_.last_child != root_.id) {
-      nodes[root_.last_child].set_brother(id);
+      nodes[root_.last_child].get_hierarchy().brother = id;
     }
 
     root_.last_child = id;
@@ -168,52 +168,14 @@ void FCTree::set_root_size(ui_size sz) {
 };
 
 void FCTree::print_tree() const noexcept {
-
-  size_t id{0};
-
-  std::println("------------------------------------------");
-  for (auto &&node : nodes) {
-    auto parent = node.get_parent_id() == root_.id
-                      ? "root"
-                      : std::to_string(node.get_parent_id());
-    auto brother = (node.get_brother_id() == node.get_parent_id() ||
-                    node.get_brother_id() == root_.id)
-                       ? "last"
-                       : std::to_string(node.get_brother_id());
-    auto rect_res = node.get_rect();
-
-    if (not rect_res) {
-      // err
-      continue;
-    }
-
-    auto rect = rect_res.value();
-
-    auto ds = node.is_discarted() ? "discarted" : "ok";
-
-    auto mem = celement::attribute_tags_t::discarded;
-
-    mem += celement::attribute_tags_t::discarded;
-
-    //   if (mem & celement::state_tags_t::discarded) {
-    // std::println("hahahahahhh");
-    // }
-
-    std::println("Id : {},Parent : {},Brother : {},Position : x:{},y:{},Size "
-                 ": w:{},h:{} |",
-                 id, parent, brother, rect.position.x, rect.position.y,
-                 rect.size.w, rect.size.h);
-    std::println("State : {}", ds);
-    ++id;
-  }
-  std::println("------------------------------------------");
+  // BORKEN
 };
 
 computing_context *FCTree::get_parent(computing_context *ctx) {
-  if (ctx->get_parent_id() == std::numeric_limits<size_t>::max()) {
+  if (ctx->get_hierarchy().parent == std::numeric_limits<size_t>::max()) {
     return &root_.ctx;
   }
-  return &nodes[ctx->get_parent_id()];
+  return &nodes[ctx->get_hierarchy().parent];
 };
 
 std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
@@ -225,9 +187,9 @@ std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
     return res;
   }
 
-  auto current = ctx == &root_.ctx ? &nodes[0] : ctx + 1;
+  auto current = (ctx == &root_.ctx) ? &nodes[0] : (ctx + 1);
 
-  if (current == &nodes.back() + 1 || current->get_parent() != ctx) {
+  if (current == &nodes.back() + 1 || get_parent(current) != ctx) {
     return res;
   }
 
@@ -236,11 +198,11 @@ std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
       res.push_back(current);
     }
 
-    if (current->get_parent_id() == current->get_brother_id()) {
+    if (auto &h = current->get_hierarchy(); h.parent == h.brother) {
       break;
     }
 
-    current = &nodes[current->get_brother_id()];
+    current = &nodes[current->get_hierarchy().brother];
   }
 
   return res;
@@ -249,39 +211,31 @@ std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
 computing_context *FCTree::get_root(computing_context *) { return &root_.ctx; };
 
 void FCTree::update_context_state(computing_context *ctx) {
-
-  // TODO : Refactor this
   if (ctx->is_discarted()) {
-    computing_context *end{ctx};
+    ctx->element.attribute_tags += celement::attribute_tags_t::discarded;
 
-    if (ctx->parent == ctx->brother && not(ctx->parent == root_.id)) {
-      computing_context *parent{&nodes[ctx->parent]};
+    if (auto id = get_id(ctx); id <= nodes.size()) {
+      if (nodes[id + 1].hierarchy.parent == id) {
+        auto begin = &nodes[id + 1];
+        auto end = begin;
 
-      for (;;) {
-        if (parent->brother == parent->parent) {
-          if (parent->parent == root_.id) {
-            end = &nodes.back() + 1;
-            break;
-          } else {
-            parent = &nodes[parent->parent];
-          }
-        } else {
-          end = &nodes[parent->brother];
+        for (; end->hierarchy.brother != end->hierarchy.parent;) {
+          end = &nodes[end->hierarchy.brother];
+        }
+
+        // TOTO : std::foreach
+        for (; begin < end; ++begin) {
+          begin->element.attribute_tags +=
+              celement::attribute_tags_t::discarded;
         }
       }
-    } else if (ctx->parent == ctx->brother) {
-      end = &nodes.back() + 1;
-    } else {
-      end = &nodes[ctx->brother];
-    };
-
-    auto current = ctx;
-
-    for (; current < end; ++current) {
-      current->element.attribute_tags += celement::attribute_tags_t::discarded;
     }
   }
 };
 
 computing_context *FCTree::get_context_by_id(size_t id) { return &nodes[id]; };
+size_t FCTree::get_id(computing_context *ctx) {
+  // WARNING : unsafe
+  return std::distance(&nodes[0], ctx);
+}
 }; // namespace iuic

@@ -41,7 +41,7 @@ struct frame_layout {
 
   virtual measure_result measure(frame_measure_utils) const noexcept = 0;
 
-  virtual void arrange(frame_arrange_utils) const noexcept = 0;
+  virtual bool arrange(frame_arrange_utils) const noexcept = 0;
 
   virtual void position(frame_position_utils) const noexcept = 0;
 };
@@ -52,9 +52,9 @@ struct text_arrange_utils;
 struct text_layout {
   virtual ~text_layout() = default;
 
-  virtual void measure(text_measure_utils) const noexcept = 0;
+  virtual measure_result measure(text_measure_utils) const noexcept = 0;
 
-  virtual void arrange(text_arrange_utils) const noexcept = 0;
+  virtual bool arrange(text_arrange_utils) const noexcept = 0;
 };
 
 }; // namespace iuic

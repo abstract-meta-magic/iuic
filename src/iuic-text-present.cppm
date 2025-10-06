@@ -8,6 +8,7 @@ module;
 
 export module iuic.core:text.present;
 import :base;
+import :storage.def;
 import :text.token;
 
 export namespace iuic::text {
@@ -28,11 +29,25 @@ struct present {
 namespace iuic::text {
 
 class text_present_aggregator {
+public:
+  void attach_present(trk_t trk, size_t id) {
+    if (presents.contains(id)) {
+      presents[id].second = trk;
+    } else {
+      // make new
+      presents.insert({id, {{}, trk}});
+    };
+  };
 
-  // ???
-  void get_present(uid_t);
+  std::pair<present, trk_t> *get_present(size_t id) {
+    if (presents.contains(id)) {
+      return &presents[id];
+    } else {
+      return nullptr;
+    };
+  };
 
 private:
-  std::map<uid_t, present> presents;
+  std::map<size_t, std::pair<present, trk_t>> presents;
 };
 }; // namespace iuic::text
