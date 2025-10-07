@@ -75,16 +75,25 @@ struct revent {
   size_t id;
 };
 
-// Нужно проработать интерфейст
-// для удобства внутреннего использования
-// Нужно лучше продумать роль этого класса
-// в системе событий
-struct event_pack {
-  using hit_map_t = std::map<ui_rect, std::vector<revent>>;
-  using key_event_map = std::map<uid_t, std::vector<revent>>;
+struct hovered_test {
+  ui_rect rect;
+  z_order_t order;
+  policy::hovered policy;
+  uid_t uid;
+};
 
-  key_event_map key;
-  hit_map_t pointer;
+struct pevent {
+  variadic_callback call;
+  policy::event policy;
+  ork_t ork;
+  trk_t trk;
+  uid_t uid;
+};
+
+struct event_pack {
+  std::vector<hovered_test> htest;
+  std::vector<pevent> local;
+  std::vector<pevent> global;
 };
 
 // главная обязанность - сборка событий
@@ -99,41 +108,21 @@ public:
   void push(revent &&e) { events.push_back(e); };
 
   event_pack build_pack(const FCTree &ctree) {
-    // Bag тут не пропускаются discarded элементы
     event_pack res;
-
-    struct hovered_test {
-      ui_rect rect;
-      z_order_t order;
-      policy::hovered policy;
-      uid_t uid;
-    };
-
-    std::vector<hovered_test> htest;
 
     for (auto &cc : ctree.range_for()) {
       if (cc.get_info().hovered_p != policy::hovered::none) {
         if (auto rect = cc.get_rect()) {
           auto &info = cc.get_info();
-          htest.push_back(hovered_test{.rect = rect.value(),
-                                       .order = info.order,
-                                       .policy = info.hovered_p,
-                                       .uid = info.uid});
+          res.htest.push_back(hovered_test{.rect = rect.value(),
+                                           .order = info.order,
+                                           .policy = info.hovered_p,
+                                           .uid = info.uid});
         }
       }
     }
 
     // sort htest by order
-
-    struct event {
-      variadic_callback call;
-      policy::event policy;
-      ork_t ork;
-      trk_t trk;
-      uid_t uid;
-    };
-
-    std::vector<event> pack;
 
     for (auto &e : events) {
       // TODO : Make pack
@@ -141,18 +130,36 @@ public:
 
       auto &info = element.get_info();
 
-      if (auto policy = info.hovered_p;
-          policy == policy::hovered::term || policy == policy::hovered::none) {
+      if (info.hovered_p == policy::hovered::none) {
         continue;
       }
 
-      pack.push_back({
-          .call = e.call,
-          .policy = info.event_p,
-          .ork = e.ork,
-          .trk = e.trk,
-          .uid = info.uid,
-      });
+      // sort global\local
+
+      std::visit(
+          [&](auto &call) {
+            using type = std::remove_cvref_t<decltype(call)>;
+            if constexpr (std::same_as<type, global_key_event_fpt> ||
+                          std::same_as<type, global_pointer_move_event_fpt>) {
+              res.global.push_back({
+                  .call = e.call,
+                  .policy = info.event_p,
+                  .ork = e.ork,
+                  .trk = e.trk,
+                  .uid = info.uid,
+              });
+            } else {
+
+              res.local.push_back({
+                  .call = e.call,
+                  .policy = info.event_p,
+                  .ork = e.ork,
+                  .trk = e.trk,
+                  .uid = info.uid,
+              });
+            }
+          },
+          e.call);
     };
 
     events.clear();
@@ -171,39 +178,98 @@ private:
 // ОСНОВНАЯ ОБЯЗАННОСТЬ :
 // корректная подготовка и отправка событий
 class event_reciver final {
-  friend void apply_event_hit_surface(event_reciver &, event_pack &&);
+  friend void apply_event_pack__(event_reciver &, event_pack &&);
 
 public:
   void key(key_code key) {
-    for (auto &&e : event_pack.key[0]) {
+
+    for (auto &e : event_pack.global) {
       std::visit(
-          [&, this](auto &call) {
-            if constexpr (std::is_invocable_v<
-                              std::remove_cvref_t<decltype(call)>,
-                              iuic::event::global::key>) {
-              call(iuic::event::global::key{
-                  extern_component,
-                  e.ork,
-                  e.trk,
-                  0,
-                  key,
-              });
+          [&](auto &call) {
+            using type = std::remove_cvref_t<decltype(call)>;
+
+            if constexpr (std::same_as<type, global_key_event_fpt>) {
+              call(event::global::key{extern_component, e.ork, e.trk, e.uid,
+                                      key});
             }
           },
           e.call);
     }
 
-    // global
+    auto rbegin = event_pack.local.rbegin();
+    auto rend = event_pack.local.rend();
 
+    for (; rbegin != rend; ++rbegin) {
+      auto &e = *rbegin;
+
+      // лишние действия
+      if (state.hovered(rbegin->uid)) {
+        std::visit(
+            [&](auto &call) {
+              using type = std::remove_cvref_t<decltype(call)>;
+
+              if constexpr (std::same_as<type, local_key_event_fpt>) {
+                call(event::local::key{extern_component, e.ork, e.trk, e.uid,
+                                       key});
+              }
+            },
+            e.call);
+      }
+    }
     // local
   };
 
   // set position without events
   void pointer_set(ui_position position) {};
 
+  static bool in__(ui_position position, ui_rect rect) {
+    return (position.x >= rect.position.x &&
+            position.x <= rect.position.x + rect.size.w &&
+            position.y >= rect.position.y &&
+            position.y <= rect.position.y + rect.size.h);
+  }
+
   // just move the pointer
   void pointer_move(ui_position position) {
+    // hit test
     // TODO : body
+
+    auto rbegin = event_pack.htest.rbegin();
+    auto rend = event_pack.htest.rend();
+    auto nbegin = rend;
+    auto nend = rend;
+
+    for (; rbegin != rend; ++rbegin) {
+      if (in__(position, rbegin->rect)) {
+        nbegin = rbegin;
+        break;
+      }
+    }
+
+    if (nbegin != rend) {
+      for (; rbegin != rend; ++rbegin) {
+        if (not in__(position, rbegin->rect)) {
+          nend = rbegin;
+        } else if (rbegin->policy == policy::hovered::block) {
+          nend = rbegin + 1;
+          break;
+        }
+      }
+    }
+
+    std::unordered_set<uid_t> res;
+
+    // WARNING : Из-за строения FCTree тут вынужденный double-check
+    // и возможность некорректной отработки некоторых событий!
+    for (; nbegin != nend; ++nbegin) {
+      if (in__(position, nbegin->rect) &&
+          nbegin->policy != policy::hovered::none) {
+        res.insert(nbegin->uid);
+      }
+    }
+
+    state.update(std::move(res));
+
     pointer_position = position;
   };
 
@@ -214,18 +280,18 @@ public:
   void key_buff_dispatch(key_code);
 
   event_reciver(object_storage &ostorage_, text_storage &tstorage_,
-                state_holder &state_)
-      : extern_component{state_, ostorage_, tstorage_} {};
+                managed_state_holder &state_)
+      : extern_component{state_, ostorage_, tstorage_}, state{state_} {};
 
 private:
   event_extern_components extern_component;
+  managed_state_holder &state;
   ui_position pointer_position;
 
   event_pack event_pack{};
 };
 
-void apply_event_hit_surface(event_reciver &er, event_pack &&ep) {
-  std::swap(er.event_pack, ep);
+void apply_event_pack__(event_reciver &er, event_pack &&pack) {
+  std::swap(er.event_pack, pack);
 }
-
 }; // namespace iuic

@@ -9,6 +9,7 @@ module;
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 export module iuic.core:storage.object;
@@ -90,6 +91,27 @@ public:
 
     return false;
   };
+
+  constexpr bool visit_or(ork_t ork, auto &&call,
+                          std::invocable<> auto &&call_or) {
+    if (try_visit(ork, std::forward<decltype(call)>(call))) {
+      return true;
+    } else {
+      return call_or(), false;
+    };
+  }
+
+  constexpr bool visit_switch(ork_t ork, auto &&...calls) noexcept {
+    auto ref = get_ref__(ork);
+
+    return ((ref.type ==
+                 storage_type_of<std::remove_cvref_t<decltype(visit_arg_type__(
+                     std::function{calls}))>>()
+             ? calls(*static_cast<std::remove_cvref_t<decltype(visit_arg_type__(
+                         std::function{calls}))> *>(ref.data)),
+             true : false) ||
+            ...);
+  }
 
   bool try_visit(ork_t srk, auto &&call) const {
     // storage_cref ref{get_ref__(srk)};

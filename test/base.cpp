@@ -341,7 +341,40 @@ int main() {
       }>();
       // frame(create_info,childs_lambda)
       b.unit.frame([](auto &b) {
-        b.unit.frame([](auto &b) { b.unit.frame(); }, style);
+        static auto idle = iuic::pseudo_state::make<struct idle>();
+        static auto focused = iuic::pseudo_state::make<struct forused>();
+
+        b.unit.frame(
+            [](auto &b) {
+              b.unit.frame([](auto &b) {
+                b.uid.branch(b.uid.make("app-box-inner"));
+                b.policy.hovered(iuic::policy::hovered::block);
+
+                b.event([](iuic::event::local::key e) {
+                  if (e.utils.state.pseudo(e.uid) != focused) {
+                    std::println("Set to focuse");
+                    if (e.code == iuic::key_map::mouse("left")) {
+                      e.utils.state.pseudo(e.uid) = focused;
+                    }
+                  }
+                });
+
+                b.event([](iuic::event::global::key e) {
+                  if (e.utils.state.pseudo(e.uid) == focused &&
+                      not e.utils.state.hovered(e.uid) &&
+                      e.code == iuic::key_map::mouse("left")) {
+                    e.utils.state.pseudo(e.uid) = idle;
+                  } else if (e.utils.state.pseudo(e.uid) == focused) {
+                    std::println("In focuse");
+                  };
+                });
+              });
+              b.uid.branch(b.uid.make("app-box"));
+              b.policy.hovered(iuic::policy::hovered::propagate);
+
+              b.event([](iuic::event::local::key e) { std::println("outer"); });
+            },
+            style);
       });
 
       // b.text("ok");

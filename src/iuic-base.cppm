@@ -363,9 +363,7 @@ namespace policy {
 enum class hovered : std::uint8_t {
   none,
   propagate, // true -> go
-  scope,     // reset -> true -> go
   block,     // true -> stop
-  term,      // stop
 };
 
 enum class event : std::uint8_t { propagate, block };

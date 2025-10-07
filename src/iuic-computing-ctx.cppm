@@ -20,7 +20,7 @@ namespace iuic {
 struct violated_computing_order : std::runtime_error {
   violated_computing_order()
       : std::runtime_error{
-            "The order of evaluation of iuic::text_layout or "
+            "The computing order of iuic::text_layout or "
             "iuic::frame_layout within iuic::computing_context for "
             "iuic::celement is broken. This is a core library bug. If you see "
             "this message, your release of the library is broken."} {}

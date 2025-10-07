@@ -49,7 +49,7 @@ private:
 };
 
 struct hovered_r__ {
-  bool hovered(uid_t) const;
+  bool hovered(uid_t uid) const { return hovered__.contains(uid); };
 
 protected:
   std::unordered_set<uid_t> hovered__;
@@ -59,17 +59,36 @@ protected:
 // read hovered
 
 struct pseudo_base__ {
+  friend struct pseudo_proxy__;
+
 protected:
   std::unordered_map<uid_t, pseudo_state> pseudo__;
   std::unordered_map<uid_t, pseudo_state> pseudo_defer__; // sync ?
 };
 
 struct pseudo_proxy__ {
-  pseudo_proxy__(uid_t uid, pseudo_base__ &);
+  pseudo_proxy__(uid_t uid_, pseudo_base__ &owner_)
+      : uid{uid_}, owner{owner_} {};
 
-  operator pseudo_state() const &&;
-  pseudo_proxy__ &operator=(pseudo_state) &&;
-  bool operator==(pseudo_state) const && noexcept;
+  operator pseudo_state() const && {
+    if (owner.pseudo__.contains(uid)) {
+      return owner.pseudo__.at(uid);
+    } else {
+      return pseudo_state::make<pseudo_state::null>();
+    };
+  };
+
+  pseudo_proxy__ &operator=(pseudo_state state) && {
+    owner.pseudo__.insert_or_assign(uid, state);
+    return *this;
+  };
+  bool operator==(pseudo_state other) const && noexcept {
+    if (owner.pseudo__.contains(uid)) {
+      return owner.pseudo__.at(uid) == other;
+    } else {
+      return false;
+    };
+  };
 
 private:
   uid_t uid;
@@ -77,11 +96,17 @@ private:
 };
 
 struct pseudo_r__ : virtual pseudo_base__ {
-  const pseudo_proxy__ pseudo(uid_t) const noexcept;
+  pseudo_state pseudo(uid_t uid) const noexcept {
+    if (pseudo__.contains(uid)) {
+      return pseudo__.at(uid);
+    } else {
+      return pseudo_state::make<pseudo_state::null>();
+    }
+  };
 };
 
 struct pseudo_rw__ : virtual pseudo_base__ {
-  pseudo_proxy__ pseudo(uid_t) noexcept;
+  pseudo_proxy__ pseudo(uid_t uid) noexcept { return {uid, *this}; };
 };
 
 struct state_holder : virtual pseudo_rw__, virtual hovered_r__ {};
@@ -89,6 +114,8 @@ struct state_holder : virtual pseudo_rw__, virtual hovered_r__ {};
 struct const_state_holder : virtual pseudo_r__, virtual hovered_r__ {};
 
 struct managed_state_holder : public state_holder, public const_state_holder {
-  void update(std::unordered_set<uid_t> &&);
+  void update(std::unordered_set<uid_t> &&hovered) {
+    std::swap(hovered__, hovered);
+  };
 };
 }; // namespace iuic

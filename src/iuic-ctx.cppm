@@ -64,7 +64,10 @@ private: // builder.def
   protected:
     void __prev() noexcept { uids.push(uids.top()); };
 
-    void __post() noexcept { uids.pop(); };
+    void __post() noexcept {
+      ctx.ctree.current().get_info().uid = uids.top();
+      uids.pop();
+    };
 
   protected: // builder unit stack
     context &ctx;
@@ -267,7 +270,7 @@ template <typename Call = void> void context::make(Call call) {
 
   // ctree.print_tree();
 
-  apply_event_hit_surface(event, event_collector.build_pack(ctree));
+  apply_event_pack__(event, event_collector.build_pack(ctree));
   // dop
   build_render_list();
 };
