@@ -30,8 +30,8 @@ request_size measure_child_request::value() const noexcept {
   }
 };
 
-const style &measure_child_request::style_of() const noexcept {
-  return *of->get_info().style;
+style::cref measure_child_request::style_of() const noexcept {
+  return of->get_info().style;
 }
 
 std::vector<measure_child_request> frame_measure_utils::get_requests() {
@@ -49,37 +49,37 @@ std::vector<measure_child_request> frame_measure_utils::get_requests() {
 
 void area_request::discard() { of->discard(); };
 
-const style &area_request::style_of() const { return *of->get_info().style; }
+style::cref area_request::style_of() const { return of->get_info().style; }
 
-const style &layout_utils_base::self_style() const {
-  return *ctx->get_info().style;
+style::cref layout_utils_base::self_style() const {
+  return ctx->get_info().style;
 };
 
-const style &layout_utils_base::parent_style() const {
+style::cref layout_utils_base::parent_style() const {
   auto parent = ctx->get_hierarchy().interface->get_parent(ctx);
-  return *parent->get_info().style;
+  return parent->get_info().style;
 };
 
-const style &layout_utils_base::root_style() const {
+style::cref layout_utils_base::root_style() const {
   auto root = ctx->get_hierarchy().interface->get_root(ctx);
-  return *root->get_info().style;
+  return root->get_info().style;
 };
 
 ui_size layout_utils_base::root_size() const {
-  return {std::get<upixel_t>(root_style().shape.max_size.w),
-          std::get<upixel_t>(root_style().shape.max_size.h)};
+  return {std::get<upixel_t>(root_style().get_shape().max_size.w),
+          std::get<upixel_t>(root_style().get_shape().max_size.h)};
 };
 
 upixel_t layout_utils_base::rem(rem_t rem) const noexcept {
-  return root_style().ephemeral_value * rem;
+  return root_style().get_advance().ephemeral_value * rem;
 };
 
 upixel_t layout_utils_base::vh(vh_t vh) const noexcept {
-  return std::get<upixel_t>(root_style().shape.max_size.h) * vh;
+  return std::get<upixel_t>(root_style().get_shape().max_size.h) * vh;
 }
 
 upixel_t layout_utils_base::vw(vw_t vw) const noexcept {
-  return std::get<upixel_t>(root_style().shape.max_size.h) * vw;
+  return std::get<upixel_t>(root_style().get_shape().max_size.h) * vw;
 }
 
 // TODO : log info
@@ -97,8 +97,8 @@ void position_request::apply(ui_position pos) { owner->apply(pos); };
 
 void position_request::discard() { owner->discard(); };
 
-const style &position_request::style_of() const noexcept {
-  return *owner->get_info().style;
+style::cref position_request::style_of() const noexcept {
+  return owner->get_info().style;
 };
 
 ui_size position_request::size_of() const noexcept {

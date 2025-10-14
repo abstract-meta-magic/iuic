@@ -29,13 +29,13 @@ struct layout_utils_base {
   void error(std::string_view message) const noexcept;
 
   // получение ссылки на собственный стиль
-  const style &self_style() const;
+  style::cref self_style() const;
 
   // получение ссылки на родительский стиль
-  const style &parent_style() const;
+  style::cref parent_style() const;
 
   // получение ссылки на viewport стиль
-  const style &root_style() const;
+  style::cref root_style() const;
 
   ui_size root_size() const;
 
@@ -60,7 +60,7 @@ struct measure_child_request {
 
   request_size value() const noexcept;
 
-  const style &style_of() const noexcept;
+  style::cref style_of() const noexcept;
 
 private:
   computing_context *of;
@@ -111,7 +111,7 @@ struct area_request {
   // выкинуть элемент = игнорировать его
   void discard();
 
-  const style &style_of() const;
+  style::cref style_of() const;
 
   request_size value() const noexcept;
 
@@ -184,7 +184,7 @@ struct position_request {
 
   void discard();
 
-  const style &style_of() const noexcept;
+  style::cref style_of() const noexcept;
 
   ui_size size_of() const noexcept;
 

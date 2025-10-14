@@ -50,12 +50,12 @@ void FCTree::reset() {
   root_.ctx.element.stage = celement::stage_t::measure;
 };
 
-void FCTree::add(const style &style, const frame_layout *layout) {
+void FCTree::add(style::ref style, const frame_layout *layout) {
   // Проблемма с дочерними объектами root element
   // Может на stack сразу ложить root element ?
   auto parent_id = not parent.empty() ? parent.top().first : root_.id;
 
-  nodes.push_back({layout, &style, this, parent_id});
+  nodes.push_back({layout, style, this, parent_id});
 
   auto &node = nodes.back();
   auto id = nodes.size() - 1;
@@ -83,12 +83,12 @@ void FCTree::add(const style &style, const frame_layout *layout) {
 
 // TODO : fix this
 // it's text add, not frame == other algo
-void FCTree::add(const style &style, const text_layout *layout) {
+void FCTree::add(style::ref style, const text_layout *layout) {
   // Проблемма с дочерними объектами root element
   // Может на stack сразу ложить root element ?
   auto parent_id = not parent.empty() ? parent.top().first : root_.id;
 
-  nodes.push_back({layout, &style, this, parent_id});
+  nodes.push_back({layout, style, this, parent_id});
 
   auto &node = nodes.back();
   auto id = nodes.size() - 1;

@@ -111,7 +111,7 @@ void context::proccess_position() {
 
 void context::proccess_arrange() {
   // TODO : PARALLEL
-  auto &max_size = ctree.root().get_info().style->shape.max_size;
+  auto &max_size = ctree.root().get_info().style.get_shape().max_size;
   ctree.root().apply(
       ui_size{std::get<upixel_t>(max_size.w), std::get<upixel_t>(max_size.h)});
 
@@ -169,9 +169,7 @@ void context::build_render_list() {
       continue;
     }
 
-    to_render.push_back({.area{rect.value()},
-                         .data{frame_render_data{
-                             .background{cc.get_info().style->background}}}});
+    to_render.push_back({.area{rect.value()}, .style = cc.get_info().style});
   }
 }
 }; // namespace iuic

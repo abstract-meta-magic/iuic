@@ -19,7 +19,7 @@ namespace iuic {
 // для вычислений используется этот
 struct final : public frame_layout {
   measure_result measure(frame_measure_utils utils) const noexcept override {
-    auto &style = utils.self_style();
+    auto style = utils.self_style();
 
     ui_size vmargin{0};
     upixel_t max_height{0};
@@ -29,7 +29,7 @@ struct final : public frame_layout {
 
     for (auto &rq : requests) {
       auto value = rq.value();
-      auto &margin = rq.style_of().positioning.margin;
+      auto &margin = rq.style_of().get_shape().margin;
 
       if (auto h = utils.upixel_of(value.height)) {
         max_height += h.value();
@@ -56,7 +56,7 @@ struct final : public frame_layout {
 
     measure_request res{};
 
-    auto &min = utils.self_style().shape.min_size;
+    auto &min = utils.self_style().get_shape().min_size;
 
     if (auto min_h = utils.upixel_of(min.h)) {
       if (min_h.value() > max_height) {
@@ -88,7 +88,7 @@ struct final : public frame_layout {
 
     for (auto &rq : requests) {
       auto value = rq.value();
-      auto &min = rq.style_of().shape.min_size;
+      auto &min = rq.style_of().get_shape().min_size;
 
       ui_size res = {.w = utils.width_upixel_of(value.width),
                      .h = utils.height_upixel_of(value.height)};
@@ -128,7 +128,7 @@ struct final : public frame_layout {
             return {};
           }
         },
-        rq.style_of().positioning.margin.top);
+        rq.style_of().get_shape().margin.top);
   };
 
   static upixel_t margin_left(frame_position_utils &utils,
@@ -150,7 +150,7 @@ struct final : public frame_layout {
             return {};
           }
         },
-        rq.style_of().positioning.margin.left);
+        rq.style_of().get_shape().margin.left);
   };
 
   void position(frame_position_utils utils) const noexcept override {
@@ -160,7 +160,7 @@ struct final : public frame_layout {
     auto content = utils.content();
 
     for (auto &&rq : content) {
-      auto &style = rq.style_of();
+      auto style = rq.style_of();
 
       position.y += margin_top(utils, rq);
       position.x += margin_left(utils, rq);

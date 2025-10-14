@@ -3,6 +3,7 @@
 module;
 
 #include <cstdint>
+#include <print>
 #include <string>
 #include <variant>
 
@@ -11,7 +12,6 @@ module;
 export module iuic.core:base;
 export namespace iuic {
 struct relement;
-struct style;
 
 // using hash_t
 // using srk
@@ -261,9 +261,9 @@ struct style_shape {
 
   indent border;
 
-  indent padding;
+  indent padding; // static ?
 
-  aspect_ratio aspect_patio;
+  aspect_ratio aspect_ratio; // static
 
   struct {
     struct {
@@ -274,12 +274,26 @@ struct style_shape {
       border_radius left;
       border_radius right;
     } bottom;
-  } border_radius;
+    color_t color;
+  } border_radius; // decorations
 
-  float grow{0};
+  float grow{0}; // static
 
-  float shrink{0};
+  float shrink{0}; // static
 };
+
+// shape : size , border-size , padding
+//
+// position :
+//
+// decaration : bg[color,ref] , border[style]
+// Прихожу к аллокации кусков стиля с последующим приминением.
+
+// dynamic_property -
+// dynamic_style - std::vector<dynamic_property>
+
+// для текужего [id]
+// b.style.dynamic() = position{22,44};
 
 struct style_positioning {
 
@@ -295,34 +309,121 @@ struct style_positioning {
   using enum position_type_e;
 };
 
-// сделать нормальное наследование свойств ui_inherit<&style_font>...
+namespace style {
 
-// https://html5book.ru/css-spravochnik.html#part1
-struct style {
-  std::string stclass{"none"};
+struct shape {
+  ui_adaptive_size min_size, max_size;
 
-  upixel_t ephemeral_value{14};
+  indent border;
 
-  style_shape shape;
+  indent padding;
 
-  style_positioning positioning;
+  indent margin;
+};
 
-  style_font font;
+struct decoration {
+  // в радианах ?
+  struct {
+    struct {
+      border_radius left;
+      border_radius right;
+    } top;
+    struct {
+      border_radius left;
+      border_radius right;
+    } bottom;
+    color_t color;
+  } border_radius; // decorations
 
   style_background background{ui_none{}};
-
-  style_effects effects;
-
-  style_animations animations;
 };
 
-struct text_render_data {
-  const style_font &font;
-  std::size_t size;
-  // ... etc
+struct transform {
+  ui_position offset{0, 0};
+
+  float scale;
 };
 
-enum class SurfaceDataType { STR, JSON, XML, YAML, TOML, CSV };
+// only static
+struct advance {
+  float grow{0}; // static
+
+  float shrink{0}; // static
+
+  upixel_t ephemeral_value{14};
+};
+
+struct decl {
+  shape shape;
+
+  decoration decoration;
+
+  transform transform;
+
+  advance advence;
+};
+
+// Невладеющий объект.
+// Может быть провисшей.
+// for relement\calculation
+struct cref {
+public: // get's
+  const shape &get_shape() const {
+    if (shape_override_ptr) {
+      return *shape_override_ptr;
+    } else {
+      return base_ptr->shape;
+    };
+  };
+
+  const decoration &get_decoration() const {
+    if (decoration_override_ptr) {
+      return *decoration_override_ptr;
+    } else {
+      return base_ptr->decoration;
+    };
+  };
+
+  const transform &get_transphorm() const {
+    if (transform_override_ptr) {
+      return *transform_override_ptr;
+    } else {
+      return base_ptr->transform;
+    };
+  };
+
+  const advance &get_advance() const { return base_ptr->advence; };
+
+  cref(const decl *decl) : base_ptr{decl} {};
+
+  cref(const decl &decl) : base_ptr{std::addressof(decl)} {};
+
+protected: //
+  const decl *base_ptr;
+
+  const shape *shape_override_ptr{nullptr}; // null
+
+  const decoration *decoration_override_ptr{nullptr}; // null
+
+  const transform *transform_override_ptr{nullptr}; // null
+};
+
+struct ref : public cref {
+  ref(const decl *decl) : cref{decl} {};
+
+  ref(const decl &decl) : cref{std::addressof(decl)} {};
+
+  void override_shape(const shape *shape) { shape_override_ptr = shape; };
+
+  void override_decoration(const decoration *decoration) {
+    decoration_override_ptr = decoration;
+  };
+
+  void override_transform(const transform *transform) {
+    transform_override_ptr = transform;
+  };
+};
+}; // namespace style
 
 /*
   Информация для поиска пользовательской
@@ -331,21 +432,6 @@ enum class SurfaceDataType { STR, JSON, XML, YAML, TOML, CSV };
   проигнорированна, то должен быть отрисован
   приметив [frame].
 */
-struct surface_static_info {
-  std::string type;
-  std::string version;
-  SurfaceDataType data_type;
-};
-
-struct frame_render_data {
-  const style_background &background;
-  // ... etc
-};
-
-// изображение которые сложнее простого квадрата(background)
-struct image_render_data {};
-
-using render_data = std::variant<frame_render_data, text_render_data>;
 
 // рисуемый элемент
 // relement и некоторые его зависимости
@@ -355,9 +441,7 @@ struct relement {
   ui_rect area;      // x,y w,h
   ui_rect clip_area; // простая обрезка
   int z_index;       // слой
-  float opacity;     // прозрачность
-  // WARNING : большой размер
-  render_data data; // метаданные для отрисовки
+  style::cref style;
 };
 namespace policy {
 enum class hovered : std::uint8_t {

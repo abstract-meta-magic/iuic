@@ -39,7 +39,7 @@ struct : public frame_layout {
     // нужно не выйти за пределы от self_size
     for (auto &&rq : requests) {
       auto rq_value = rq.value();
-      auto &min = rq.style_of().shape.min_size;
+      auto &min = rq.style_of().get_shape().min_size;
 
       bool valide{true};
 
@@ -81,7 +81,7 @@ struct : public frame_layout {
             return {};
           }
         },
-        rq.style_of().positioning.margin.top);
+        rq.style_of().get_shape().margin.top);
   };
 
   static upixel_t margin_left(frame_position_utils &utils,
@@ -105,7 +105,7 @@ struct : public frame_layout {
             return {};
           }
         },
-        rq.style_of().positioning.margin.left);
+        rq.style_of().get_shape().margin.left);
   };
   void position(frame_position_utils utils) const noexcept override {
     auto current_pos = utils.self_position();
@@ -158,9 +158,9 @@ public: // Public Interface
     Добовление нового элемента и вход в его контекст.
     Инвалидирует все итераторы и range_proxy.
   */
-  void add(const style &style, const frame_layout *layout);
+  void add(style::ref, const frame_layout *layout);
 
-  void add(const style &style, const text_layout *layout);
+  void add(style::ref, const text_layout *layout);
 
   /*
     Выход из контекста родительского элемента.
@@ -265,7 +265,7 @@ private: // Data
     static constexpr auto id = std::numeric_limits<size_t>::max();
     root_t(FCTree *ctree)
         : style{}, last_child{}, ctx{&root_element_layout, &style, ctree, id} {}
-    style style;           // можно унифицировать стиль
+    style::decl style;     // можно унифицировать стиль
     size_t last_child;     // помошник в построении макета
     computing_context ctx; // сам контекст
   } root_{this};

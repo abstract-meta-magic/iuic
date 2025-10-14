@@ -8,6 +8,7 @@
 #include <SDL3/SDL_video.h>
 #include <concepts>
 #include <iostream>
+#include <memory>
 #include <print>
 #include <string_view>
 #include <strings.h>
@@ -18,6 +19,12 @@
 import iuic.core;
 
 namespace iuic::key_map {
+
+struct command {
+  virtual ~command() = default;
+  virtual std::unique_ptr<command> proccess(struct game *) = 0;
+  virtual void undo(struct game *) = 0;
+};
 
 struct flex_event {
   enum class type {
@@ -39,14 +46,14 @@ constexpr key_code mouse(std::string_view str) {
 }; // namespace iuic::key_map
 
 constexpr auto s_1 = []() {
-  iuic::style res{};
+  iuic::style::decl res{};
 
   res.shape.min_size = {iuic::upixel_t{120}, iuic::upixel_t{240}};
 
-  res.positioning.margin.top = iuic::upixel_t{20};
-  res.positioning.margin.left = iuic::upixel_t{30};
+  res.shape.margin.top = iuic::upixel_t{20};
+  res.shape.margin.left = iuic::upixel_t{30};
 
-  res.background = iuic::color::css::red{};
+  res.decoration.background = iuic::color::css::red{};
   return res;
 }();
 
@@ -64,15 +71,77 @@ SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
 using builder_ui = iuic::context::builder;
 
 constexpr auto none_style = []() {
-  iuic::style res{};
+  iuic::style::decl res{};
 
   res.shape.max_size = iuic::ui_adaptive_size{};
 
   return res;
 }();
 
+void novel_text_left_menu(iuic::context::builder &b) {
+  b.unit.frame([](auto &b) {
+    //...
+  });
+}
+
+enum class type { local, global };
+
+struct my_custom_event {};
+
+iuic::trk_t novel_text(iuic::context::builder &b) {
+  iuic::trk_t extern_buff;
+
+  b.unit.frame([&](auto &b) {
+    auto uid = b.uid.make("novet-text-box");
+    b.policy.hovered(iuic::policy::hovered::block);
+
+    novel_text_left_menu(b);
+    static auto text_set = iuic::pseudo_state::make<struct text_set>();
+    static auto text_forse_set =
+        iuic::pseudo_state::make<struct text_force_set>();
+    static auto text_proccess = iuic::pseudo_state::make<struct text_set>();
+    static auto text_set_next =
+        iuic::pseudo_state::make<struct text_set_next>();
+
+    // extern text
+    b.event.attach([](iuic::event::local::key e) {});
+
+    b.event([](iuic::event::local::utils u, my_custom_event e) {
+      // ...
+    });
+    // my buff
+
+    // static text
+
+    // text wrapper
+    b.unit.frame([&](auto &b) {
+      auto trk = b.storage.text.persist(uid, "text");
+      extern_buff = b.storage.text.persist(uid, "extern-text");
+      b.unit.text(trk);
+
+      b.policy.hovered(iuic::policy::hovered::propagate);
+
+      b.event([](iuic::event::global::key e) {
+        if (e.utils.state.pseudo(e.uid) == text_proccess) {
+          e.utils.state.pseudo(e.uid) = text_forse_set;
+        } else if (e.utils.state.pseudo(e.uid) == text_set) {
+          e.utils.state.pseudo(e.uid) = text_set_next;
+        }
+      });
+    });
+  });
+
+  return extern_buff;
+}
+
+struct style_ref {};
+
+struct style {
+  style_ref background;
+};
+
 void button(iuic::context::builder &b, std::invocable<> auto &&call,
-            const iuic::style &style = iuic::def_style) {
+            iuic::style::ref style = iuic::def_style) {
   static constexpr bool uid_seed{true};
 
   iuic::uid_t uid;
@@ -86,93 +155,40 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
         // iuic::animation hovered_anim{ ... };
         // begin -- delta -- end
 
-        /* STATE
-        // consteval ctor
-        static constexp iuic::pseudo_state btn_active{};
-
-        if (b.state.pseudo(uid) == btn_active) {
-          ...
-        }
-
-        iuic::event::global::key {}; по всей площади
-        iuic::event::local::key {};  в рамках площади элемента
-        */
-
-        /* text
-           auto trk = b.storage.text.persist(uid,"lable");
-           b.unit.text(tkr);
-
-           ...
-           e.utils.text.try_visit(e.trk,[](iuic::text_buffer& tb) {
-             ...
-             tb.replace("my");
-             ...
-           });
-
-           alternative
-
-           создание текста из одного токена
-           для коротких строк
-           b.unit.text(iuic::text::token{"window"});
-        */
-
-        /* UID
-        // ввести понятия наследования uid изночально от root
-        // ответвления uid
-        b.uid.branch(uid);
-        */
-
-        /* POLICY
-
-
-        // включает возможность hovered и закрепляет uid
-        b.policy.hovered(iuic::policy::hovered::propagate);
-        // включает события и закрепляет uid
-        b.policy.event(iuic::policy::event::consume);
-
-        b.event([](auto& r) {
-          // ...
-          r.key()
-          // ...
-        });
-
-        // true и продолжить распространение
-        b.policy.hovered(e.uid) = iuic::event::hovered::propagate;
-        // true и прекратить распространение
-        b.policy.hovered(e.uid) = iuic::event::hovered::consume;
-        // сбросить предыдущие, установить терущий в true и продолжить
-        распространение b.policy.hovered(e.uid) =
-        iuic::event::hovered::scope_propagate;
-        // сбросить предыдущие, установить терущий в true и прекратить
-        распространение b.policy.hovered(e.uid) =
-        iuic::event::hovered::scope_consume;
-        // сбросить предыдущие, прекратить распространение
-        b.policy.hovered(e.uid) = iuic::event::hovered::block;
-        */
-
-        /* Z ORDER
-        b.order.group(4); // 4:0
-
-        if(builder.state.pseude(uid) == focused) {
-          b.order.up(); // 4:0->1
-          b.oredr.down(); // 4:1->0
-          b.order.set(6); // 4:6
-          b.order.top(); // 4:(max)
-        }
-        */
-
-        // TODO : замена b.selector.* -> b.state.*
-
-        // e.utils.state.hovered(uid) = true;
-        // e.utils.state.hovered(uid) == true;
-
         /* Dynamic style
            if(e.utils.state.hovered(e.uid)) {
               e.uitls.state.hovered(e.uid) = false;
            }
+           // style property : begind proccess end
 
+           // scheduler ... ?
+           struct sc {
+             pseudo_state from;
+             pseudo_state to;
+             call c;
+             state st;
+           };
+
+           // p - r - p - r - p = 40 byte
+
+           // перед вычисления макета
+           b.transition<struct idle,struct load>([](auto u){
+             ...
+
+             if(u.time.elipce > 1s) {
+               ...
+               u.state.pseudo = view;
+               return tr_continue{};
+             }
+             ...
+             return tr_end{};
+           },ork);
+
+           b.transition<struct focused,struct idle>([](...) { ... });
 
           if(b.state.is_hovered()) {
+             property animate(const style*,float dt,transform);
+             *::animation::color::liner(uid,)
              замена
              b.style.override(b.style.sheet("button-def:hovered"));
           } else if(b.selector.is_selected()) {
@@ -180,6 +196,10 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
              b.style.extend(b.style.sheet("button-def:selected"));
           }
         */
+
+        enum class tr { Continue, End };
+
+        auto u = tr::Continue;
 
         auto srk = b.storage.object.persist(uid, "callback");
         auto trk = b.storage.text.persist(uid, "lable");
@@ -206,7 +226,7 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
 }
 
 constexpr inline void button(iuic::context::builder &b, const std::string &str,
-                             const iuic::style &style = iuic::def_style) {
+                             iuic::style::ref style = iuic::def_style) {
   static constexpr bool uid_sub_seed{true};
 
   auto uid = b.uid.make(b.uid.make(&uid_sub_seed), str);
@@ -248,57 +268,8 @@ template <auto object> constexpr const auto &static_ref() noexcept {
   return object;
 }
 
-template <std::invocable<> auto call>
-constexpr const auto &static_ref() noexcept {
-  static constexpr auto _{call()};
-  return _;
-}
-
-// import iuic.kit.base;
-namespace iuic::kit {
-// base kit
-struct base {
-
-  static constexpr void button(iuic::context::builder &b) noexcept;
-
-  static constexpr void button(iuic::context::builder &b,
-                               std::invocable<> auto call) noexcept;
-
-  static constexpr void lable(std::string text) noexcept;
-
-  static constexpr trk_t text_field() noexcept;
-
-  static constexpr trk_t text_field(std::string) noexcept;
-
-  struct color {
-    static constexpr color_t text;
-
-    static constexpr color_t text_hovered;
-
-    static constexpr color_t text_visited;
-  };
-};
-
-}; // namespace iuic::kit
-
-void test_list(iuic::context::builder &b, auto begin, auto end, auto call) {
-  b.frame([&](auto &b) {
-    for (; begin != end; ++begin) {
-      // this list item wrapper
-      b.frame([&]() {
-        // здесь создаеться уникальный id для пересечения элементов.
-        // this item frame
-        b.frame([&]() { call(*begin); });
-      });
-    };
-  });
-}
-
 int main() {
-  using color = iuic::kit::base::color;
   using namespace iuic;
-
-  color_t c = color::text;
 
   context ctx;
 
@@ -329,52 +300,46 @@ int main() {
   while (!quit) {
 
     ctx.make([&](auto &b) {
-      auto &style = static_ref<[]() {
-        iuic::style res{};
-
-        res.shape.min_size = {upixel_t{200}, upixel_t{400}};
-        res.background = iuic::color::css::lime{80};
-        res.positioning.margin = {upixel_t{20}, upixel_t{20}, upixel_t{20},
-                                  upixel_t{20}};
-
-        return res;
-      }>();
       // frame(create_info,childs_lambda)
-      b.unit.frame([](auto &b) {
+      b.unit.frame([&](auto &b) {
         static auto idle = iuic::pseudo_state::make<struct idle>();
         static auto focused = iuic::pseudo_state::make<struct forused>();
 
-        b.unit.frame(
-            [](auto &b) {
-              b.unit.frame([](auto &b) {
-                b.uid.branch(b.uid.make("app-box-inner"));
-                b.policy.hovered(iuic::policy::hovered::block);
+        // b.state.pseudo.init_value(idle);
 
-                b.event([](iuic::event::local::key e) {
-                  if (e.utils.state.pseudo(e.uid) != focused) {
-                    std::println("Set to focuse");
-                    if (e.code == iuic::key_map::mouse("left")) {
-                      e.utils.state.pseudo(e.uid) = focused;
-                    }
-                  }
-                });
+        b.unit.frame([&](auto &b) {
+          b.unit.frame([&](auto &b) {
+            auto inner = b.uid.make("app-box-inner");
+            b.uid.branch(inner);
 
-                b.event([](iuic::event::global::key e) {
-                  if (e.utils.state.pseudo(e.uid) == focused &&
-                      not e.utils.state.hovered(e.uid) &&
-                      e.code == iuic::key_map::mouse("left")) {
-                    e.utils.state.pseudo(e.uid) = idle;
-                  } else if (e.utils.state.pseudo(e.uid) == focused) {
-                    std::println("In focuse");
-                  };
-                });
-              });
-              b.uid.branch(b.uid.make("app-box"));
-              b.policy.hovered(iuic::policy::hovered::propagate);
+            b.state.pseudo_default(inner, idle);
 
-              b.event([](iuic::event::local::key e) { std::println("outer"); });
-            },
-            style);
+            b.policy.hovered(iuic::policy::hovered::block);
+
+            b.event([](iuic::event::local::key e) {
+              if (e.utils.state.pseudo(e.uid) != focused) {
+                std::println("Set to focuse");
+                if (e.code == iuic::key_map::mouse("left")) {
+                  e.utils.state.pseudo(e.uid) = focused;
+                }
+              }
+            });
+
+            b.event([](iuic::event::global::key e) {
+              if (e.utils.state.pseudo(e.uid) == focused &&
+                  not e.utils.state.hovered(e.uid) &&
+                  e.code == iuic::key_map::mouse("left")) {
+                e.utils.state.pseudo(e.uid) = idle;
+              } else if (e.utils.state.pseudo(e.uid) == focused) {
+                std::println("In focuse");
+              };
+            });
+          });
+          b.uid.branch(b.uid.make("app-box"));
+          b.policy.hovered(iuic::policy::hovered::propagate);
+
+          b.event([](iuic::event::local::key e) { std::println("outer"); });
+        });
       });
 
       // b.text("ok");
@@ -383,7 +348,7 @@ int main() {
 
       button(b, []() { std::println("my pritty btn"); });
 
-      button(b, []() { std::println("my pritty btn with style"); }, style);
+      button(b, []() { std::println("my pritty btn with style"); });
     });
 
     // SDL
@@ -412,28 +377,20 @@ int main() {
     auto &tree = ctx.get_tree();
     for (auto &&r : tree) {
       auto rect = to_sdl_rect(r.area);
+
+      auto &b = r.style.get_decoration().background;
       std::visit(
-          [renderer, &rect](auto &obj) {
-            if constexpr (std::same_as<std::remove_cvref_t<decltype(obj)>,
-                                       frame_render_data>) {
-              std::visit(
-                  [&](auto &&c) {
-                    if constexpr (std::same_as<std::remove_cvref_t<decltype(c)>,
-                                               color_t>) {
-                      SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
-                      SDL_RenderFillRect(renderer, &rect);
-                      // std::println("r:{}g:{}:b{}:a{}", c.r, c.g, c.b, c.a);
-                    } else if constexpr (std::same_as<
-                                             std::remove_cvref_t<decltype(c)>,
-                                             ui_background_image>) {
-                      // not impl yet
-                    }
-                  },
-                  obj.background);
+          [&](auto &obj) {
+            using type = std::remove_cvref_t<decltype(obj)>;
+            if constexpr (std::same_as<type, iuic::color_t>) {
+              SDL_SetRenderDrawColor(renderer, obj.r, obj.g, obj.b, obj.a);
+              SDL_RenderFillRect(renderer, &rect);
             }
           },
-          r.data);
+          b);
     }
+
+    SDL_RenderDebugText(renderer, 0, 0, "penis");
 
     // std::cout << "GO" << std::endl;
 

@@ -103,6 +103,12 @@ struct pseudo_r__ : virtual pseudo_base__ {
       return pseudo_state::make<pseudo_state::null>();
     }
   };
+
+  void pseudo_default(uid_t uid, pseudo_state state) {
+    if (not pseudo__.contains(uid)) {
+      pseudo__.insert({uid, state});
+    }
+  };
 };
 
 struct pseudo_rw__ : virtual pseudo_base__ {

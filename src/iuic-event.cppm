@@ -1,6 +1,7 @@
 
 module;
 
+#include <concepts>
 #include <map>
 #include <print>
 #include <type_traits>
@@ -37,6 +38,7 @@ struct key : event_base {
   key_code code;
 };
 
+struct utils {};
 struct pointer_move {};
 }; // namespace global
 
@@ -45,7 +47,7 @@ struct key : event_base {
   uid_t uid;
   key_code code;
 };
-
+struct utils {};
 struct pointer_move {};
 }; // namespace local
 } // namespace event
@@ -66,6 +68,16 @@ using variadic_callback =
 
 template <typename T>
 concept event_callback_cpt = requires(T &&call) { variadic_callback{call}; };
+
+template <typename T>
+void make_custom(void (*call)(event::global::utils, T)) {
+  // тут нужно будет проверить тривиальность копируемости
+};
+
+template <typename T> void make_custom(void (*call)(event::local::utils, T)) {};
+
+template <typename T>
+concept custom_event_callback_cpt = requires(T &&call) { make_custom(+call); };
 
 // хешировать
 struct revent {

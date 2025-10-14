@@ -133,7 +133,7 @@ struct computing_context {
   };
 
   struct info_t {
-    const style *style{nullptr};
+    style::ref style;
     uid_t uid;
     z_order_t order;
     policy::hovered hovered_p{policy::hovered::none};
@@ -142,7 +142,7 @@ struct computing_context {
   friend class FCTree;
 
   // конструктор для вычисления фрейма
-  computing_context(const frame_layout *layout_, const style *style_,
+  computing_context(const frame_layout *layout_, style::ref style_,
                     computing_hierarchy *hierarchy_, size_t parent_)
       : hierarchy{hierarchy_, parent_}, info{style_} {
     element.frame_layout = layout_;
@@ -152,7 +152,7 @@ struct computing_context {
   };
 
   // конструктор для вычисления текста
-  computing_context(const text_layout *layout_, const style *style_,
+  computing_context(const text_layout *layout_, style::ref style_,
                     computing_hierarchy *hierarchy_, size_t parent_)
       : hierarchy{hierarchy_, parent_}, info{style_} {
     element.attribute_tags += celement::attribute_tags_t::text;

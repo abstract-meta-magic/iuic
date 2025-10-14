@@ -29,17 +29,17 @@ export import :event;
 export namespace iuic {
 
 // base stye
-constexpr style def_style = []() {
-  style res{};
+constexpr style::decl def_style = []() {
+  style::decl res{};
 
   res.shape.min_size = {percent_t{16}, percent_t{24}};
 
-  res.positioning.margin.top = percent_t{4};
-  res.positioning.margin.left = upixel_t{30};
+  res.shape.margin.top = percent_t{4};
+  res.shape.margin.left = upixel_t{30};
 
   res.shape.border.top = upixel_t{20}, res.shape.border.left = upixel_t{40};
 
-  res.background = color::css::white{};
+  res.decoration.background = color::css::white{};
 
   return res;
 }();
@@ -81,13 +81,13 @@ private: // builder.def
       Базовая форма для всего.Стелизуемый рамка.
       TODO : можно заменить на нешаблонный вызов
     */
-    void frame(std::invocable<builder &> auto &&call, const style & = def_style,
+    void frame(std::invocable<builder &> auto &&call, style::ref = def_style,
                const frame_layout & = box_layout) noexcept;
 
     void frame(std::invocable<builder &> auto &&call,
                const frame_layout &) noexcept;
 
-    void frame(const style & = def_style,
+    void frame(style::ref = def_style,
                const frame_layout & = box_layout) noexcept;
 
     void frame(const frame_layout &) noexcept;
@@ -95,7 +95,7 @@ private: // builder.def
     /*
       Является конечной точкой.Отрисовка текста
     */
-    void text(text_registry_key, const style & = def_style);
+    void text(text_registry_key, style::ref = def_style);
   };
 
   struct builder_order_interface : protected virtual builder_base {
@@ -173,6 +173,11 @@ private: // builder.def
       attach(std::forward<decltype(call)>(call), trk);
     };
 
+    void operator()(custom_event_callback_cpt auto &&call, ork_t ork = 0,
+                    trk_t trk = 0) {
+      // ...
+    };
+
     // event
     template <event_callback_cpt Call>
     void attach(Call &&call, object_registry_key ork = 0,
@@ -185,6 +190,9 @@ private: // builder.def
     void attach(Call &&call, text_registry_key trk) {
       attach<Call>(std::forward<Call>(call), 0, trk);
     }
+
+    void attach(custom_event_callback_cpt auto &&call, ork_t ork = 0,
+                trk_t trk = 0) {};
   };
 
 public:
@@ -278,7 +286,7 @@ template <typename Call = void> void context::make(Call call) {
 // --- Builder Template Impl ---
 
 void context::builder_unit_interface::frame(
-    std::invocable<context::builder &> auto &&call, const style &style,
+    std::invocable<context::builder &> auto &&call, style::ref style,
     const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
 
@@ -296,7 +304,7 @@ void context::builder_unit_interface::frame(
 };
 
 void context::builder_unit_interface::frame(
-    const style &style, const frame_layout &layout) noexcept {
+    style::ref style, const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
   ctx.ctree.up();
 };
@@ -307,13 +315,11 @@ void context::builder_unit_interface::frame(
 };
 
 void context::builder_unit_interface::text(text_registry_key key,
-                                           const style &st) {
-
+                                           style::ref st) {
   ctx.ctree.add(st, &text_def_layout);
 
   ctx.tpa.attach_present(key, ctx.ctree.current_index());
   // WARNING : установить данные для отрисовки текста
   ctx.ctree.up();
 }
-
 } // namespace iuic
