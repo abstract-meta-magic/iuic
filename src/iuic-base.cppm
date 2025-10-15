@@ -310,7 +310,7 @@ struct style_positioning {
 };
 
 namespace style {
-
+// limit 128
 struct shape {
   ui_adaptive_size min_size, max_size;
 
@@ -321,6 +321,7 @@ struct shape {
   indent margin;
 };
 
+// limit 64
 struct decoration {
   // в радианах ?
   struct {
@@ -338,13 +339,14 @@ struct decoration {
   style_background background{ui_none{}};
 };
 
+// limit 64
 struct transform {
   ui_position offset{0, 0};
 
   float scale;
 };
 
-// only static
+// static - unlimited
 struct advance {
   float grow{0}; // static
 

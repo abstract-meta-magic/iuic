@@ -26,6 +26,7 @@ void context::reset() {
   to_render.clear();
   object.advance_generation();
   text.advance_generation();
+  frame_resource__.release();
 };
 
 void context::proccess_measure() {

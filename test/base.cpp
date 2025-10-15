@@ -156,23 +156,18 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
         // begin -- delta -- end
 
         /* Dynamic style
-           if(e.utils.state.hovered(e.uid)) {
-              e.uitls.state.hovered(e.uid) = false;
+
+           if(b.state.hovered(uid)) {
+             b.style.dynamic(iuic::style::decoratin{.background =
+           *::color::red});
            }
+
            // style property : begind proccess end
 
-           // scheduler ... ?
-           struct sc {
-             pseudo_state from;
-             pseudo_state to;
-             call c;
-             state st;
-           };
-
-           // p - r - p - r - p = 40 byte
 
            // перед вычисления макета
            b.transition<struct idle,struct load>([](auto u){
+             сделать корутины
              ...
 
              if(u.time.elipce > 1s) {
@@ -185,21 +180,12 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
            },ork);
 
            b.transition<struct focused,struct idle>([](...) { ... });
-
-          if(b.state.is_hovered()) {
-             property animate(const style*,float dt,transform);
-             *::animation::color::liner(uid,)
-             замена
-             b.style.override(b.style.sheet("button-def:hovered"));
-          } else if(b.selector.is_selected()) {
-             наследование
-             b.style.extend(b.style.sheet("button-def:selected"));
-          }
         */
 
-        enum class tr { Continue, End };
-
-        auto u = tr::Continue;
+        if (b.state.hovered(uid)) {
+          b.style.dynamic(
+              iuic::style::decoration{.background = iuic::color::css::red()});
+        };
 
         auto srk = b.storage.object.persist(uid, "callback");
         auto trk = b.storage.text.persist(uid, "lable");
@@ -308,33 +294,48 @@ int main() {
         // b.state.pseudo.init_value(idle);
 
         b.unit.frame([&](auto &b) {
-          b.unit.frame([&](auto &b) {
-            auto inner = b.uid.make("app-box-inner");
-            b.uid.branch(inner);
+          auto style = []() -> iuic::style::ref {
+            static iuic::style::decl res{};
+            res.shape.min_size = {iuic::upixel_t{240}, iuic::upixel_t{60}};
 
-            b.state.pseudo_default(inner, idle);
+            res.decoration.background = iuic::color::css::red();
 
-            b.policy.hovered(iuic::policy::hovered::block);
+            return res;
+          }();
+          b.unit.frame(
+              [&](auto &b) {
+                auto inner = b.uid.make("app-box-inner");
+                b.uid.branch(inner);
 
-            b.event([](iuic::event::local::key e) {
-              if (e.utils.state.pseudo(e.uid) != focused) {
-                std::println("Set to focuse");
-                if (e.code == iuic::key_map::mouse("left")) {
-                  e.utils.state.pseudo(e.uid) = focused;
+                b.state.pseudo_default(inner, idle);
+
+                b.policy.hovered(iuic::policy::hovered::block);
+
+                if (b.state.pseudo(inner) == focused) {
+                  b.style.dynamic(iuic::style::decoration{
+                      .background = iuic::color_t{44, 22, 99, 255}});
                 }
-              }
-            });
 
-            b.event([](iuic::event::global::key e) {
-              if (e.utils.state.pseudo(e.uid) == focused &&
-                  not e.utils.state.hovered(e.uid) &&
-                  e.code == iuic::key_map::mouse("left")) {
-                e.utils.state.pseudo(e.uid) = idle;
-              } else if (e.utils.state.pseudo(e.uid) == focused) {
-                std::println("In focuse");
-              };
-            });
-          });
+                b.event([](iuic::event::local::key e) {
+                  if (e.utils.state.pseudo(e.uid) != focused) {
+                    std::println("Set to focuse");
+                    if (e.code == iuic::key_map::mouse("left")) {
+                      e.utils.state.pseudo(e.uid) = focused;
+                    }
+                  }
+                });
+
+                b.event([](iuic::event::global::key e) {
+                  if (e.utils.state.pseudo(e.uid) == focused &&
+                      not e.utils.state.hovered(e.uid) &&
+                      e.code == iuic::key_map::mouse("left")) {
+                    e.utils.state.pseudo(e.uid) = idle;
+                  } else if (e.utils.state.pseudo(e.uid) == focused) {
+                    std::println("In focuse");
+                  };
+                });
+              },
+              style);
           b.uid.branch(b.uid.make("app-box"));
           b.policy.hovered(iuic::policy::hovered::propagate);
 

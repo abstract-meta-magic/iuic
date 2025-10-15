@@ -4,6 +4,7 @@ module;
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <memory_resource>
 #include <stack>
 #include <string>
 #include <string_view>
@@ -195,24 +196,56 @@ private: // builder.def
                 trk_t trk = 0) {};
   };
 
+  struct builder_style_interface : protected virtual builder_base {
+    builder_style_interface(builder_base &&bb) : builder_base{bb} {};
+
+    void dynamic(style::shape &&shape) {
+      // allocate tmp
+      auto ptr = ctx.frame_memory<style::shape>();
+
+      new (ptr) style::shape{std::move(shape)};
+
+      ctx.ctree.current().get_info().style.override_shape(ptr);
+    };
+
+    void dynamic(style::transform &&transform) {
+      auto ptr = ctx.frame_memory<style::transform>();
+
+      new (ptr) style::transform{std::move(transform)};
+
+      ctx.ctree.current().get_info().style.override_transform(ptr);
+    };
+
+    void dynamic(style::decoration &&decoration) {
+      auto ptr = ctx.frame_memory<style::decoration>();
+
+      new (ptr) style::decoration{std::move(decoration)};
+
+      ctx.ctree.current().get_info().style.override_decoration(ptr);
+    };
+  };
+
 public:
   struct builder final : public virtual builder_base,
                          private builder_unit_interface,
                          private builder_uid_interface,
                          private builder_policy_interface,
                          private builder_storage_interface,
-                         private builder_event_interface {
+                         private builder_event_interface,
+                         private builder_style_interface {
     builder(builder_base &&bb) noexcept
         : builder_base{bb}, builder_unit_interface{std::move(bb)},
           builder_uid_interface{std::move(bb)},
           builder_policy_interface{std::move(bb)},
           builder_storage_interface{std::move(bb)},
-          builder_event_interface{std::move(bb)} {};
+          builder_event_interface{std::move(bb)},
+          builder_style_interface{std::move(bb)} {};
     builder_unit_interface &unit{*this};
     builder_uid_interface &uid{*this};
     builder_policy_interface &policy{*this};
     builder_storage_interface &storage{*this};
     builder_event_interface &event{*this};
+    builder_style_interface &style{*this};
     const_state_holder &state{ctx.state};
 
     builder(const builder &) = delete;
@@ -248,6 +281,12 @@ public:
   event_reciver event{object, text, state};
 
 private:
+  template <typename T> T *frame_memory() {
+    // TODO : wrap throw ?
+    return static_cast<T *>(frame_resource__.allocate(sizeof(T), alignof(T)));
+  };
+
+private:
   managed_state_holder state{};
 
   text::text_present_aggregator tpa{};
@@ -259,6 +298,10 @@ private:
   std::vector<relement> to_render;
   // ядро построения
   builder b{builder_base{*this}};
+
+  std::byte frame_memory__[1024 * 1024 * 2];
+  std::pmr::monotonic_buffer_resource frame_resource__{frame_memory__,
+                                                       sizeof(frame_memory__)};
 };
 
 template <typename T>
