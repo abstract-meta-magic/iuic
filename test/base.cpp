@@ -6,7 +6,10 @@
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
+#include <chrono>
 #include <concepts>
+#include <cstddef>
+#include <ctime>
 #include <iostream>
 #include <memory>
 #include <print>
@@ -15,6 +18,8 @@
 #include <sys/types.h>
 #include <type_traits>
 #include <variant>
+
+#include <coroutine>
 
 import iuic.core;
 
@@ -44,6 +49,13 @@ constexpr key_code mouse(std::string_view str) {
   return {};
 };
 }; // namespace iuic::key_map
+
+void hh() {
+  int my;
+  constexpr bool solution = std::is_trivial_v<decltype([](int) {
+
+  })>;
+};
 
 constexpr auto s_1 = []() {
   iuic::style::decl res{};
@@ -166,7 +178,7 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
 
 
            // перед вычисления макета
-           b.transition<struct idle,struct load>([](auto u){
+           b.state.transition<struct idle,struct load>([](auto u){
              сделать корутины
              ...
 
@@ -283,25 +295,27 @@ int main() {
 
   std::string msg{"Hello world"};
 
+  struct idle_t;
+  struct focused_t;
+  static auto idle = iuic::pseudo_state::make<idle_t>();
+  static auto focused = iuic::pseudo_state::make<focused_t>();
   while (!quit) {
 
     ctx.make([&](auto &b) {
       // frame(create_info,childs_lambda)
       b.unit.frame([&](auto &b) {
-        static auto idle = iuic::pseudo_state::make<struct idle>();
-        static auto focused = iuic::pseudo_state::make<struct forused>();
-
         // b.state.pseudo.init_value(idle);
 
         b.unit.frame([&](auto &b) {
-          auto style = []() -> iuic::style::ref {
-            static iuic::style::decl res{};
+          static constexpr auto style = []() {
+            iuic::style::decl res{};
             res.shape.min_size = {iuic::upixel_t{240}, iuic::upixel_t{60}};
 
-            res.decoration.background = iuic::color::css::red();
+            res.decoration.background = iuic::color::css::blue();
 
             return res;
           }();
+
           b.unit.frame(
               [&](auto &b) {
                 auto inner = b.uid.make("app-box-inner");
@@ -334,6 +348,62 @@ int main() {
                     std::println("In focuse");
                   };
                 });
+
+                static auto liner_color =
+                    [](iuic::context::transition_utils &utils,
+                       iuic::color_t from, iuic::color_t to,
+                       std::chrono::duration<float> d) {
+                      auto el = std::chrono::duration<float>(
+                          std::chrono::steady_clock::now() - utils.time_point);
+
+                      auto sc = el / d;
+
+                      if (sc > 1) {
+                        utils.set_dynamic_style(
+                            iuic::style::decoration{.background{to}});
+                      } else {
+                        std::uint8_t r = from.r + (to.r - from.r) * sc;
+                        std::uint8_t g = from.g + (to.g - from.g) * sc;
+                        std::uint8_t b = from.b + (to.b - from.b) * sc;
+                        std::uint8_t a = from.a + (to.a - from.a) * sc;
+                        utils.set_dynamic_style(iuic::style::decoration{
+                            .background{iuic::color_t{r, g, b, a}}});
+                      }
+                    };
+
+                b.state.transition(
+                    idle, focused,
+                    [](iuic::context::transition_utils utils)
+                        -> iuic::state_transition {
+                      for (;;) {
+                        liner_color(utils, iuic::color::css::blue{},
+                                    iuic::color::css::red{},
+                                    std::chrono::milliseconds{320});
+
+                        if (auto el = std::chrono::duration<float>(
+                                std::chrono::steady_clock::now() -
+                                utils.time_point);
+                            el > std::chrono::seconds{4}) {
+                          co_return idle;
+                        } else {
+                          co_yield iuic::null;
+                        }
+                      }
+                    });
+
+                b.state.transition(focused, idle,
+                                   [](iuic::context::transition_utils utils)
+                                       -> iuic::state_transition {
+                                     for (;;) {
+                                       liner_color(
+                                           utils, iuic::color::css::red{},
+                                           iuic::color::css::blue{},
+                                           std::chrono::milliseconds{150});
+                                       co_yield iuic::null;
+                                     }
+
+                                     co_return focused;
+                                   });
               },
               style);
           b.uid.branch(b.uid.make("app-box"));

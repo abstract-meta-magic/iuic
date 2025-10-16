@@ -1,6 +1,7 @@
 
 module;
 
+#include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -54,6 +55,28 @@ enum class UpdateType { Dynamic, Static, DirtyFlag };
 class context {
 public: // public forward decl
   struct builder;
+
+  struct transition_utils {
+    using time_t = std::chrono::time_point<std::chrono::steady_clock>;
+
+    transition_utils(context &ctx_, size_t index_, time_t time_, uid_t uid_,
+                     ork_t ork_ = 0)
+        : ctx{ctx_}, index{index_}, time_point{time_}, uid{uid_}, ork{ork_} {};
+
+    const time_t time_point;
+    const uid_t uid;
+    const ork_t ork;
+
+    void set_dynamic_style(style::shape &&) {};
+    void set_dynamic_style(style::decoration &&);
+    void set_dynamic_style(style::transform &&) {};
+
+    void try_visit_object() {};
+
+  private:
+    context &ctx;
+    size_t index;
+  };
 
 private: // builder.def
   struct builder_base {
@@ -225,6 +248,37 @@ private: // builder.def
     };
   };
 
+  struct builder_state_interface : protected virtual builder_base {
+    builder_state_interface(builder_base &&bb) : builder_base{std::move(bb)} {};
+
+    void transition(pseudo_state from, pseudo_state to, auto &&call)
+      requires std::is_invocable_r_v<state_transition, decltype(call),
+                                     transition_utils>
+    {
+      auto tr_state = ctx.state_tr.transition_state(ctx.ctree.current_index());
+
+      auto actual_state = ((state_holder &)ctx.state).pseudo(uids.top());
+
+      if (actual_state.from() == from && actual_state.to() == to &&
+          to != pseudo_state::null()) {
+        auto tr = call({ctx, ctx.ctree.current_index(),
+                        actual_state.time_point(), uids.top()});
+        tr.from = from;
+        tr.to = to;
+        tr.uid = uids.top();
+        ctx.state_tr.apply(ctx.ctree.current_index(), std::move(tr));
+      }
+    };
+
+    auto pseudo(uid_t uid) { return ((state_holder &)ctx.state).pseudo(uid); };
+
+    void pseudo_default(uid_t uid, pseudo_state state) {
+      ctx.state.pseudo_default(uid, state);
+    }
+
+    bool hovered(uid_t uid) { return ctx.state.hovered(uid); };
+  };
+
 public:
   struct builder final : public virtual builder_base,
                          private builder_unit_interface,
@@ -232,21 +286,23 @@ public:
                          private builder_policy_interface,
                          private builder_storage_interface,
                          private builder_event_interface,
-                         private builder_style_interface {
+                         private builder_style_interface,
+                         private builder_state_interface {
     builder(builder_base &&bb) noexcept
         : builder_base{bb}, builder_unit_interface{std::move(bb)},
           builder_uid_interface{std::move(bb)},
           builder_policy_interface{std::move(bb)},
           builder_storage_interface{std::move(bb)},
           builder_event_interface{std::move(bb)},
-          builder_style_interface{std::move(bb)} {};
+          builder_style_interface{std::move(bb)},
+          builder_state_interface{std::move(bb)} {};
     builder_unit_interface &unit{*this};
     builder_uid_interface &uid{*this};
     builder_policy_interface &policy{*this};
     builder_storage_interface &storage{*this};
     builder_event_interface &event{*this};
     builder_style_interface &style{*this};
-    const_state_holder &state{ctx.state};
+    builder_state_interface &state{*this};
 
     builder(const builder &) = delete;
     builder &operator=(const builder &) = delete;
@@ -288,6 +344,7 @@ private:
 
 private:
   managed_state_holder state{};
+  pseudo_state_transition_handler state_tr{state};
 
   text::text_present_aggregator tpa{};
   // плоское дерево вычислений
@@ -314,6 +371,8 @@ template <typename Call = void> void context::make(Call call) {
 
   // построение FCT
   call(b);
+
+  state_tr.process();
 
   proccess_measure();
   proccess_arrange();
@@ -365,4 +424,11 @@ void context::builder_unit_interface::text(text_registry_key key,
   // WARNING : установить данные для отрисовки текста
   ctx.ctree.up();
 }
+
+void context::transition_utils::set_dynamic_style(style::decoration &&style) {
+  auto ptr = new (ctx.frame_resource__.allocate(sizeof(style::decoration),
+                                                alignof(style::decoration)))
+      style::decoration{std::move(style)};
+  ctx.ctree.at(index).get_info().style.override_decoration(ptr);
+};
 } // namespace iuic
