@@ -2,6 +2,7 @@
 
 module;
 
+#include <chrono>
 #include <cstdint>
 #include <print>
 #include <string>
@@ -18,6 +19,9 @@ struct relement;
 using uid_t = std::uint64_t;
 using pixel_t = std::int32_t;
 using upixel_t = std::uint32_t;
+using time_t = std::chrono::time_point<std::chrono::steady_clock>;
+using time_duration_t = std::chrono::duration<double>;
+
 // type for angl
 
 struct percent_t {
@@ -48,6 +52,7 @@ struct vh_t {
     return *this;
   }
 };
+
 struct vw_t {
   percent_t value;
   constexpr operator float() const noexcept { return value; }
@@ -121,10 +126,6 @@ struct ui_rect {
   ui_size size;
   constexpr auto operator<=>(const ui_rect &) const = default;
 };
-
-// top | bottom = horisontal center
-// right | left = vertical center
-// TODO : нормальные доки
 
 /*
   Используеться для определения типа выравнивания.
@@ -219,7 +220,6 @@ public:
 };
 
 struct ui_none {};
-template <typename T> struct ui_initial;
 
 struct ui_inherit {};
 
@@ -228,10 +228,6 @@ struct ui_auto {};
 struct ui_background_image {};
 
 using style_background = std::variant<ui_none, color_t, ui_background_image>;
-
-struct style_effects {};
-
-struct style_animations {};
 
 using ui_adaptive_unit =
     std::variant<ui_auto, upixel_t, percent_t, vw_t, vh_t, rem_t>;
@@ -254,59 +250,6 @@ struct aspect_ratio {
   std::uint8_t width{0};
   std::uint8_t height{0};
   enum dominant_side_e { AUTO, WIDTH, HEIGHT } dominant_side{AUTO};
-};
-
-struct style_shape {
-  ui_adaptive_size min_size, max_size;
-
-  indent border;
-
-  indent padding; // static ?
-
-  aspect_ratio aspect_ratio; // static
-
-  struct {
-    struct {
-      border_radius left;
-      border_radius right;
-    } top;
-    struct {
-      border_radius left;
-      border_radius right;
-    } bottom;
-    color_t color;
-  } border_radius; // decorations
-
-  float grow{0}; // static
-
-  float shrink{0}; // static
-};
-
-// shape : size , border-size , padding
-//
-// position :
-//
-// decaration : bg[color,ref] , border[style]
-// Прихожу к аллокации кусков стиля с последующим приминением.
-
-// dynamic_property -
-// dynamic_style - std::vector<dynamic_property>
-
-// для текужего [id]
-// b.style.dynamic() = position{22,44};
-
-struct style_positioning {
-
-  indent margin;
-
-  align align;
-
-  enum position_type_e { STATIC, RELATIVE, ABSOLUTE, FIXED } type;
-
-  // TODO : добавить адаптив
-  ui_position offset{0, 0};
-
-  using enum position_type_e;
 };
 
 namespace style {
@@ -415,25 +358,17 @@ struct ref : public cref {
 
   ref(const decl &decl) : cref{std::addressof(decl)} {};
 
-  void override_shape(const shape *shape) { shape_override_ptr = shape; };
+  void override(const shape *shape) { shape_override_ptr = shape; };
 
-  void override_decoration(const decoration *decoration) {
+  void override(const decoration *decoration) {
     decoration_override_ptr = decoration;
   };
 
-  void override_transform(const transform *transform) {
+  void override(const transform *transform) {
     transform_override_ptr = transform;
   };
 };
 }; // namespace style
-
-/*
-  Информация для поиска пользовательской
-  поверхности для рисования.Эта информация
-  может быть проигнорированна, и если информация
-  проигнорированна, то должен быть отрисован
-  приметив [frame].
-*/
 
 // рисуемый элемент
 // relement и некоторые его зависимости
@@ -445,6 +380,7 @@ struct relement {
   int z_index;       // слой
   style::cref style;
 };
+
 namespace policy {
 enum class hovered : std::uint8_t {
   none,

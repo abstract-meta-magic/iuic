@@ -40,7 +40,8 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-layout.cppm"
 	"src/iuic-computing-ctx.cppm"
 	"src/iuic-ctx.cppm"
-	"src/iuic-pseudo-selector.cppm"
+	"src/iuic-state.cppm"
+	"src/iuic-state-transition.cppm"
 	"src/iuic-base-color.cppm"
 )
 
@@ -50,6 +51,8 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-fct.cpp"
 	"src/iuic-layout-utils.cpp"
 	"src/iuic-computing-ctx.cpp"
+	"src/iuic-state.cpp"
+	"src/iuic-state-transition.cpp"
 )
 
 ## set hash

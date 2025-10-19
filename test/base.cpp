@@ -50,13 +50,6 @@ constexpr key_code mouse(std::string_view str) {
 };
 }; // namespace iuic::key_map
 
-void hh() {
-  int my;
-  constexpr bool solution = std::is_trivial_v<decltype([](int) {
-
-  })>;
-};
-
 constexpr auto s_1 = []() {
   iuic::style::decl res{};
 
@@ -90,68 +83,6 @@ constexpr auto none_style = []() {
   return res;
 }();
 
-void novel_text_left_menu(iuic::context::builder &b) {
-  b.unit.frame([](auto &b) {
-    //...
-  });
-}
-
-enum class type { local, global };
-
-struct my_custom_event {};
-
-iuic::trk_t novel_text(iuic::context::builder &b) {
-  iuic::trk_t extern_buff;
-
-  b.unit.frame([&](auto &b) {
-    auto uid = b.uid.make("novet-text-box");
-    b.policy.hovered(iuic::policy::hovered::block);
-
-    novel_text_left_menu(b);
-    static auto text_set = iuic::pseudo_state::make<struct text_set>();
-    static auto text_forse_set =
-        iuic::pseudo_state::make<struct text_force_set>();
-    static auto text_proccess = iuic::pseudo_state::make<struct text_set>();
-    static auto text_set_next =
-        iuic::pseudo_state::make<struct text_set_next>();
-
-    // extern text
-    b.event.attach([](iuic::event::local::key e) {});
-
-    b.event([](iuic::event::local::utils u, my_custom_event e) {
-      // ...
-    });
-    // my buff
-
-    // static text
-
-    // text wrapper
-    b.unit.frame([&](auto &b) {
-      auto trk = b.storage.text.persist(uid, "text");
-      extern_buff = b.storage.text.persist(uid, "extern-text");
-      b.unit.text(trk);
-
-      b.policy.hovered(iuic::policy::hovered::propagate);
-
-      b.event([](iuic::event::global::key e) {
-        if (e.utils.state.pseudo(e.uid) == text_proccess) {
-          e.utils.state.pseudo(e.uid) = text_forse_set;
-        } else if (e.utils.state.pseudo(e.uid) == text_set) {
-          e.utils.state.pseudo(e.uid) = text_set_next;
-        }
-      });
-    });
-  });
-
-  return extern_buff;
-}
-
-struct style_ref {};
-
-struct style {
-  style_ref background;
-};
-
 void button(iuic::context::builder &b, std::invocable<> auto &&call,
             iuic::style::ref style = iuic::def_style) {
   static constexpr bool uid_seed{true};
@@ -164,38 +95,8 @@ void button(iuic::context::builder &b, std::invocable<> auto &&call,
         b.unit.frame([&](auto &b) { uid = b.uid.make(&uid_seed); },
                      none_style); // hiden style
 
-        // iuic::animation hovered_anim{ ... };
-        // begin -- delta -- end
-
-        /* Dynamic style
-
-           if(b.state.hovered(uid)) {
-             b.style.dynamic(iuic::style::decoratin{.background =
-           *::color::red});
-           }
-
-           // style property : begind proccess end
-
-
-           // перед вычисления макета
-           b.state.transition<struct idle,struct load>([](auto u){
-             сделать корутины
-             ...
-
-             if(u.time.elipce > 1s) {
-               ...
-               u.state.pseudo = view;
-               return tr_continue{};
-             }
-             ...
-             return tr_end{};
-           },ork);
-
-           b.transition<struct focused,struct idle>([](...) { ... });
-        */
-
         if (b.state.hovered(uid)) {
-          b.style.dynamic(
+          b.style.override(
               iuic::style::decoration{.background = iuic::color::css::red()});
         };
 
@@ -321,12 +222,12 @@ int main() {
                 auto inner = b.uid.make("app-box-inner");
                 b.uid.branch(inner);
 
-                b.state.pseudo_default(inner, idle);
+                b.state.pseudo_init_value(inner, idle);
 
                 b.policy.hovered(iuic::policy::hovered::block);
 
                 if (b.state.pseudo(inner) == focused) {
-                  b.style.dynamic(iuic::style::decoration{
+                  b.style.override(iuic::style::decoration{
                       .background = iuic::color_t{44, 22, 99, 255}});
                 }
 
@@ -359,14 +260,14 @@ int main() {
                       auto sc = el / d;
 
                       if (sc > 1) {
-                        utils.set_dynamic_style(
+                        utils.style.override(
                             iuic::style::decoration{.background{to}});
                       } else {
                         std::uint8_t r = from.r + (to.r - from.r) * sc;
                         std::uint8_t g = from.g + (to.g - from.g) * sc;
                         std::uint8_t b = from.b + (to.b - from.b) * sc;
                         std::uint8_t a = from.a + (to.a - from.a) * sc;
-                        utils.set_dynamic_style(iuic::style::decoration{
+                        utils.style.override(iuic::style::decoration{
                             .background{iuic::color_t{r, g, b, a}}});
                       }
                     };

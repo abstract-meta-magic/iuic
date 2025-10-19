@@ -24,6 +24,7 @@ export import :storage.object;
 export import :storage.text;
 export import :text.present;
 export import :state;
+export import :state.transition;
 export import :event;
 
 // import :default
@@ -57,25 +58,35 @@ public: // public forward decl
   struct builder;
 
   struct transition_utils {
-    using time_t = std::chrono::time_point<std::chrono::steady_clock>;
-
     transition_utils(context &ctx_, size_t index_, time_t time_, uid_t uid_,
-                     ork_t ork_ = 0)
-        : ctx{ctx_}, index{index_}, time_point{time_}, uid{uid_}, ork{ork_} {};
+                     ork_t ork_ = 0, trk_t trk_ = 0)
+        : time_point{time_}, uid{uid_}, ork{ork_}, trk{trk_},
+          style{ctx_, index_}, storage{ctx_} {};
 
     const time_t time_point;
     const uid_t uid;
     const ork_t ork;
+    const trk_t trk;
 
-    void set_dynamic_style(style::shape &&) {};
-    void set_dynamic_style(style::decoration &&);
-    void set_dynamic_style(style::transform &&) {};
+    struct style_interface {
+      style_interface(context &ctx, std::size_t index);
 
-    void try_visit_object() {};
+      void override(style::shape &&);
 
-  private:
-    context &ctx;
-    size_t index;
+      void override(style::decoration &&);
+
+      void override(style::transform &&);
+
+    private:
+      context &ctx;
+      size_t index;
+    } style;
+
+    struct storage_interface {
+      storage_interface(context &);
+      mutable_object_storage &object;
+      mutable_text_storage &text;
+    } storage;
   };
 
 private: // builder.def
@@ -222,42 +233,40 @@ private: // builder.def
   struct builder_style_interface : protected virtual builder_base {
     builder_style_interface(builder_base &&bb) : builder_base{bb} {};
 
-    void dynamic(style::shape &&shape) {
+    void override(style::shape &&shape) {
       // allocate tmp
       auto ptr = ctx.frame_memory<style::shape>();
 
       new (ptr) style::shape{std::move(shape)};
 
-      ctx.ctree.current().get_info().style.override_shape(ptr);
+      ctx.ctree.current().get_info().style.override(ptr);
     };
 
-    void dynamic(style::transform &&transform) {
+    void override(style::transform &&transform) {
       auto ptr = ctx.frame_memory<style::transform>();
 
       new (ptr) style::transform{std::move(transform)};
 
-      ctx.ctree.current().get_info().style.override_transform(ptr);
+      ctx.ctree.current().get_info().style.override(ptr);
     };
 
-    void dynamic(style::decoration &&decoration) {
+    void override(style::decoration &&decoration) {
       auto ptr = ctx.frame_memory<style::decoration>();
 
       new (ptr) style::decoration{std::move(decoration)};
 
-      ctx.ctree.current().get_info().style.override_decoration(ptr);
+      ctx.ctree.current().get_info().style.override(ptr);
     };
   };
 
   struct builder_state_interface : protected virtual builder_base {
     builder_state_interface(builder_base &&bb) : builder_base{std::move(bb)} {};
 
-    void transition(pseudo_state from, pseudo_state to, auto &&call)
-      requires std::is_invocable_r_v<state_transition, decltype(call),
-                                     transition_utils>
-    {
-      auto tr_state = ctx.state_tr.transition_state(ctx.ctree.current_index());
-
-      auto actual_state = ((state_holder &)ctx.state).pseudo(uids.top());
+    void
+    transition(pseudo_state from, pseudo_state to,
+               std::convertible_to<state_transition (*)(transition_utils)> auto
+                   &&call) {
+      auto actual_state = ctx.state.pseudo(uids.top());
 
       if (actual_state.from() == from && actual_state.to() == to &&
           to != pseudo_state::null()) {
@@ -272,8 +281,8 @@ private: // builder.def
 
     auto pseudo(uid_t uid) { return ((state_holder &)ctx.state).pseudo(uid); };
 
-    void pseudo_default(uid_t uid, pseudo_state state) {
-      ctx.state.pseudo_default(uid, state);
+    void pseudo_init_value(uid_t uid, pseudo_state state) {
+      ctx.state.pseudo_init_value(uid, state);
     }
 
     bool hovered(uid_t uid) { return ctx.state.hovered(uid); };
@@ -344,7 +353,7 @@ private:
 
 private:
   managed_state_holder state{};
-  pseudo_state_transition_handler state_tr{state};
+  state_transition_scheduler state_tr{state};
 
   text::text_present_aggregator tpa{};
   // плоское дерево вычислений
@@ -425,10 +434,36 @@ void context::builder_unit_interface::text(text_registry_key key,
   ctx.ctree.up();
 }
 
-void context::transition_utils::set_dynamic_style(style::decoration &&style) {
+context::transition_utils::storage_interface::storage_interface(context &ctx)
+    : object{ctx.object}, text{ctx.text} {};
+
+context::transition_utils::style_interface::style_interface(context &ctx_,
+                                                            std::size_t index_)
+    : ctx{ctx_}, index{index_} {};
+
+void context::transition_utils::style_interface::override(
+    style::decoration &&style) {
   auto ptr = new (ctx.frame_resource__.allocate(sizeof(style::decoration),
                                                 alignof(style::decoration)))
       style::decoration{std::move(style)};
-  ctx.ctree.at(index).get_info().style.override_decoration(ptr);
+  ctx.ctree.at(index).get_info().style.override(ptr);
+};
+
+void context::transition_utils::style_interface::override(
+    style::shape &&style) {
+  auto ptr = new (ctx.frame_resource__.allocate(sizeof(style::shape),
+                                                alignof(style::shape)))
+      style::shape{std::move(style)};
+
+  ctx.ctree.at(index).get_info().style.override(ptr);
+};
+
+void context::transition_utils::style_interface::override(
+    style::transform &&style) {
+  auto ptr = new (ctx.frame_resource__.allocate(sizeof(style::transform),
+                                                alignof(style::transform)))
+      style::transform{std::move(style)};
+
+  ctx.ctree.at(index).get_info().style.override(ptr);
 };
 } // namespace iuic
