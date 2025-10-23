@@ -1,0 +1,72 @@
+{
+	"bmi-installation" : null,
+	"compiler-frontend-variant" : "GNU",
+	"compiler-id" : "Clang",
+	"compiler-simulate-id" : "",
+	"config" : "Debug",
+	"cxx-modules" : 
+	{
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/src/cat-kit.cppm.o" : 
+		{
+			"bmi-only" : false,
+			"destination" : null,
+			"name" : "cat_kit_modules",
+			"relative-directory" : "src",
+			"source" : "/home/hikki/job/cpp/iuic/project/kit/cat-kit/src/cat-kit.cppm",
+			"type" : "CXX_MODULES",
+			"visibility" : "PUBLIC"
+		}
+	},
+	"database-info" : null,
+	"dir-cur-bld" : "/home/hikki/job/cpp/iuic/project/.build/kit/cat-kit",
+	"dir-cur-src" : "/home/hikki/job/cpp/iuic/project/kit/cat-kit",
+	"dir-top-bld" : "/home/hikki/job/cpp/iuic/project/.build",
+	"dir-top-src" : "/home/hikki/job/cpp/iuic/project",
+	"exports" : [],
+	"forward-modules-from-target-dirs" : [],
+	"include-dirs" : [],
+	"language" : "CXX",
+	"linked-target-dirs" : 
+	[
+		"/home/hikki/job/cpp/iuic/project/.build/CMakeFiles/iuic_core.dir"
+	],
+	"module-dir" : "/home/hikki/job/cpp/iuic/project/.build/kit/cat-kit/CMakeFiles/cat_kit.dir",
+	"sources" : 
+	{
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-base.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-base.cpp"
+		},
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-computing-ctx.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-computing-ctx.cpp"
+		},
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-ctx.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-ctx.cpp"
+		},
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-fct.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-fct.cpp"
+		},
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-layout-utils.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-layout-utils.cpp"
+		},
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-state-transition.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-state-transition.cpp"
+		},
+		"kit/cat-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-state.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-state.cpp"
+		}
+	}
+}

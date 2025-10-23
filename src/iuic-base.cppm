@@ -17,6 +17,15 @@ struct relement;
 // using hash_t
 // using srk
 using uid_t = std::uint64_t;
+namespace uid {
+struct anchor {
+  consteval anchor() = default;
+  anchor(const anchor &) = delete;
+  anchor &operator=(const anchor &) = delete;
+  anchor(anchor &&) = delete;
+  anchor &operator=(anchor &&) = delete;
+};
+}; // namespace uid
 using pixel_t = std::int32_t;
 using upixel_t = std::uint32_t;
 using time_t = std::chrono::time_point<std::chrono::steady_clock>;
@@ -382,6 +391,13 @@ struct relement {
 };
 
 namespace policy {
+
+struct shared {};
+
+struct unique {};
+
+struct indexed {};
+
 enum class hovered : std::uint8_t {
   none,
   propagate, // true -> go

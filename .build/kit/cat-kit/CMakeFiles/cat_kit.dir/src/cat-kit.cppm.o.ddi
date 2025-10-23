@@ -1,0 +1,21 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "kit/cat-kit/CMakeFiles/cat_kit.dir/src/cat-kit.cppm.o",
+      "provides": [
+        {
+          "is-interface": true,
+          "logical-name": "iuic.cat_kit",
+          "source-path": "/home/hikki/job/cpp/iuic/project/kit/cat-kit/src/cat-kit.cppm"
+        }
+      ],
+      "requires": [
+        {
+          "logical-name": "iuic.core"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

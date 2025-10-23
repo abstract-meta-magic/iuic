@@ -1,0 +1,17 @@
+ninja_dyndep_version = 1.0
+build examples/CMakeFiles/button.dir/button.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build examples/CMakeFiles/button.dir/__/src/iuic-base.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-base.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build examples/CMakeFiles/button.dir/__/src/iuic-ctx.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-hash.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build examples/CMakeFiles/button.dir/__/src/iuic-fct.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-fct.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build examples/CMakeFiles/button.dir/__/src/iuic-layout-utils.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-layout.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build examples/CMakeFiles/button.dir/__/src/iuic-computing-ctx.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-computing_context.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build examples/CMakeFiles/button.dir/__/src/iuic-state.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-state.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build examples/CMakeFiles/button.dir/__/src/iuic-state-transition.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-state.transition.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+

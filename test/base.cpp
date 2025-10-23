@@ -22,33 +22,7 @@
 #include <coroutine>
 
 import iuic.core;
-
-namespace iuic::key_map {
-
-struct command {
-  virtual ~command() = default;
-  virtual std::unique_ptr<command> proccess(struct game *) = 0;
-  virtual void undo(struct game *) = 0;
-};
-
-struct flex_event {
-  enum class type {
-    sshh,
-  } type;
-  char data[];
-};
-
-constexpr key_code mouse(std::string_view str) {
-  if (str == "left") {
-    return key_code{(key_t)1};
-  } else if (str == "mid") {
-    return key_code{(key_t)2};
-  } else if (str == "right") {
-    return key_code{(key_t)3};
-  }
-  return {};
-};
-}; // namespace iuic::key_map
+import iuic.kitty_kit;
 
 constexpr auto s_1 = []() {
   iuic::style::decl res{};
@@ -74,98 +48,6 @@ SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
 };
 
 using builder_ui = iuic::context::builder;
-
-constexpr auto none_style = []() {
-  iuic::style::decl res{};
-
-  res.shape.max_size = iuic::ui_adaptive_size{};
-
-  return res;
-}();
-
-void button(iuic::context::builder &b, std::invocable<> auto &&call,
-            iuic::style::ref style = iuic::def_style) {
-  static constexpr bool uid_seed{true};
-
-  iuic::uid_t uid;
-
-  b.unit.frame(
-      [&](auto &b) {
-        // just for uid
-        b.unit.frame([&](auto &b) { uid = b.uid.make(&uid_seed); },
-                     none_style); // hiden style
-
-        if (b.state.hovered(uid)) {
-          b.style.override(
-              iuic::style::decoration{.background = iuic::color::css::red()});
-        };
-
-        auto srk = b.storage.object.persist(uid, "callback");
-        auto trk = b.storage.text.persist(uid, "lable");
-
-        b.unit.text(trk);
-
-        b.storage.object.init_if_not(srk, [&]() { return call; });
-
-        b.uid.branch(uid); // event set
-
-        b.policy.hovered(iuic::policy::hovered::propagate);
-
-        using callback_t = std::remove_cvref_t<decltype(call)>;
-        b.event(
-            [](iuic::event::local::key e) {
-              if (e.code == iuic::key_map::mouse("left")) {
-                e.utils.object.try_visit(e.ork,
-                                         [](callback_t &call) { call(); });
-              };
-            },
-            srk);
-      },
-      style);
-}
-
-constexpr inline void button(iuic::context::builder &b, const std::string &str,
-                             iuic::style::ref style = iuic::def_style) {
-  static constexpr bool uid_sub_seed{true};
-
-  auto uid = b.uid.make(b.uid.make(&uid_sub_seed), str);
-
-  static auto focused = iuic::pseudo_state::make<struct focused>();
-  static auto idle = iuic::pseudo_state::make<struct idle>();
-
-  b.unit.frame(
-      [=](auto &b) {
-        // b.text(str);
-
-        b.uid.branch(uid);
-        auto trk = b.storage.text.persist(uid, "haha");
-
-        b.unit.text(trk);
-
-        b.policy.hovered(iuic::policy::hovered::propagate);
-
-        b.event([](iuic::event::local::key e) {
-          if (e.code == iuic::key_map::mouse("left")) {
-            if (e.utils.state.pseudo(e.uid) != focused) {
-              e.utils.state.pseudo(e.uid) = focused;
-            }
-          }
-        });
-
-        b.event([](iuic::event::global::key e) {
-          std::println("Text field press : {}", e.code[0]);
-          if (e.utils.state.pseudo(e.uid) == focused &&
-              e.code == iuic::key_map::mouse("left")) {
-            e.utils.state.pseudo(e.uid) = idle;
-          }
-        });
-      },
-      style);
-}
-
-template <auto object> constexpr const auto &static_ref() noexcept {
-  return object;
-}
 
 int main() {
   using namespace iuic;
@@ -316,11 +198,11 @@ int main() {
 
       // b.text("ok");
 
-      button(b, [&]() { std::println("yo {}", msg); });
+      kitty_kit::button(b, [&]() { std::println("yo {}", msg); });
 
-      button(b, []() { std::println("my pritty btn"); });
+      kitty_kit::button(b, []() { std::println("my pritty btn"); });
 
-      button(b, []() { std::println("my pritty btn with style"); });
+      kitty_kit::button(b, []() { std::println("my pritty btn with style"); });
     });
 
     // SDL

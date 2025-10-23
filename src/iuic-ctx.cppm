@@ -6,6 +6,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <memory_resource>
+#include <sstream>
 #include <stack>
 #include <string>
 #include <string_view>
@@ -16,12 +17,14 @@ module;
 export module iuic.core;
 export import :base;
 export import :base.color;
+export import :layout.def;
 import :layout.frame.box;
 import :layout.text.box;
 import :fct;
 export import :storage.def;
 export import :storage.object;
 export import :storage.text;
+export import :text.token;
 export import :text.present;
 export import :state;
 export import :state.transition;
@@ -91,22 +94,26 @@ public: // public forward decl
 
 private: // builder.def
   struct builder_base {
+    struct unit {
+      uid_t uid{0};
+      size_t index{0};
+    };
     builder_base(context &ctx_) : ctx{ctx_} {
       static std::string root_uid{"root-uid-hash-str-4467532667"};
-      uids.push(hash::make(4474444, root_uid.c_str(), root_uid.size()));
+      uids.push(unit{hash::make(4474444, root_uid.c_str(), root_uid.size())});
     };
 
   protected:
     void __prev() noexcept { uids.push(uids.top()); };
 
     void __post() noexcept {
-      ctx.ctree.current().get_info().uid = uids.top();
+      ctx.ctree.current().get_info().uid = uids.top().uid;
       uids.pop();
     };
 
   protected: // builder unit stack
     context &ctx;
-    std::stack<uid_t> uids;
+    std::stack<unit> uids;
   };
 
   struct builder_unit_interface : protected virtual builder_base {
@@ -130,7 +137,8 @@ private: // builder.def
     /*
       Является конечной точкой.Отрисовка текста
     */
-    void text(text_registry_key, style::ref = def_style);
+    void text(text_registry_key, style::ref = def_style,
+              const text_layout & = text_def_layout);
   };
 
   struct builder_order_interface : protected virtual builder_base {
@@ -158,30 +166,56 @@ private: // builder.def
   };
 
   struct builder_uid_interface : protected virtual builder_base {
+    static inline constexpr uid::anchor default_anchor{};
+
     builder_uid_interface(builder_base &&bb) : builder_base{bb} {};
-    // base uid + str.hash
-    uid_t make(const std::string &str) const noexcept {
-      return hash::make(uids.top(), str.c_str(), str.size());
+
+    uid_t make(const std::string &str,
+               const uid::anchor &anchor = default_anchor) const noexcept {
+      std::stringstream ss;
+      ss << str;
+      ss << &default_anchor;
+
+      auto hash_string = ss.str();
+      return hash::make(hash_string.c_str(), hash_string.length());
     };
 
-    // base uid + other.uid.hash + str.hash
-    uid_t make(uid_t uid, const std::string &str) const noexcept {
-      return hash::make(uid, str.c_str(), str.size());
+    uid_t make(policy::shared, const std::string &str,
+               const uid::anchor &anchor = default_anchor) {
+      std::stringstream ss;
+      ss << str;
+      ss << &default_anchor;
+      ss << ctx.ctree.current().get_hierarchy().parent;
+
+      auto hash_string = ss.str();
+      return hash::make(hash_string.c_str(), hash_string.length());
     };
 
-    // base uid + ptr.hash
-    template <typename T>
-      requires std::is_pointer_v<T>
-    uid_t make(T ptr) const noexcept {
-      return __make_uid_from_ptr(reinterpret_cast<const void *>(ptr));
+    uid_t make(policy::unique, const std::string &str,
+               const uid::anchor &anchor = default_anchor) {
+      std::stringstream ss;
+      ss << str;
+      ss << &default_anchor;
+      ss << ctx.ctree.current().get_hierarchy().brother;
+      ss << ctx.ctree.current().get_hierarchy().parent;
+
+      auto hash_string = ss.str();
+      return hash::make(hash_string.c_str(), hash_string.length());
     };
 
-    template <typename T, typename... ARGS>
-    uid_t make(T(ptr)(ARGS...)) const noexcept {
-      return __make_uid_from_ptr(reinterpret_cast<const void *>(ptr));
+    uid_t make(policy::indexed, const std::string &str,
+               const uid::anchor &anchor = default_anchor) {
+      std::stringstream ss;
+      ss << str;
+      ss << &default_anchor;
+      ss << ctx.ctree.current().get_hierarchy().parent;
+      ss << ++uids.top().index;
+
+      auto hash_string = ss.str();
+      return hash::make(hash_string.c_str(), hash_string.length());
     };
 
-    void branch(uid_t uid) { uids.top() = uid; };
+    void branch(uid_t uid) { uids.top().uid = uid; };
 
   private:
     uid_t __make_uid_from_ptr(const void *ptr) const noexcept {
@@ -262,19 +296,20 @@ private: // builder.def
   struct builder_state_interface : protected virtual builder_base {
     builder_state_interface(builder_base &&bb) : builder_base{std::move(bb)} {};
 
+    // TODO : use uid
     void
-    transition(pseudo_state from, pseudo_state to,
+    transition(uid_t uid, pseudo_state from, pseudo_state to,
                std::convertible_to<state_transition (*)(transition_utils)> auto
                    &&call) {
-      auto actual_state = ctx.state.pseudo(uids.top());
+      auto actual_state = ctx.state.pseudo(uid);
 
       if (actual_state.from() == from && actual_state.to() == to &&
           to != pseudo_state::null()) {
-        auto tr = call({ctx, ctx.ctree.current_index(),
-                        actual_state.time_point(), uids.top()});
+        auto tr = call(
+            {ctx, ctx.ctree.current_index(), actual_state.time_point(), uid});
         tr.from = from;
         tr.to = to;
-        tr.uid = uids.top();
+        tr.uid = uid;
         ctx.state_tr.apply(ctx.ctree.current_index(), std::move(tr));
       }
     };
@@ -324,7 +359,7 @@ public: // api
 
   template <typename Call = void> void make(Call call);
 
-  // TODO : rename
+  // TODO : rename to blueprint
   const std::vector<relement> &get_tree();
 
 private:
@@ -425,9 +460,9 @@ void context::builder_unit_interface::frame(
   frame(def_style, layout);
 };
 
-void context::builder_unit_interface::text(text_registry_key key,
-                                           style::ref st) {
-  ctx.ctree.add(st, &text_def_layout);
+void context::builder_unit_interface::text(text_registry_key key, style::ref st,
+                                           const text_layout &layout) {
+  ctx.ctree.add(st, &layout);
 
   ctx.tpa.attach_present(key, ctx.ctree.current_index());
   // WARNING : установить данные для отрисовки текста
@@ -466,4 +501,27 @@ void context::transition_utils::style_interface::override(
 
   ctx.ctree.at(index).get_info().style.override(ptr);
 };
+
+struct ui_scheme_base {
+  // modify
+protected:
+  std::vector<relement> elements;
+};
+
+struct ui_scheme : protected ui_scheme_base {
+
+  ui_scheme &operator=(const ui_scheme_base &);
+  ui_scheme &operator=(ui_scheme_base &&);
+
+  // другие интересные функций
+
+  void foreach (std::invocable<const celement &> auto &&fn);
+};
+
+void test(ui_scheme &sh) {
+
+  ui_scheme_base base;
+
+  sh = std::move(base);
+}
 } // namespace iuic

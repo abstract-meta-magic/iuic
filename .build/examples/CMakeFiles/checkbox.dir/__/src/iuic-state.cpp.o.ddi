@@ -1,0 +1,17 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "examples/CMakeFiles/checkbox.dir/__/src/iuic-state.cpp.o",
+      "requires": [
+        {
+          "logical-name": "iuic.core:state"
+        },
+        {
+          "logical-name": "iuic.core"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,14 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "examples/CMakeFiles/checkbox.dir/checkbox.cpp.o",
+      "requires": [
+        {
+          "logical-name": "iuic.core"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

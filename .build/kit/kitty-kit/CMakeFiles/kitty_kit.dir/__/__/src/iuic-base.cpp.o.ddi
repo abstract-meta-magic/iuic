@@ -1,0 +1,17 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-base.cpp.o",
+      "requires": [
+        {
+          "logical-name": "iuic.core:base"
+        },
+        {
+          "logical-name": "iuic.core"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

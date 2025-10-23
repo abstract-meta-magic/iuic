@@ -14,7 +14,7 @@ set_target_properties(xxLib PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/tmp
 target_link_libraries(te xxLib)
 ## xxHash - END
 
-target_link_libraries(te iuic::core SDL3::SDL3)
+target_link_libraries(te iuic::core iuic::kit::kitty SDL3::SDL3)
 
 # -Wall -Wextra
 target_compile_options(te PRIVATE  -O0 -fcolor-diagnostics)

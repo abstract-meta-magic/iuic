@@ -1,0 +1,14 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "examples/CMakeFiles/button.dir/button.cpp.o",
+      "requires": [
+        {
+          "logical-name": "iuic.core"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

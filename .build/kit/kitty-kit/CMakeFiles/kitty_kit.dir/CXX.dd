@@ -1,0 +1,18 @@
+ninja_dyndep_version = 1.0
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-base.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-base.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-ctx.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-hash.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-fct.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-fct.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-layout-utils.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-layout.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-computing-ctx.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-computing_context.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-state.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-state.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-state-transition.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-state.transition.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
+
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/src/kitty-kit.cppm.o | kit/kitty-kit/CMakeFiles/kitty_kit.dir/iuic.kitty_kit.pcm: dyndep | CMakeFiles/iuic_core.dir/iuic.core.pcm kit/base-key-map/CMakeFiles/iuic_base_key_map.dir/iuic.key_map.base.pcm
+  restat = 1
+

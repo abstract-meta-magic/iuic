@@ -1,0 +1,24 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "kit/kitty-kit/CMakeFiles/kitty_kit.dir/src/kitty-kit.cppm.o",
+      "provides": [
+        {
+          "is-interface": true,
+          "logical-name": "iuic.kitty_kit",
+          "source-path": "/home/hikki/job/cpp/iuic/project/kit/kitty-kit/src/kitty-kit.cppm"
+        }
+      ],
+      "requires": [
+        {
+          "logical-name": "iuic.core"
+        },
+        {
+          "logical-name": "iuic.key_map.base"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

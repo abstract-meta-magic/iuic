@@ -1,0 +1,17 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "kit/kitty-kit/CMakeFiles/cat_kit.dir/__/__/src/iuic-fct.cpp.o",
+      "requires": [
+        {
+          "logical-name": "iuic.core:fct"
+        },
+        {
+          "logical-name": "iuic.core"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}
