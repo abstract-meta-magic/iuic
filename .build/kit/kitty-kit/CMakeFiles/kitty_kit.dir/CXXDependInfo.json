@@ -68,6 +68,11 @@
 		{
 			"language" : "CXX",
 			"source" : "/home/hikki/job/cpp/iuic/project/src/iuic-state.cpp"
+		},
+		"kit/kitty-kit/CMakeFiles/kitty_kit.dir/src/kitty-kit.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/hikki/job/cpp/iuic/project/kit/kitty-kit/src/kitty-kit.cpp"
 		}
 	}
 }

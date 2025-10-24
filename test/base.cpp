@@ -155,7 +155,7 @@ int main() {
                     };
 
                 b.state.transition(
-                    idle, focused,
+                    inner, idle, focused,
                     [](iuic::context::transition_utils utils)
                         -> iuic::state_transition {
                       for (;;) {
@@ -174,7 +174,7 @@ int main() {
                       }
                     });
 
-                b.state.transition(focused, idle,
+                b.state.transition(inner, focused, idle,
                                    [](iuic::context::transition_utils utils)
                                        -> iuic::state_transition {
                                      for (;;) {

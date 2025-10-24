@@ -1,4 +1,6 @@
 ninja_dyndep_version = 1.0
+build kit/kitty-kit/CMakeFiles/kitty_kit.dir/src/kitty-kit.cpp.o: dyndep | kit/kitty-kit/CMakeFiles/kitty_kit.dir/iuic.kitty_kit.pcm
+
 build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-base.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-base.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm
 
 build kit/kitty-kit/CMakeFiles/kitty_kit.dir/__/__/src/iuic-ctx.cpp.o: dyndep | CMakeFiles/iuic_core.dir/iuic.core-hash.pcm CMakeFiles/iuic_core.dir/iuic.core.pcm

@@ -100,7 +100,7 @@ struct frame_measure_utils : layout_utils_base {
   };
 };
 
-struct area_request {
+export struct area_request {
   constexpr area_request(computing_context *of_) noexcept : of{of_} {}
 
   constexpr area_request(const area_request &) = default;

@@ -13,7 +13,11 @@ target_sources(kitty_kit PUBLIC
     TYPE CXX_MODULES
     FILES
     "src/kitty-kit.cppm"
-  )
+)
+
+target_sources(kitty_kit PUBLIC
+    "src/kitty-kit.cpp"
+)
 
 target_link_libraries(kitty_kit PUBLIC 
     iuic_core

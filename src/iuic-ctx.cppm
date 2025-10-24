@@ -6,6 +6,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <memory_resource>
+#include <print>
 #include <sstream>
 #include <stack>
 #include <string>
@@ -196,7 +197,7 @@ private: // builder.def
       std::stringstream ss;
       ss << str;
       ss << &default_anchor;
-      ss << ctx.ctree.current().get_hierarchy().brother;
+      ss << ctx.ctree.current_index(); // error
       ss << ctx.ctree.current().get_hierarchy().parent;
 
       auto hash_string = ss.str();
@@ -314,7 +315,7 @@ private: // builder.def
       }
     };
 
-    auto pseudo(uid_t uid) { return ((state_holder &)ctx.state).pseudo(uid); };
+    auto pseudo(uid_t uid) { return ctx.state.pseudo(uid); };
 
     void pseudo_init_value(uid_t uid, pseudo_state state) {
       ctx.state.pseudo_init_value(uid, state);
@@ -501,27 +502,28 @@ void context::transition_utils::style_interface::override(
 
   ctx.ctree.at(index).get_info().style.override(ptr);
 };
-
+/*
 struct ui_scheme_base {
-  // modify
+// modify
 protected:
-  std::vector<relement> elements;
+std::vector<relement> elements;
 };
 
 struct ui_scheme : protected ui_scheme_base {
 
-  ui_scheme &operator=(const ui_scheme_base &);
-  ui_scheme &operator=(ui_scheme_base &&);
+ui_scheme &operator=(const ui_scheme_base &);
+ui_scheme &operator=(ui_scheme_base &&);
 
-  // другие интересные функций
+// другие интересные функций
 
-  void foreach (std::invocable<const celement &> auto &&fn);
+void foreach (std::invocable<const celement &> auto &&fn);
 };
 
 void test(ui_scheme &sh) {
 
-  ui_scheme_base base;
+ui_scheme_base base;
 
-  sh = std::move(base);
+sh = std::move(base);
 }
+*/
 } // namespace iuic

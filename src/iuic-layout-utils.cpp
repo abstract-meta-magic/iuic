@@ -79,7 +79,7 @@ upixel_t layout_utils_base::vh(vh_t vh) const noexcept {
 }
 
 upixel_t layout_utils_base::vw(vw_t vw) const noexcept {
-  return std::get<upixel_t>(root_style().get_shape().max_size.h) * vw;
+  return std::get<upixel_t>(root_style().get_shape().max_size.w) * vw;
 }
 
 // TODO : log info

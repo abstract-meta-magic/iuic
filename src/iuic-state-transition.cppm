@@ -18,6 +18,9 @@ export {
   struct ok_t {
   } constexpr inline ok{};
 
+  struct yield_t {
+  } constexpr inline yield{};
+
   struct err_t {
   } constexpr inline err{};
 }
@@ -45,7 +48,9 @@ struct state_tansition_promise_type {
 
   std::suspend_always final_suspend() noexcept { return {}; }
 
-  std::suspend_always yield_value(std::variant<ok_t, null_t>) { return {}; };
+  std::suspend_always yield_value(std::variant<ok_t, null_t, err_t, yield_t>) {
+    return {};
+  };
 
   void return_value(iuic::pseudo_state state) { ret = state; };
 
