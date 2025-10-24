@@ -4,6 +4,7 @@ module;
 #include <atomic>
 #include <concepts>
 #include <cstdint>
+#include <print>
 
 export module iuic.kitty_kit;
 export import iuic.core;
@@ -755,6 +756,56 @@ bool checkbox(builder &b) {
       style, layout);
 
   return out;
+};
+
+void radio_button(builder &b) {
+  static style::decl style{[]() {
+    style::decl res{};
+
+    res.shape.min_size.w = upixel_t{20};
+    res.shape.min_size.h = upixel_t{20};
+
+    res.decoration.background = color::catppuccin::macchiato::surface_2{};
+
+    return res;
+  }()};
+
+  static layout::simple_box layout{};
+
+  struct radio_state {
+    iuic::uid_t current_selected{0};
+  };
+
+  b.unit.frame(
+      [](builder &b) {
+        auto suid = b.uid.make(policy::shared{}, "shared-link");
+        auto uid = b.uid.make(policy::unique{}, "r-button");
+        b.uid.branch(uid);
+
+        auto ork = b.storage.object.persist(suid, "shared-state");
+
+        b.storage.object.init_if_not(ork, [&]() { return radio_state{uid}; });
+
+        b.storage.object.try_visit(ork, [&](radio_state &state) {
+          if (state.current_selected == uid) {
+            b.style.override(style::decoration{
+                .background{color::catppuccin::macchiato::surface_0{}}});
+          }
+        });
+
+        b.policy.hovered(policy::hovered::propagate);
+
+        b.event(
+            [](event::local::key e) {
+              if (e.code == key_map::mouse("left")) {
+                e.utils.object.try_visit(e.ork, [&](radio_state &state) {
+                  state.current_selected = e.uid;
+                });
+              }
+            },
+            ork);
+      },
+      style, layout);
 };
 
 // list -> item_wrapper -> item

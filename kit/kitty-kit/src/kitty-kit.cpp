@@ -55,6 +55,7 @@ bool simple_box::arrange(frame_arrange_utils utils) const noexcept {
 void simple_box::position(frame_position_utils utils) const noexcept {};
 
 measure_result short_text::measure(text_measure_utils utils) const noexcept {
+
   return {};
 };
 bool short_text::arrange(text_arrange_utils utils) const noexcept {

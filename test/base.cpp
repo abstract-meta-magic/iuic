@@ -194,6 +194,10 @@ int main() {
 
           b.event([](iuic::event::local::key e) { std::println("outer"); });
         });
+
+        kitty_kit::radio_button(b);
+        kitty_kit::radio_button(b);
+        kitty_kit::radio_button(b);
       });
 
       // b.text("ok");
