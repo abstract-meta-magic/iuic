@@ -21,12 +21,32 @@ void context::set_view_size(ui_size size) { ctree.set_root_size(size); };
 
 const std::vector<relement> &context::get_tree() { return to_render; }
 
+// Refactor and move to other file
+template <> void advance(context::builder &builder) {
+  builder.uids[0].index = 0;
+};
+
+// Refactor and move to other file
+template <> void advance(managed_object_storage &storage) {
+  storage.advance_generation();
+};
+
+// Refactor and move to other file
+template <> void advance(managed_text_storage &storage) {
+  storage.advance_generation();
+};
+
+// Refactor and move to other file
+template <> void advance(FCTree &ctree) { ctree.reset(); };
+
+// TODO : replace all to advance
 void context::reset() {
-  ctree.reset();
+  iuic::advance(ctree);
   to_render.clear();
-  object.advance_generation();
-  text.advance_generation();
+  iuic::advance(object);
+  iuic::advance(text);
   frame_resource__.release();
+  iuic::advance(b);
 };
 
 void context::proccess_measure() {
@@ -72,28 +92,28 @@ void context::proccess_measure() {
   std::visit(
       [&](auto layout) {
         if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
-          auto res = layout->measure({&ctree.root()});
+          auto res = layout->measure({ctree.root()});
 
           if (res) {
-            ctree.root().apply(res.value().rq);
+            ctree.root()->apply(res.value().rq);
           } else {
-            ctree.root().discard();
+            ctree.root()->discard();
           };
         }
       },
-      ctree.root().get_layout());
+      ctree.root()->get_layout());
 };
 
 void context::proccess_position() {
   // TODO : PARALLEL
-  ctree.root().apply(ui_position{0, 0});
+  ctree.root()->apply(ui_position{0, 0});
   std::visit(
       [&](auto layout) {
         if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
-          layout->position({&ctree.root()});
+          layout->position({ctree.root()});
         }
       },
-      ctree.root().get_layout());
+      ctree.root()->get_layout());
 
   for (auto &cc : ctree.range_for()) {
     if (cc.is_discarted()) {
@@ -112,17 +132,17 @@ void context::proccess_position() {
 
 void context::proccess_arrange() {
   // TODO : PARALLEL
-  auto &max_size = ctree.root().get_info().style.get_shape().max_size;
-  ctree.root().apply(
+  auto &max_size = ctree.root()->get_info().style.get_shape().max_size;
+  ctree.root()->apply(
       ui_size{std::get<upixel_t>(max_size.w), std::get<upixel_t>(max_size.h)});
 
   std::visit(
       [&](auto layout) {
         if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
-          layout->arrange({&ctree.root()});
+          layout->arrange({ctree.root()});
         }
       },
-      ctree.root().get_layout());
+      ctree.root()->get_layout());
 
   for (auto &cc : ctree.range_for()) {
     if (cc.is_discarted()) {

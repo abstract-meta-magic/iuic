@@ -596,11 +596,10 @@ void button(builder &b, std::invocable<> auto &&callback) {
 
   style::ref ref{style_};
 
+  auto uid = b.uid.make(policy::unique{}, "kitty-kit-button");
   b.frame(
+      uid,
       [&](builder &b) {
-        auto uid = b.uid.make(policy::unique{}, "kitty-kit-button");
-        b.uid.branch(uid);
-
         auto ork = b.storage.object.persist(uid, "button-callback");
 
         b.storage.object.init_if_not(
@@ -633,11 +632,10 @@ void text_button(builder &b, trk_t trk, std::invocable<> auto &&callback) {
   static layout::text_button layout_;
   static layout::short_text text_layout;
 
-  b.frame(
+  auto uid = b.uid.make("kitty-kit-button");
+  b.element.frame(
+      uid,
       [&](builder &b) {
-        auto uid = b.uid.make("kitty-kit-button");
-        b.uid.branch(uid);
-
         auto ork = b.storage.object.persist(uid, "button-callback");
 
         b.storage.object.init_if_not(
@@ -655,7 +653,7 @@ void text_button(builder &b, trk_t trk, std::invocable<> auto &&callback) {
             },
             ork);
 
-        b.unit.text(trk, text_style, text_layout);
+        b.element.text(trk, text_style, text_layout);
       },
 
       button_style, layout_);
@@ -670,8 +668,8 @@ void lable(builder &b, trk_t trk) {
   static layout::simple_box wrapper_layout;
   static layout::short_text text_box_layout;
 
-  b.unit.frame(
-      [&](builder &b) { b.unit.text(trk, text_box_style, text_box_layout); },
+  b.element.frame(
+      [&](builder &b) { b.element.text(trk, text_box_style, text_box_layout); },
       wrapper_style, wrapper_layout);
 };
 
@@ -690,10 +688,8 @@ trk_t input(builder &b) {
 
   trk_t out;
 
-  b.unit.frame([&](builder &b) {
-    auto uid = b.uid.make(policy::unique{}, "kitty-kit-text-input");
-
-    b.uid.branch(uid);
+  auto uid = b.uid.make(policy::unique{}, "kitty-kit-text-input");
+  b.element.frame(uid, [&](builder &b) {
     out = b.storage.text.persist(uid, "text-buffer");
 
     b.policy.hovered(policy::hovered::propagate);
@@ -719,7 +715,7 @@ trk_t input(builder &b) {
       }
     });
 
-    b.unit.text(out, text_box_style, text_box_layout);
+    b.element.text(out, text_box_style, text_box_layout);
   });
 
   return out;
@@ -736,12 +732,10 @@ bool checkbox(builder &b) {
 
   bool out{false};
 
-  b.unit.frame(
+  auto uid = b.uid.make(policy::unique{}, "kitty-checkbox");
+  b.element.frame(
+      uid,
       [&](builder &b) {
-        auto uid = b.uid.make(policy::unique{}, "kitty-checkbox");
-
-        b.uid.branch(uid);
-
         if (b.state.pseudo(uid) == active) {
           out = true;
         }
@@ -758,7 +752,7 @@ bool checkbox(builder &b) {
   return out;
 };
 
-void radio_button(builder &b) {
+bool radio_button(builder &b) {
   static style::decl style{[]() {
     style::decl res{};
 
@@ -776,11 +770,13 @@ void radio_button(builder &b) {
     iuic::uid_t current_selected{0};
   };
 
-  b.unit.frame(
-      [](builder &b) {
-        auto suid = b.uid.make(policy::shared{}, "shared-link");
-        auto uid = b.uid.make(policy::unique{}, "r-button");
-        b.uid.branch(uid);
+  bool out{false};
+
+  auto uid = b.uid.make(policy::indexed{}, "r-button");
+  b.element.frame(
+      uid,
+      [&](builder &b) {
+        auto suid = b.uid.make(policy::shared{1}, "shared-link");
 
         auto ork = b.storage.object.persist(suid, "shared-state");
 
@@ -790,6 +786,7 @@ void radio_button(builder &b) {
           if (state.current_selected == uid) {
             b.style.override(style::decoration{
                 .background{color::catppuccin::macchiato::surface_0{}}});
+            out = true;
           }
         });
 
@@ -806,6 +803,8 @@ void radio_button(builder &b) {
             ork);
       },
       style, layout);
+
+  return out;
 };
 
 // list -> item_wrapper -> item

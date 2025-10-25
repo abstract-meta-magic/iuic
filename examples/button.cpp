@@ -14,10 +14,8 @@ void button(context::builder &b, std::invocable<> auto &&call) {
   using bt = context::builder;
   int dy_seed{};
 
-  b.unit.frame([&](bt &b) {
-    auto uid = b.uid.make(policy::unique{}, "button");
-
-    b.uid.branch(uid);
+  auto uid = b.uid.make(policy::unique{}, "button");
+  b.element.frame(uid, [&](bt &b) {
     b.policy.hovered(policy::hovered::propagate);
 
     auto ork = b.storage.object.persist(uid, "callback");

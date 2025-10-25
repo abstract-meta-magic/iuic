@@ -19,18 +19,14 @@ iuic::uid_t checkbox(context::builder &b, const std::string &name) {
 
   iuic::uid_t box_state_uid;
 
-  b.unit.frame([&](auto &b) {
-    auto uid = b.uid.make(iuic::policy::unique{}, "check-frame");
-    b.uid.branch(uid);
-
+  auto uid = b.uid.make(iuic::policy::unique{}, "check-frame");
+  b.element.frame([&](auto &b) {
     auto trk = b.storage.text.persist(uid, "check-text");
 
-    b.unit.text(trk);
+    b.element.text(trk);
 
-    b.unit.frame([&](auto &b) {
-      box_state_uid = b.uid.make(iuic::policy::shared{}, "check-box");
-      b.uid.branch(box_state_uid);
-
+    box_state_uid = b.uid.make(iuic::policy::shared{}, "check-box");
+    b.element.frame(box_state_uid, [&](auto &b) {
       b.policy.hovered(policy::hovered::propagate);
 
       // b.state.pseudo.init(idle);
@@ -55,18 +51,14 @@ void checkbox(context::builder &b, const std::string &name,
 
   iuic::uid_t box_state_uid;
 
-  b.unit.frame([&](auto &b) {
-    auto uid = b.uid.make(iuic::policy::unique{}, "check-frame");
-    b.uid.branch(uid);
-
+  auto uid = b.uid.make(iuic::policy::unique{}, "check-frame");
+  b.element.frame(uid, [&](auto &b) {
     auto trk = b.storage.text.persist(uid, "check-text");
 
-    b.unit.text(trk);
+    b.element.text(trk);
 
-    b.unit.frame([&](auto &b) {
-      box_state_uid = b.uid.make(iuic::policy::shared{}, "check-box");
-      b.uid.branch(box_state_uid);
-
+    box_state_uid = b.uid.make(iuic::policy::shared{}, "check-box");
+    b.element.frame(box_state_uid, [&](auto &b) {
       b.state.pseudo_init_value(box_state_uid, idle);
 
       b.policy.hovered(policy::hovered::propagate);

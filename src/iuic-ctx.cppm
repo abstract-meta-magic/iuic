@@ -101,24 +101,22 @@ private: // builder.def
     };
     builder_base(context &ctx_) : ctx{ctx_} {
       static std::string root_uid{"root-uid-hash-str-4467532667"};
-      uids.push(unit{hash::make(4474444, root_uid.c_str(), root_uid.size())});
+      uids.push_back(
+          unit{hash::make(4474444, root_uid.c_str(), root_uid.size())});
     };
 
   protected:
-    void __prev() noexcept { uids.push(uids.top()); };
+    void __prev() noexcept { uids.push_back({uids.back().uid}); };
 
-    void __post() noexcept {
-      ctx.ctree.current().get_info().uid = uids.top().uid;
-      uids.pop();
-    };
+    void __post() noexcept { uids.pop_back(); };
 
   protected: // builder unit stack
     context &ctx;
-    std::stack<unit> uids;
+    std::vector<unit> uids;
   };
 
-  struct builder_unit_interface : protected virtual builder_base {
-    builder_unit_interface(builder_base &&bb) : builder_base{bb} {};
+  struct builder_element_interface : protected virtual builder_base {
+    builder_element_interface(builder_base &&bb) : builder_base{bb} {};
 
     /*
       Базовая форма для всего.Стелизуемый рамка.
@@ -135,6 +133,18 @@ private: // builder.def
 
     void frame(const frame_layout &) noexcept;
 
+    void frame(uid_t uid, std::invocable<builder &> auto &&call,
+               style::ref = def_style,
+               const frame_layout & = box_layout) noexcept;
+
+    void frame(uid_t uid, std::invocable<builder &> auto &&call,
+               const frame_layout &) noexcept;
+
+    void frame(uid_t uid, style::ref = def_style,
+               const frame_layout & = box_layout) noexcept;
+
+    void frame(uid_t uid, const frame_layout &) noexcept;
+
     /*
       Является конечной точкой.Отрисовка текста
     */
@@ -146,13 +156,13 @@ private: // builder.def
     builder_order_interface(builder_base &&bb) : builder_base{bb} {}
 
     void group(std::uint16_t value) {
-      ctx.ctree.current().get_info().order.group = value;
+      ctx.ctree.current()->get_info().order.group = value;
     };
 
-    void up() { ctx.ctree.current().get_info().order.priority += 1; };
+    void up() { ctx.ctree.current()->get_info().order.priority += 1; };
 
     void set(std::uint16_t value) {
-      ctx.ctree.current().get_info().order.priority += value;
+      ctx.ctree.current()->get_info().order.priority += value;
     };
   };
 
@@ -160,10 +170,12 @@ private: // builder.def
     builder_policy_interface(builder_base &&bb) : builder_base{bb} {};
 
     void hovered(policy::hovered p) {
-      ctx.ctree.current().get_info().hovered_p = p;
+      ctx.ctree.current()->get_info().hovered_p = p;
     };
 
-    void event(policy::event p) { ctx.ctree.current().get_info().event_p = p; };
+    void event(policy::event p) {
+      ctx.ctree.current()->get_info().event_p = p;
+    };
   };
 
   struct builder_uid_interface : protected virtual builder_base {
@@ -181,12 +193,20 @@ private: // builder.def
       return hash::make(hash_string.c_str(), hash_string.length());
     };
 
-    uid_t make(policy::shared, const std::string &str,
+    uid_t make(policy::shared sh, const std::string &str,
                const uid::anchor &anchor = default_anchor) {
+      // ok
+
+      auto current = ctx.ctree.current_index();
+
+      for (size_t i{0}; i < sh.up; ++i) {
+        current = ctx.ctree.at(current)->get_hierarchy().parent;
+      }
+
       std::stringstream ss;
       ss << str;
       ss << &default_anchor;
-      ss << ctx.ctree.current().get_hierarchy().parent;
+      ss << current;
 
       auto hash_string = ss.str();
       return hash::make(hash_string.c_str(), hash_string.length());
@@ -197,8 +217,17 @@ private: // builder.def
       std::stringstream ss;
       ss << str;
       ss << &default_anchor;
-      ss << ctx.ctree.current_index(); // error
-      ss << ctx.ctree.current().get_hierarchy().parent;
+      ss << ctx.ctree.current_index();
+
+      auto cur = ctx.ctree.current();
+
+      auto ch = cur->get_hierarchy().interface->get_childs(cur);
+      if (ch.empty()) {
+        ss << ctx.ctree.current()->get_info().uid;
+      } else {
+        ss << ch.back()->get_hierarchy().interface->get_id(ch.back());
+        ss << ch.back()->get_info().uid;
+      }
 
       auto hash_string = ss.str();
       return hash::make(hash_string.c_str(), hash_string.length());
@@ -209,14 +238,15 @@ private: // builder.def
       std::stringstream ss;
       ss << str;
       ss << &default_anchor;
-      ss << ctx.ctree.current().get_hierarchy().parent;
-      ss << ++uids.top().index;
+
+      ss << ctx.ctree.current()->get_hierarchy().parent;
+      ss << ++uids.back().index; // save | always contains root
 
       auto hash_string = ss.str();
       return hash::make(hash_string.c_str(), hash_string.length());
     };
 
-    void branch(uid_t uid) { uids.top().uid = uid; };
+    uid_t self() const noexcept { return ctx.ctree.current()->get_info().uid; };
 
   private:
     uid_t __make_uid_from_ptr(const void *ptr) const noexcept {
@@ -274,7 +304,7 @@ private: // builder.def
 
       new (ptr) style::shape{std::move(shape)};
 
-      ctx.ctree.current().get_info().style.override(ptr);
+      ctx.ctree.current()->get_info().style.override(ptr);
     };
 
     void override(style::transform &&transform) {
@@ -282,7 +312,7 @@ private: // builder.def
 
       new (ptr) style::transform{std::move(transform)};
 
-      ctx.ctree.current().get_info().style.override(ptr);
+      ctx.ctree.current()->get_info().style.override(ptr);
     };
 
     void override(style::decoration &&decoration) {
@@ -290,7 +320,7 @@ private: // builder.def
 
       new (ptr) style::decoration{std::move(decoration)};
 
-      ctx.ctree.current().get_info().style.override(ptr);
+      ctx.ctree.current()->get_info().style.override(ptr);
     };
   };
 
@@ -326,22 +356,23 @@ private: // builder.def
 
 public:
   struct builder final : public virtual builder_base,
-                         private builder_unit_interface,
+                         private builder_element_interface,
                          private builder_uid_interface,
                          private builder_policy_interface,
                          private builder_storage_interface,
                          private builder_event_interface,
                          private builder_style_interface,
                          private builder_state_interface {
+    friend void iuic::advance(auto &);
     builder(builder_base &&bb) noexcept
-        : builder_base{bb}, builder_unit_interface{std::move(bb)},
+        : builder_base{bb}, builder_element_interface{std::move(bb)},
           builder_uid_interface{std::move(bb)},
           builder_policy_interface{std::move(bb)},
           builder_storage_interface{std::move(bb)},
           builder_event_interface{std::move(bb)},
           builder_style_interface{std::move(bb)},
           builder_state_interface{std::move(bb)} {};
-    builder_unit_interface &unit{*this};
+    builder_element_interface &element{*this};
     builder_uid_interface &uid{*this};
     builder_policy_interface &policy{*this};
     builder_storage_interface &storage{*this};
@@ -432,10 +463,34 @@ template <typename Call = void> void context::make(Call call) {
 
 // --- Builder Template Impl ---
 
-void context::builder_unit_interface::frame(
+void context::builder_element_interface::frame(
     std::invocable<context::builder &> auto &&call, style::ref style,
     const frame_layout &layout) noexcept {
+  frame(ctx.ctree.current()->get_info().uid, std::forward<decltype(call)>(call),
+        style, layout);
+};
+
+void context::builder_element_interface::frame(
+    std::invocable<context::builder &> auto &&call,
+    const frame_layout &layout) noexcept {
+  frame(ctx.ctree.current()->get_info().uid, std::forward<decltype(call)>(call),
+        def_style, layout);
+};
+
+void context::builder_element_interface::frame(
+    style::ref style, const frame_layout &layout) noexcept {
+  frame(ctx.ctree.current()->get_info().uid, layout);
+}
+void context::builder_element_interface::frame(
+    const frame_layout &layout) noexcept {
+  frame(def_style, layout);
+};
+
+void context::builder_element_interface::frame(
+    uid_t uid, std::invocable<context::builder &> auto &&call, style::ref style,
+    const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
+  ctx.ctree.current()->get_info().uid = uid;
 
   this->__prev();
   call((builder &)*this);
@@ -444,25 +499,27 @@ void context::builder_unit_interface::frame(
   ctx.ctree.up();
 };
 
-void context::builder_unit_interface::frame(
-    std::invocable<context::builder &> auto &&call,
+void context::builder_element_interface::frame(
+    uid_t uid, std::invocable<context::builder &> auto &&call,
     const frame_layout &layout) noexcept {
-  frame(std::forward<decltype(call)>(call), def_style, layout);
+  frame(uid, std::forward<decltype(call)>(call), def_style, layout);
 };
 
-void context::builder_unit_interface::frame(
-    style::ref style, const frame_layout &layout) noexcept {
+void context::builder_element_interface::frame(
+    uid_t uid, style::ref style, const frame_layout &layout) noexcept {
   ctx.ctree.add(style, &layout);
+  ctx.ctree.current()->get_info().uid = uid;
   ctx.ctree.up();
 };
 
-void context::builder_unit_interface::frame(
-    const frame_layout &layout) noexcept {
-  frame(def_style, layout);
+void context::builder_element_interface::frame(
+    uid_t uid, const frame_layout &layout) noexcept {
+  frame(uid, def_style, layout);
 };
 
-void context::builder_unit_interface::text(text_registry_key key, style::ref st,
-                                           const text_layout &layout) {
+void context::builder_element_interface::text(text_registry_key key,
+                                              style::ref st,
+                                              const text_layout &layout) {
   ctx.ctree.add(st, &layout);
 
   ctx.tpa.attach_present(key, ctx.ctree.current_index());
@@ -482,7 +539,7 @@ void context::transition_utils::style_interface::override(
   auto ptr = new (ctx.frame_resource__.allocate(sizeof(style::decoration),
                                                 alignof(style::decoration)))
       style::decoration{std::move(style)};
-  ctx.ctree.at(index).get_info().style.override(ptr);
+  ctx.ctree.at(index)->get_info().style.override(ptr);
 };
 
 void context::transition_utils::style_interface::override(
@@ -491,7 +548,7 @@ void context::transition_utils::style_interface::override(
                                                 alignof(style::shape)))
       style::shape{std::move(style)};
 
-  ctx.ctree.at(index).get_info().style.override(ptr);
+  ctx.ctree.at(index)->get_info().style.override(ptr);
 };
 
 void context::transition_utils::style_interface::override(
@@ -500,7 +557,7 @@ void context::transition_utils::style_interface::override(
                                                 alignof(style::transform)))
       style::transform{std::move(style)};
 
-  ctx.ctree.at(index).get_info().style.override(ptr);
+  ctx.ctree.at(index)->get_info().style.override(ptr);
 };
 /*
 struct ui_scheme_base {

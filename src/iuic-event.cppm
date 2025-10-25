@@ -138,9 +138,9 @@ public:
 
     for (auto &e : events) {
       // TODO : Make pack
-      auto &element = ctree.at(e.id);
+      auto element = ctree.at(e.id);
 
-      auto &info = element.get_info();
+      auto &info = element->get_info();
 
       if (info.hovered_p == policy::hovered::none) {
         continue;

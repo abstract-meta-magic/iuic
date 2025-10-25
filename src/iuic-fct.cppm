@@ -170,37 +170,37 @@ public: // Public Interface
   /*
     Получение последнего элемента.
   */
-  computing_context &last() noexcept;
+  computing_context *last() noexcept;
 
   /*
     Получение последнего элемента.
     Может возвращать корневой элемент.
   */
-  const computing_context &last() const noexcept;
+  const computing_context *last() const noexcept;
 
-  computing_context &current() noexcept;
+  computing_context *current() noexcept;
 
-  const computing_context &current() const noexcept;
-
-  /*
-    Получение элемента по индексу.
-  */
-  computing_context &at(size_t);
+  const computing_context *current() const noexcept;
 
   /*
     Получение элемента по индексу.
   */
-  const computing_context &at(size_t) const;
+  computing_context *at(size_t);
+
+  /*
+    Получение элемента по индексу.
+  */
+  const computing_context *at(size_t) const;
 
   /*
     Получение корневого элемента.
   */
-  computing_context &root() noexcept;
+  computing_context *root() noexcept;
 
   /*
     Получение корневого элемента.
   */
-  const computing_context &root() const noexcept;
+  const computing_context *root() const noexcept;
 
   /*
     Размер дерева, без учета корневого элемента.

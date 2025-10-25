@@ -86,10 +86,10 @@ int main() {
 
     ctx.make([&](auto &b) {
       // frame(create_info,childs_lambda)
-      b.unit.frame([&](auto &b) {
+      b.element.frame([&](auto &b) {
         // b.state.pseudo.init_value(idle);
 
-        b.unit.frame([&](auto &b) {
+        b.element.frame([&](auto &b) {
           static constexpr auto style = []() {
             iuic::style::decl res{};
             res.shape.min_size = {iuic::upixel_t{240}, iuic::upixel_t{60}};
@@ -99,11 +99,10 @@ int main() {
             return res;
           }();
 
-          b.unit.frame(
+          auto inner = b.uid.make("app-box-inner");
+          b.element.frame(
+              inner,
               [&](auto &b) {
-                auto inner = b.uid.make("app-box-inner");
-                b.uid.branch(inner);
-
                 b.state.pseudo_init_value(inner, idle);
 
                 b.policy.hovered(iuic::policy::hovered::block);
@@ -189,14 +188,20 @@ int main() {
                                    });
               },
               style);
-          b.uid.branch(b.uid.make("app-box"));
+
           b.policy.hovered(iuic::policy::hovered::propagate);
 
           b.event([](iuic::event::local::key e) { std::println("outer"); });
         });
 
-        kitty_kit::radio_button(b);
-        kitty_kit::radio_button(b);
+        if (kitty_kit::radio_button(b)) {
+          kitty_kit::button(b, [&]() { std::println("first - 1"); });
+          kitty_kit::button(b, [&]() { std::println("first - 2"); });
+        }
+        if (kitty_kit::radio_button(b)) {
+          kitty_kit::button(b, [&]() { std::println("second - 1"); });
+          kitty_kit::button(b, [&]() { std::println("second - 2"); });
+        };
         kitty_kit::radio_button(b);
       });
 

@@ -11,6 +11,11 @@ module;
 // Independ User Interface Core
 
 export module iuic.core:base;
+
+namespace iuic {
+void advance(auto &);
+};
+
 export namespace iuic {
 struct relement;
 
@@ -392,7 +397,9 @@ struct relement {
 
 namespace policy {
 
-struct shared {};
+struct shared {
+  unsigned up{0};
+};
 
 struct unique {};
 

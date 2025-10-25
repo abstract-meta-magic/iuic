@@ -119,32 +119,38 @@ void FCTree::up() {
   current_.pop();
 };
 
-computing_context &FCTree::last() noexcept {
+computing_context *FCTree::last() noexcept {
   // REFACTOR THIS
   if (nodes.empty()) {
-    return root_.ctx;
+    return &root_.ctx;
   }
 
-  return nodes.back();
+  return &nodes.back();
 };
 
-const computing_context &FCTree::last() const noexcept { return last(); }
+const computing_context *FCTree::last() const noexcept { return last(); }
 
-computing_context &FCTree::current() noexcept {
+computing_context *FCTree::current() noexcept {
   if (current_.empty()) {
-    return root_.ctx;
+    return &root_.ctx;
   }
-  return nodes[current_.top()];
+  return &nodes[current_.top()];
 }
-const computing_context &FCTree::current() const noexcept { return current(); }
 
-computing_context &FCTree::root() noexcept { return root_.ctx; }
+const computing_context *FCTree::current() const noexcept {
+  if (current_.empty()) {
+    return &root_.ctx;
+  }
+  return &nodes[current_.top()];
+}
 
-const computing_context &FCTree::root() const noexcept { return root_.ctx; }
+computing_context *FCTree::root() noexcept { return &root_.ctx; }
 
-computing_context &FCTree::at(size_t id) { return nodes[id]; }
+const computing_context *FCTree::root() const noexcept { return &root_.ctx; }
 
-const computing_context &FCTree::at(size_t id) const { return nodes[id]; }
+computing_context *FCTree::at(size_t id) { return &nodes[id]; }
+
+const computing_context *FCTree::at(size_t id) const { return &nodes[id]; }
 
 size_t FCTree::size() const noexcept { return nodes.size(); };
 
@@ -172,7 +178,10 @@ void FCTree::print_tree() const noexcept {
 };
 
 computing_context *FCTree::get_parent(computing_context *ctx) {
-  if (ctx->get_hierarchy().parent == std::numeric_limits<size_t>::max()) {
+  if (ctx == &root_.ctx) {
+    return ctx;
+  } else if (ctx->get_hierarchy().parent ==
+             std::numeric_limits<size_t>::max()) {
     return &root_.ctx;
   }
   return &nodes[ctx->get_hierarchy().parent];
@@ -186,6 +195,8 @@ std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
   if (nodes.empty()) {
     return res;
   }
+
+  auto hierarchy = ctx->get_hierarchy().interface;
 
   auto current = (ctx == &root_.ctx) ? &nodes[0] : (ctx + 1);
 

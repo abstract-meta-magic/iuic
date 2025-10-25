@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "builder.md",
+                "file": "builder-uid.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "builder"
+              "title": "builder-uid"
             }
           }
         ],
@@ -200,6 +200,7 @@
   },
   "active": "71a38c9dae8d39f0",
   "lastOpenFiles": [
+    "builder.md",
     "builder-element.md",
     "builder-event.md",
     "builder-policy.md",
@@ -214,7 +215,6 @@
     "uid.md",
     "Время жизни.md",
     "объект события.md",
-    "builder.md",
     "Без названия.md",
     "src/image",
     "src",
