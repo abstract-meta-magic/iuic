@@ -10,6 +10,7 @@ module;
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 module iuic.core;
@@ -37,7 +38,7 @@ template <> void advance(managed_text_storage &storage) {
 };
 
 // Refactor and move to other file
-template <> void advance(FCTree &ctree) { ctree.reset(); };
+template <> void advance(computing::tree &ctree) { ctree.reset(); };
 
 // TODO : replace all to advance
 void context::reset() {
@@ -73,16 +74,16 @@ void context::proccess_measure() {
             }
           } else if constexpr (std::same_as<decltype(layout),
                                             const text_layout *>) {
-            if (auto tp = tpa.get_present(
-                    cc.get_hierarchy().interface->get_id(&cc))) {
-              if (auto buff = text.get(tp->second)) {
-                if (auto res = layout->measure({&cc, buff})) {
-                  cc.apply(res.value().rq);
-                } else {
-                  cc.discard();
-                };
-              }
+
+            auto res = layout->measure(
+                {&cc, tpa.get_linked_text(
+                          cc.get_hierarchy().interface->get_id(&cc))});
+            if (res) {
+              cc.apply(res.value().rq);
+            } else {
+              cc.discard();
             }
+            // TODO compute
           }
         },
         cc.get_layout());
@@ -157,19 +158,15 @@ void context::proccess_arrange() {
             }
           } else if constexpr (std::same_as<decltype(layout),
                                             const text_layout *>) {
-            if (auto tp = tpa.get_present(
-                    cc.get_hierarchy().interface->get_id(&cc))) {
-              auto &text_present = tp->first;
+            auto id = cc.get_hierarchy().interface->get_id(&cc);
 
-              // can discart
-              if (layout->arrange({&cc, &tp->first})) {
-                if (auto asize = cc.get_size()) {
-                  text_present.rect.size = asize.value();
-                }
-                cc.apply(&text_present);
-              } else {
-                cc.discard();
-              }
+            // apply rect ?
+            text::present present;
+
+            if (layout->arrange({&cc, present, tpa.get_linked_text(id)})) {
+              tpa.apply_present(id, std::move(present));
+            } else {
+              cc.discard();
             }
           }
         },
@@ -184,13 +181,17 @@ void context::build_render_list() {
   // отрисовки
 
   for (auto &cc : ctree.range_for()) {
-    auto rect = cc.get_rect();
-    if (not rect) {
-      // err ?
-      continue;
+    if (not cc.is_discarted()) {
+      if (std::holds_alternative<const frame_layout *>(cc.get_layout())) {
+        to_render.push_back(
+            {.rect{cc.get_rect().value()}, .style = cc.get_info().style});
+      } else {
+        to_render.push_back(
+            {.rect{cc.get_rect().value()},
+             .text{&tpa.get_present(cc.get_hierarchy().interface->get_id(&cc))},
+             .style = cc.get_info().style});
+      }
     }
-
-    to_render.push_back({.area{rect.value()}, .style = cc.get_info().style});
   }
 }
 }; // namespace iuic

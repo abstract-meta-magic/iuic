@@ -1,6 +1,7 @@
 
 module;
 
+#include <print>
 #include <string_view>
 #include <variant>
 #include <vector>
@@ -12,21 +13,23 @@ namespace iuic {
 
 void area_request::apply(ui_size sz) { of->apply(sz); };
 
-request_size area_request::value() const noexcept {
+request_size area_request::value() const {
   auto rq_size = of->get_request();
   if (rq_size) {
     return rq_size.value();
   } else {
-    throw violated_computing_order{};
+    std::println("__area_request__");
+    throw computing::violated_order{};
   }
 }
 
-request_size measure_child_request::value() const noexcept {
+request_size measure_child_request::value() const {
   auto rq_size = of->get_request();
   if (rq_size) {
     return rq_size.value();
   } else {
-    throw violated_computing_order{};
+    std::println("__measure_child_request__");
+    throw computing::violated_order{};
   }
 };
 
@@ -88,7 +91,7 @@ void layout_utils_base::log(std::string_view message) const noexcept {}
 void layout_utils_base::warning(std::string_view message) const noexcept {}
 
 // AREA
-frame_measure_utils::frame_measure_utils(computing_context *ctx_) noexcept
+frame_measure_utils::frame_measure_utils(computing::context *ctx_) noexcept
     : layout_utils_base{ctx_} {}
 
 // POSITION
@@ -101,12 +104,12 @@ style::cref position_request::style_of() const noexcept {
   return owner->get_info().style;
 };
 
-ui_size position_request::size_of() const noexcept {
+ui_size position_request::size_of() const {
   auto size = owner->get_size();
   if (size) {
     return size.value();
   } else {
-    throw violated_computing_order{};
+    throw computing::violated_order{};
   }
 };
 
@@ -123,21 +126,21 @@ std::vector<position_request> frame_position_utils::content() {
   return res;
 };
 
-ui_position frame_position_utils::self_position() const noexcept {
+ui_position frame_position_utils::self_position() const {
   auto rect = ctx->get_rect();
   if (rect) {
     return rect.value().position;
   } else {
-    throw violated_computing_order{};
+    throw computing::violated_order{};
   }
 };
 
-ui_size frame_position_utils::self_size() const noexcept {
+ui_size frame_position_utils::self_size() const {
   auto rect = ctx->get_rect();
   if (rect) {
     return rect.value().size;
   } else {
-    throw violated_computing_order{};
+    throw computing::violated_order{};
   }
 };
 
@@ -161,12 +164,18 @@ std::vector<area_request> frame_arrange_utils::get_requests() {
   return res;
 }
 
-ui_size frame_arrange_utils::self_size() const noexcept {
+ui_size frame_arrange_utils::self_size() const {
   auto size = ctx->get_size();
   if (size) {
     return size.value();
   } else {
-    throw violated_computing_order{};
+    throw computing::violated_order{};
   };
+};
+
+text::present &text_arrange_utils::get_present() { return present; };
+
+const text::token::sequence &text_arrange_utils::get_tokens() const {
+  return sq;
 };
 }; // namespace iuic

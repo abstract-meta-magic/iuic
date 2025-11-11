@@ -21,7 +21,9 @@ export import :base.color;
 export import :layout.def;
 import :layout.frame.box;
 import :layout.text.box;
-import :fct;
+import :computing.tree;
+export import :relement; // wrong
+export import :policy;
 export import :storage.def;
 export import :storage.object;
 export import :storage.text;
@@ -149,6 +151,14 @@ private: // builder.def
       Является конечной точкой.Отрисовка текста
     */
     void text(text_registry_key, style::ref = def_style,
+              const text_layout & = text_def_layout);
+
+    // in frame
+    void text(text::token &&, style::ref = def_style,
+              const text_layout & = text_def_layout);
+
+    // in frame
+    void text(const text::token &, style::ref = def_style,
               const text_layout & = text_def_layout);
   };
 
@@ -322,6 +332,38 @@ private: // builder.def
 
       ctx.ctree.current()->get_info().style.override(ptr);
     };
+
+    void override(std::invocable<style::transform &> auto &&call) {
+      auto ptr = ctx.frame_memory<style::transform>();
+
+      new (ptr) style::transform{
+          ctx.ctree.current()->get_info().style.get_transphorm()};
+
+      ctx.ctree.current()->get_info().style.override(ptr);
+
+      call(*ptr);
+    };
+
+    void override(std::invocable<style::shape &> auto &&call) {
+      auto ptr = ctx.frame_memory<style::shape>();
+
+      new (ptr) style::shape{ctx.ctree.current()->get_info().style.get_shape()};
+
+      ctx.ctree.current()->get_info().style.override(ptr);
+
+      call(*ptr);
+    };
+
+    void override(std::invocable<style::decoration &> auto &&call) {
+      auto ptr = ctx.frame_memory<style::decoration>();
+
+      new (ptr) style::decoration{
+          ctx.ctree.current()->get_info().style.get_decoration()};
+
+      ctx.ctree.current()->get_info().style.override(ptr);
+
+      call(*ptr);
+    };
   };
 
   struct builder_state_interface : protected virtual builder_base {
@@ -422,9 +464,9 @@ private:
   managed_state_holder state{};
   state_transition_scheduler state_tr{state};
 
-  text::text_present_aggregator tpa{};
+  text::present_aggregator tpa{};
   // плоское дерево вычислений
-  FCTree ctree;
+  computing::tree ctree;
   // дерево событий
   event_collector event_collector;
   // плоский список отрисовки
@@ -522,7 +564,23 @@ void context::builder_element_interface::text(text_registry_key key,
                                               const text_layout &layout) {
   ctx.ctree.add(st, &layout);
 
-  ctx.tpa.attach_present(key, ctx.ctree.current_index());
+  // wrong ctx.tpa.attach_present(key, ctx.ctree.current_index());
+  // WARNING : установить данные для отрисовки текста
+  ctx.ctree.up();
+}
+
+void context::builder_element_interface::text(text::token &&token,
+                                              style::ref st,
+                                              const text_layout &layout) {
+  ctx.ctree.add(st, &layout);
+
+  text::token::sequence sq{};
+
+  sq.tokens.push_back(std::move(token));
+
+  ctx.tpa.reserve_present(ctx.ctree.current_index(), std::move(sq));
+
+  // wrong ctx.tpa.attach_present(key, ctx.ctree.current_index());
   // WARNING : установить данные для отрисовки текста
   ctx.ctree.up();
 }

@@ -8,49 +8,46 @@ module;
 #include <vector>
 
 module iuic.core;
-import :fct;
+import :computing.tree;
 
-namespace iuic {
+namespace iuic::computing {
 
-FCTree::range_based_for_proxy FCTree::range_for() { return {*this}; };
+tree::range_based_for_proxy tree::range_for() { return {*this}; };
 
-FCTree::const_range_based_for_proxy FCTree::range_for() const {
+tree::const_range_based_for_proxy tree::range_for() const { return {*this}; };
+
+tree::reverse_range_based_for_proxy tree::reverse_range_for() {
   return {*this};
 };
 
-FCTree::reverse_range_based_for_proxy FCTree::reverse_range_for() {
+tree::const_reverse_range_based_for_proxy tree::reverse_range_for() const {
   return {*this};
 };
 
-FCTree::const_reverse_range_based_for_proxy FCTree::reverse_range_for() const {
-  return {*this};
-};
-
-FCTree::range_based_for_proxy::range_based_for_proxy(FCTree &ctree)
+tree::range_based_for_proxy::range_based_for_proxy(tree &ctree)
     : begin_{&ctree.nodes[0], (void *)(&ctree.nodes.back() + 1)} {}
 
-FCTree::const_range_based_for_proxy::const_range_based_for_proxy(
-    const FCTree &ctree)
+tree::const_range_based_for_proxy::const_range_based_for_proxy(
+    const tree &ctree)
     : begin_{&ctree.nodes[0], (const void *)(&ctree.nodes.back() + 1)} {}
 
-FCTree::reverse_range_based_for_proxy::reverse_range_based_for_proxy(
-    FCTree &ctree)
+tree::reverse_range_based_for_proxy::reverse_range_based_for_proxy(tree &ctree)
     : begin_{&ctree.nodes.back(), (void *)(&ctree.nodes[0] - 1)} {}
 
-FCTree::const_reverse_range_based_for_proxy::
-    const_reverse_range_based_for_proxy(const FCTree &ctree)
+tree::const_reverse_range_based_for_proxy::const_reverse_range_based_for_proxy(
+    const tree &ctree)
     : begin_{&ctree.nodes.back(), (void *)(&ctree.nodes[0] - 1)} {}
 
-// FCTree
+// tree
 
-void FCTree::reset() {
+void tree::reset() {
   nodes.clear();
   parent = {}; // ...
   parent.push({root_.id, root_.id});
-  root_.ctx.element.stage = celement::stage_t::measure;
+  root_.ctx.element.stage = element::stage_t::measure;
 };
 
-void FCTree::add(style::ref style, const frame_layout *layout) {
+void tree::add(style::ref style, const frame_layout *layout) {
   // Проблемма с дочерними объектами root element
   // Может на stack сразу ложить root element ?
   auto parent_id = not parent.empty() ? parent.top().first : root_.id;
@@ -83,7 +80,7 @@ void FCTree::add(style::ref style, const frame_layout *layout) {
 
 // TODO : fix this
 // it's text add, not frame == other algo
-void FCTree::add(style::ref style, const text_layout *layout) {
+void tree::add(style::ref style, const text_layout *layout) {
   // Проблемма с дочерними объектами root element
   // Может на stack сразу ложить root element ?
   auto parent_id = not parent.empty() ? parent.top().first : root_.id;
@@ -114,12 +111,12 @@ void FCTree::add(style::ref style, const text_layout *layout) {
   current_.push(id);
 };
 
-void FCTree::up() {
+void tree::up() {
   parent.pop();
   current_.pop();
 };
 
-computing_context *FCTree::last() noexcept {
+context *tree::last() noexcept {
   // REFACTOR THIS
   if (nodes.empty()) {
     return &root_.ctx;
@@ -128,33 +125,33 @@ computing_context *FCTree::last() noexcept {
   return &nodes.back();
 };
 
-const computing_context *FCTree::last() const noexcept { return last(); }
+const context *tree::last() const noexcept { return last(); }
 
-computing_context *FCTree::current() noexcept {
+context *tree::current() noexcept {
   if (current_.empty()) {
     return &root_.ctx;
   }
   return &nodes[current_.top()];
 }
 
-const computing_context *FCTree::current() const noexcept {
+const context *tree::current() const noexcept {
   if (current_.empty()) {
     return &root_.ctx;
   }
   return &nodes[current_.top()];
 }
 
-computing_context *FCTree::root() noexcept { return &root_.ctx; }
+context *tree::root() noexcept { return &root_.ctx; }
 
-const computing_context *FCTree::root() const noexcept { return &root_.ctx; }
+const context *tree::root() const noexcept { return &root_.ctx; }
 
-computing_context *FCTree::at(size_t id) { return &nodes[id]; }
+context *tree::at(size_t id) { return &nodes[id]; }
 
-const computing_context *FCTree::at(size_t id) const { return &nodes[id]; }
+const context *tree::at(size_t id) const { return &nodes[id]; }
 
-size_t FCTree::size() const noexcept { return nodes.size(); };
+size_t tree::size() const noexcept { return nodes.size(); };
 
-size_t FCTree::index_at_last() const noexcept {
+size_t tree::index_at_last() const noexcept {
   if (nodes.empty()) {
     return root_.id;
   }
@@ -162,22 +159,22 @@ size_t FCTree::index_at_last() const noexcept {
   return size() - 1;
 };
 
-size_t FCTree::current_index() const noexcept {
+size_t tree::current_index() const noexcept {
   if (current_.empty()) {
     return root_.id;
   }
   return current_.top();
 };
 
-void FCTree::set_root_size(ui_size sz) {
+void tree::set_root_size(ui_size sz) {
   root_.style.shape.max_size = {sz.w, sz.h};
 };
 
-void FCTree::print_tree() const noexcept {
+void tree::print_tree() const noexcept {
   // BORKEN
 };
 
-computing_context *FCTree::get_parent(computing_context *ctx) {
+context *tree::get_parent(context *ctx) {
   if (ctx == &root_.ctx) {
     return ctx;
   } else if (ctx->get_hierarchy().parent ==
@@ -187,10 +184,10 @@ computing_context *FCTree::get_parent(computing_context *ctx) {
   return &nodes[ctx->get_hierarchy().parent];
 };
 
-std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
+std::vector<context *> tree::get_childs(context *ctx) {
   // WARNING : Очень хрупко
   // Требуеться рефакторинг
-  std::vector<computing_context *> res{};
+  std::vector<context *> res{};
 
   if (nodes.empty()) {
     return res;
@@ -219,11 +216,11 @@ std::vector<computing_context *> FCTree::get_childs(computing_context *ctx) {
   return res;
 }
 
-computing_context *FCTree::get_root(computing_context *) { return &root_.ctx; };
+context *tree::get_root(context *) { return &root_.ctx; };
 
-void FCTree::update_context_state(computing_context *ctx) {
+void tree::update_context_state(context *ctx) {
   if (ctx->is_discarted()) {
-    ctx->element.attribute_tags += celement::attribute_tags_t::discarded;
+    ctx->element.attribute_tags += element::attribute_tags_t::discarded;
 
     if (auto id = get_id(ctx); id <= nodes.size()) {
       if (nodes[id + 1].hierarchy.parent == id) {
@@ -236,17 +233,16 @@ void FCTree::update_context_state(computing_context *ctx) {
 
         // TOTO : std::foreach
         for (; begin < end; ++begin) {
-          begin->element.attribute_tags +=
-              celement::attribute_tags_t::discarded;
+          begin->element.attribute_tags += element::attribute_tags_t::discarded;
         }
       }
     }
   }
 };
 
-computing_context *FCTree::get_context_by_id(size_t id) { return &nodes[id]; };
-size_t FCTree::get_id(computing_context *ctx) {
+context *tree::get_context_by_id(size_t id) { return &nodes[id]; };
+size_t tree::get_id(context *ctx) {
   // WARNING : unsafe
   return std::distance(&nodes[0], ctx);
 }
-}; // namespace iuic
+}; // namespace iuic::computing

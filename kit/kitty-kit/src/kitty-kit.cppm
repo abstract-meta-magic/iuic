@@ -5,6 +5,7 @@ module;
 #include <concepts>
 #include <cstdint>
 #include <print>
+#include <string_view>
 
 export module iuic.kitty_kit;
 export import iuic.core;
@@ -626,187 +627,12 @@ void button(builder &b, std::invocable<> auto &&callback) {
       style_, layout_);
 };
 
-void text_button(builder &b, trk_t trk, std::invocable<> auto &&callback) {
-  static style::decl button_style{};
-  static style::decl text_style{};
-  static layout::text_button layout_;
+void text_button(builder &b, std::string_view text,
+                 std::invocable<> auto &&call) {
   static layout::short_text text_layout;
-
-  auto uid = b.uid.make("kitty-kit-button");
-  b.element.frame(
-      uid,
-      [&](builder &b) {
-        auto ork = b.storage.object.persist(uid, "button-callback");
-
-        b.storage.object.init_if_not(
-            ork, [&]() { return std::forward<decltype(callback)>(callback); });
-
-        b.policy.hovered(policy::hovered::propagate);
-
-        using callback_type = std::remove_cvref_t<decltype(callback)>;
-        b.event(
-            [](event::local::key e) {
-              if (e.code == key_map::mouse("left")) {
-                e.utils.object.try_visit(
-                    e.ork, [](callback_type &callback) { callback(); });
-              }
-            },
-            ork);
-
-        b.element.text(trk, text_style, text_layout);
-      },
-
-      button_style, layout_);
-};
-
-void text_button(builder &, const text::token &,
-                 std::invocable<> auto &&callback);
-
-void lable(builder &b, trk_t trk) {
-  static style::decl wrapper_style;
-  static style::decl text_box_style;
-  static layout::simple_box wrapper_layout;
-  static layout::short_text text_box_layout;
-
-  b.element.frame(
-      [&](builder &b) { b.element.text(trk, text_box_style, text_box_layout); },
-      wrapper_style, wrapper_layout);
-};
-
-void lable(builder &, const text::token &);
-
-trk_t input(builder &b) {
-  struct idle;
-  struct focused;
-  static style::decl wrapper_style;
-  static style::decl text_box_style;
-  static layout::simple_box wrapper_layout;
-  static layout::short_text text_box_layout;
-
-  static auto idle = pseudo_state::make<struct idle>();
-  static auto focused = pseudo_state::make<struct focused>();
-
-  trk_t out;
-
-  auto uid = b.uid.make(policy::unique{}, "kitty-kit-text-input");
-  b.element.frame(uid, [&](builder &b) {
-    out = b.storage.text.persist(uid, "text-buffer");
-
-    b.policy.hovered(policy::hovered::propagate);
-
-    // -- state --
-    b.state.pseudo_init_value(uid, idle);
-
-    b.event([](event::local::key e) {
-      // TODO : key_map
-      if (e.code == key_map::mouse("left")) {
-        if (auto state = e.utils.state.pseudo(e.uid); state == idle) {
-          state = focused;
-        }
-      }
-    });
-
-    b.event([](event::global::key e) {
-      if (e.code == key_map::mouse("left")) {
-        if (auto state = e.utils.state.pseudo(e.uid);
-            state == focused && not e.utils.state.hovered(e.uid)) {
-          state = idle;
-        }
-      }
-    });
-
-    b.element.text(out, text_box_style, text_box_layout);
+  static style::decl style{};
+  b.element.frame([&](builder &b) {
+    b.element.text(text::token{text}, style, text_layout);
   });
-
-  return out;
-};
-
-bool checkbox(builder &b) {
-  struct idle;
-  struct active;
-  static layout::simple_box layout;
-  static style::decl style;
-
-  static auto idle = pseudo_state::make<struct idle>();
-  static auto active = pseudo_state::make<struct active>();
-
-  bool out{false};
-
-  auto uid = b.uid.make(policy::unique{}, "kitty-checkbox");
-  b.element.frame(
-      uid,
-      [&](builder &b) {
-        if (b.state.pseudo(uid) == active) {
-          out = true;
-        }
-
-        b.event([](event::local::key e) {
-          if (e.code == key_map::mouse("left")) {
-            auto state = e.utils.state.pseudo(e.uid);
-            state == active ? state = idle : state = active;
-          }
-        });
-      },
-      style, layout);
-
-  return out;
-};
-
-bool radio_button(builder &b) {
-  static style::decl style{[]() {
-    style::decl res{};
-
-    res.shape.min_size.w = upixel_t{20};
-    res.shape.min_size.h = upixel_t{20};
-
-    res.decoration.background = color::catppuccin::macchiato::surface_2{};
-
-    return res;
-  }()};
-
-  static layout::simple_box layout{};
-
-  struct radio_state {
-    iuic::uid_t current_selected{0};
-  };
-
-  bool out{false};
-
-  auto uid = b.uid.make(policy::indexed{}, "r-button");
-  b.element.frame(
-      uid,
-      [&](builder &b) {
-        auto suid = b.uid.make(policy::shared{1}, "shared-link");
-
-        auto ork = b.storage.object.persist(suid, "shared-state");
-
-        b.storage.object.init_if_not(ork, [&]() { return radio_state{uid}; });
-
-        b.storage.object.try_visit(ork, [&](radio_state &state) {
-          if (state.current_selected == uid) {
-            b.style.override(style::decoration{
-                .background{color::catppuccin::macchiato::surface_0{}}});
-            out = true;
-          }
-        });
-
-        b.policy.hovered(policy::hovered::propagate);
-
-        b.event(
-            [](event::local::key e) {
-              if (e.code == key_map::mouse("left")) {
-                e.utils.object.try_visit(e.ork, [&](radio_state &state) {
-                  state.current_selected = e.uid;
-                });
-              }
-            },
-            ork);
-      },
-      style, layout);
-
-  return out;
-};
-
-// list -> item_wrapper -> item
-void item_list(builder &, auto begin, auto end, auto call);
+}
 }; // namespace kitty_kit

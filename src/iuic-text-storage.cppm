@@ -73,8 +73,7 @@ protected:
 
 // WRONG
 struct tkk : text::tokenizer {
-  std::vector<text::token>
-  proccess(std::string_view str) const noexcept override {
+  text::token::sequence process(std::string_view str) const noexcept override {
     return {};
   };
 };

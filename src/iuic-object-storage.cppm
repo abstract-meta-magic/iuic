@@ -233,12 +233,24 @@ protected: // data
 struct mutable_object_storage : public object_storage {
   template <typename T> void set(ork_t, T &&);
 
-  object_registry_key tmp(uid_t uid, const std::string &name) {
+  template <typename T>
+  std::tuple<T &, object_registry_key> tmp(uid_t uid, const std::string &name,
+                                           T &&object)
+    requires std::is_trivially_destructible_v<T>
+  {
+    using pure_type = std::remove_cvref_t<T>;
     auto srk = make_tmp_srk__(uid, name);
 
     tmp__.try_emplace(srk, base_ref{});
 
-    return srk;
+    auto &ref = tmp__[srk];
+
+    // force replace
+    ref.type = storage_type_of<pure_type>();
+    ref.data = tmp_resource.allocate(ref.type->size, ref.type->align);
+    new (ref.data) pure_type{std::forward<T>(object)};
+
+    return {*static_cast<T *>(ref.data), srk};
   };
 
   object_registry_key persist(uid_t uid, const std::string &name) {
@@ -303,15 +315,6 @@ struct mutable_object_storage : public object_storage {
       }
       break;
     }
-    }
-
-    if (tmp__.contains(srk)) {
-      auto &ref = tmp__[srk];
-      if (ref.type == storage_type_of<std::nullptr_t>()) {
-        ref.type = storage_type_of<pure_type>();
-        ref.data = tmp_resource.allocate(ref.type->size, ref.type->align);
-        new (ref.data) pure_type{call()};
-      }
     }
   };
 };

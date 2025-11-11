@@ -141,89 +141,6 @@ struct ui_rect {
   constexpr auto operator<=>(const ui_rect &) const = default;
 };
 
-/*
-  Используеться для определения типа выравнивания.
-  Может быть спокойно проигнорирован layout.
-*/
-struct align {
-  enum class vertical : std::uint8_t {
-    top = 1,
-    middle = 2,
-    bottom = 3
-  } vertical_v{vertical::top};
-
-  enum class horisontal : std::uint8_t {
-    left = 10,
-    middle = 20,
-    right = 30
-  } horisontal_v{horisontal::left};
-
-  enum class target : std::uint8_t {
-    childs = 100,
-    self = 200
-  } target{target::childs};
-
-  align &operator=(const align::vertical &v) noexcept {
-    vertical_v = v;
-    return *this;
-  }
-
-  align &operator=(align::vertical &&v) noexcept {
-    vertical_v = v;
-    return *this;
-  }
-
-  align &operator=(align::horisontal &&h) noexcept {
-    horisontal_v = h;
-    return *this;
-  }
-
-  align &operator=(const align::horisontal &h) noexcept {
-    horisontal_v = h;
-    return *this;
-  }
-
-  // Align type to number.
-  constexpr std::uint8_t to_num() const noexcept {
-    return static_cast<std::uint8_t>(vertical_v) +
-           static_cast<std::uint8_t>(horisontal_v);
-  };
-
-  // Aling type + target to number.
-  constexpr std::uint8_t to_num_full() const noexcept {
-    return static_cast<std::uint8_t>(vertical_v) +
-           static_cast<std::uint8_t>(horisontal_v) +
-           static_cast<std::uint8_t>(target);
-  };
-
-  // Align type to number.
-  constexpr operator std::uint8_t() const noexcept { return to_num(); };
-};
-
-// top-middle
-constexpr align align_tm{align::vertical::top, align::horisontal::middle};
-// middle-middle
-constexpr align align_mm{align::vertical::middle, align::horisontal::middle};
-// middle-left
-constexpr align align_ml{align::vertical::middle, align::horisontal::left};
-// middle-right
-constexpr align align_mr{align::vertical::middle, align::horisontal::right};
-// bottom-middle
-constexpr align align_bm{align::vertical::bottom, align::horisontal::middle};
-// top-left
-constexpr align align_tl{align::vertical::bottom, align::horisontal::left};
-// top-right
-constexpr align align_tr{align::vertical::bottom, align::horisontal::right};
-// bottom-left
-constexpr align align_bl{align::vertical::bottom, align::horisontal::left};
-// bottom-right
-constexpr align align_br{align::vertical::bottom, align::horisontal::right};
-
-// вынести
-struct style_font {
-  // ...
-};
-
 struct color_t {
   static constexpr color_t get_white() noexcept {
     return {255, 255, 255, 255};
@@ -296,11 +213,30 @@ struct decoration {
   style_background background{ui_none{}};
 };
 
+enum class position { STATIC, RELATIVE, FIXED, ABSOLUTE, STICKY };
+
+enum class valign { TOP, MIDDLE, BOTTOM };
+
+enum class halign { LEFT, MIDDLE, RIGHT };
+
 // limit 64
 struct transform {
+  valign valign{valign::TOP};
+
+  halign halign{halign::LEFT};
+
+  position position{position::STATIC};
+
   ui_position offset{0, 0};
 
   float scale;
+
+  struct override {
+    struct valign {};
+    struct halign {};
+    struct position {};
+    struct scale {};
+  };
 };
 
 // static - unlimited
@@ -383,35 +319,4 @@ struct ref : public cref {
   };
 };
 }; // namespace style
-
-// рисуемый элемент
-// relement и некоторые его зависимости
-// нужно будет вынисти в отдельную часть
-// iuic.core:relement или схожее название
-struct relement {
-  ui_rect area;      // x,y w,h
-  ui_rect clip_area; // простая обрезка
-  int z_index;       // слой
-  style::cref style;
-};
-
-namespace policy {
-
-struct shared {
-  unsigned up{0};
-};
-
-struct unique {};
-
-struct indexed {};
-
-enum class hovered : std::uint8_t {
-  none,
-  propagate, // true -> go
-  block,     // true -> stop
-};
-
-enum class event : std::uint8_t { propagate, block };
-}; // namespace policy
-
 } // namespace iuic

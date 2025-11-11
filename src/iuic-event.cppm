@@ -11,7 +11,7 @@ module;
 
 export module iuic.core:event;
 import :base;
-import :fct;
+import :computing.tree;
 import :storage.def;
 import :state;
 export import :key_code;
@@ -31,32 +31,44 @@ struct event_base {
   event_extern_components &utils;
   object_registry_key ork; // can be null
   text_registry_key trk;   // can be null
+  uid_t uid;
 };
 namespace global {
 struct key : event_base {
-  uid_t uid;
   key_code code;
+  ui_position current_mouse_position{};
+};
+
+struct mouse : event_base {
+  ui_position current_mouse_position{};
+  ui_position old_mouse_position{};
 };
 
 struct utils {};
-struct pointer_move {};
 }; // namespace global
 
 namespace local {
 struct key : event_base {
-  uid_t uid;
   key_code code;
+  ui_position current_mouse_position{};
+  ui_rect rect;
 };
+
+struct mouse : event_base {
+  ui_position current_mouse_position{};
+  ui_position old_mouse_position{};
+  ui_rect rect;
+};
+
 struct utils {};
-struct pointer_move {};
 }; // namespace local
 } // namespace event
 }; // namespace iuic
 namespace iuic {
 
 // pointer
-using global_pointer_move_event_fpt = void (*)(event::local::pointer_move);
-using local_pointer_move_event_fpt = void (*)(event::local::pointer_move);
+using global_pointer_move_event_fpt = void (*)(event::global::mouse);
+using local_pointer_move_event_fpt = void (*)(event::local::mouse);
 
 // key
 using global_key_event_fpt = void (*)(event::global::key);
@@ -119,7 +131,7 @@ public:
 
   void push(revent &&e) { events.push_back(e); };
 
-  event_pack build_pack(const FCTree &ctree) {
+  event_pack build_pack(const computing::tree &ctree) {
     event_pack res;
 
     for (auto &cc : ctree.range_for()) {

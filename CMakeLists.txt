@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.31)
 
 ## wrong ?
 set(CMAKE_CXX_COMPILER clang++)
@@ -7,7 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 ## wrong ?
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
+
 project(iuic LANGUAGES CXX)
+
 
 
 option(IUIC_PRETTY "Включить pretty" OFF)
@@ -43,23 +46,25 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-state.cppm"
 	"src/iuic-state-transition.cppm"
 	"src/iuic-base-color.cppm"
+	"src/iuic-policy.cppm"
+	"src/iuic-relement.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-fct.cpp"
+	"src/iuic-text-present.cpp"
 	"src/iuic-layout-utils.cpp"
 	"src/iuic-computing-ctx.cpp"
 	"src/iuic-state.cpp"
 	"src/iuic-state-transition.cpp"
 )
-
 ## set hash
 
 if(IUIC_HASH_TYPE STREQUAL "xxHash3")
 if(DEFINED IUIC_HASH_INCLUDE_DIR)
-message("iuic::core xxHash3 added")
+message("iuic::core : xxHash3 added")
 message("Hash dir "${IUIC_HASH_INCLUDE_DIR})
 target_include_directories(${PROJECT_NAME}_core
 	PRIVATE ${IUIC_HASH_INCLUDE_DIR})

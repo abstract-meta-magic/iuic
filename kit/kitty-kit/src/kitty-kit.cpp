@@ -1,6 +1,7 @@
 
 
 module;
+#include <print>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -50,15 +51,30 @@ measure_result simple_box::measure(frame_measure_utils utils) const noexcept {
   }}};
 };
 bool simple_box::arrange(frame_arrange_utils utils) const noexcept {
+  for (auto &&rq : utils.get_requests()) {
+    rq.discard();
+  }
   return true;
 };
-void simple_box::position(frame_position_utils utils) const noexcept {};
+void simple_box::position(frame_position_utils utils) const noexcept {
+  for (auto &&c : utils.content()) {
+    c.discard();
+  };
+};
 
 measure_result short_text::measure(text_measure_utils utils) const noexcept {
-
-  return {};
+  return {{upixel_t{20}, upixel_t{20}}};
 };
+
 bool short_text::arrange(text_arrange_utils utils) const noexcept {
+
+  auto &tokens = utils.get_tokens().tokens;
+
+  for (auto &token : tokens) {
+    // std::println("text : {}", token.text);
+  }
+
   return true;
 };
+// scroll_box
 }; // namespace kitty_kit::layout

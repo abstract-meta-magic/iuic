@@ -11,14 +11,20 @@ module;
 #include <variant>
 #include <vector>
 
-export module iuic.core:computing_context;
+export module iuic.core:computing.context;
 import :base;
 import :layout.def;
+import :policy;
 
-namespace iuic {
+// forward decl
+namespace iuic::text {
+struct present;
+};
 
-struct violated_computing_order : std::runtime_error {
-  violated_computing_order()
+namespace iuic::computing {
+
+struct violated_order : std::runtime_error {
+  violated_order()
       : std::runtime_error{
             "The computing order of iuic::text_layout or "
             "iuic::frame_layout within iuic::computing_context for "
@@ -26,14 +32,11 @@ struct violated_computing_order : std::runtime_error {
             "this message, your release of the library is broken."} {}
 };
 
-struct computing_context;
-namespace text {
-struct present;
-};
+struct context;
 
 // Дле представления используется
 // Альтернативная блочная модель
-struct celement {
+struct element {
   enum struct attribute_tags_t : std::uint8_t {
     null = 0,
     discarded = 1 << 1,
@@ -45,7 +48,6 @@ struct celement {
     frame_arrange,
     frame_position, // text_layout skip this stage
     text_arrange,
-    text_present,
     text_position,
     complite,
     undefined,
@@ -57,7 +59,6 @@ struct celement {
     request_size area_request;
     ui_size applyed_size;
     ui_rect full_area;
-    text::present *applyed_text_present;
     // err_handler
     // text_request
   };
@@ -67,41 +68,41 @@ struct celement {
   };
 };
 
-constexpr celement::attribute_tags_t operator+(celement::attribute_tags_t lhs,
-                                               celement::attribute_tags_t rhs) {
-  return static_cast<celement::attribute_tags_t>(
-      static_cast<std::underlying_type_t<celement::attribute_tags_t>>(lhs) |
-      static_cast<std::underlying_type_t<celement::attribute_tags_t>>(rhs));
+constexpr element::attribute_tags_t operator+(element::attribute_tags_t lhs,
+                                              element::attribute_tags_t rhs) {
+  return static_cast<element::attribute_tags_t>(
+      static_cast<std::underlying_type_t<element::attribute_tags_t>>(lhs) |
+      static_cast<std::underlying_type_t<element::attribute_tags_t>>(rhs));
 }
 
-constexpr celement::attribute_tags_t &
-operator+=(celement::attribute_tags_t &lhs, celement::attribute_tags_t rhs) {
+constexpr element::attribute_tags_t &operator+=(element::attribute_tags_t &lhs,
+                                                element::attribute_tags_t rhs) {
   lhs = lhs + rhs;
   return lhs;
 }
 
-constexpr celement::attribute_tags_t operator-(celement::attribute_tags_t lhs,
-                                               celement::attribute_tags_t rhs) {
+constexpr element::attribute_tags_t operator-(element::attribute_tags_t lhs,
+                                              element::attribute_tags_t rhs) {
 
-  return static_cast<celement::attribute_tags_t>(
-      static_cast<std::underlying_type_t<celement::attribute_tags_t>>(lhs) &
-      ~static_cast<std::underlying_type_t<celement::attribute_tags_t>>(rhs));
+  return static_cast<element::attribute_tags_t>(
+      static_cast<std::underlying_type_t<element::attribute_tags_t>>(lhs) &
+      ~static_cast<std::underlying_type_t<element::attribute_tags_t>>(rhs));
 }
 
-constexpr celement::attribute_tags_t &
-operator-=(celement::attribute_tags_t &lhs, celement::attribute_tags_t rhs) {
+constexpr element::attribute_tags_t &operator-=(element::attribute_tags_t &lhs,
+                                                element::attribute_tags_t rhs) {
   lhs = lhs - rhs;
   return lhs;
 }
 
-constexpr bool operator&(celement::attribute_tags_t lhs,
-                         celement::attribute_tags_t rhs) {
+constexpr bool operator&(element::attribute_tags_t lhs,
+                         element::attribute_tags_t rhs) {
 
-  return static_cast<celement::attribute_tags_t>(
-             static_cast<std::underlying_type_t<celement::attribute_tags_t>>(
+  return static_cast<element::attribute_tags_t>(
+             static_cast<std::underlying_type_t<element::attribute_tags_t>>(
                  lhs) &
-             static_cast<std::underlying_type_t<celement::attribute_tags_t>>(
-                 rhs)) != celement::attribute_tags_t::null;
+             static_cast<std::underlying_type_t<element::attribute_tags_t>>(
+                 rhs)) != element::attribute_tags_t::null;
 }
 
 // Это интерфейс отвечает за возможность
@@ -109,22 +110,22 @@ constexpr bool operator&(celement::attribute_tags_t lhs,
 struct computing_hierarchy {
   virtual ~computing_hierarchy() = default;
 
-  virtual computing_context *get_root(computing_context *) = 0;
+  virtual context *get_root(context *) = 0;
 
-  virtual computing_context *get_parent(computing_context *) = 0;
+  virtual context *get_parent(context *) = 0;
 
-  virtual std::vector<computing_context *> get_childs(computing_context *) = 0;
+  virtual std::vector<context *> get_childs(context *) = 0;
 
-  virtual void update_context_state(computing_context *) = 0;
+  virtual void update_context_state(context *) = 0;
 
-  virtual computing_context *get_context_by_id(size_t) = 0;
+  virtual context *get_context_by_id(size_t) = 0;
 
-  virtual size_t get_id(computing_context *) = 0;
+  virtual size_t get_id(context *) = 0;
 };
 
 // а еще хочеться нормальные интерфейс
 // а еще хочеться чтобы была попытка соблюдения SRP
-struct computing_context {
+struct context {
   struct hierarchy_t {
     computing_hierarchy *interface{nullptr};
     size_t parent{std::numeric_limits<size_t>::max()};
@@ -139,11 +140,11 @@ struct computing_context {
     policy::hovered hovered_p{policy::hovered::none};
     policy::event event_p;
   };
-  friend class FCTree;
+  friend class tree; // TODO : end of friend
 
   // конструктор для вычисления фрейма
-  computing_context(const frame_layout *layout_, style::ref style_,
-                    computing_hierarchy *hierarchy_, size_t parent_)
+  context(const frame_layout *layout_, style::ref style_,
+          computing_hierarchy *hierarchy_, size_t parent_)
       : hierarchy{hierarchy_, parent_}, info{style_} {
     element.frame_layout = layout_;
     if (not hierarchy_) {
@@ -152,10 +153,10 @@ struct computing_context {
   };
 
   // конструктор для вычисления текста
-  computing_context(const text_layout *layout_, style::ref style_,
-                    computing_hierarchy *hierarchy_, size_t parent_)
+  context(const text_layout *layout_, style::ref style_,
+          computing_hierarchy *hierarchy_, size_t parent_)
       : hierarchy{hierarchy_, parent_}, info{style_} {
-    element.attribute_tags += celement::attribute_tags_t::text;
+    element.attribute_tags += element::attribute_tags_t::text;
     element.text_layout = layout_;
     if (not hierarchy_) {
       throw std::runtime_error{"Null hierarchy"};
@@ -163,11 +164,11 @@ struct computing_context {
   };
 
 public: // get's ordered
-  std::expected<request_size, celement::stage_t> get_request() const noexcept;
+  std::expected<request_size, element::stage_t> get_request() const noexcept;
 
-  std::expected<ui_size, celement::stage_t> get_size() const noexcept;
+  std::expected<ui_size, element::stage_t> get_size() const noexcept;
 
-  std::expected<ui_rect, celement::stage_t> get_rect() const noexcept;
+  std::expected<ui_rect, element::stage_t> get_rect() const noexcept;
 
 public: // get's free
   std::variant<const frame_layout *, const text_layout *>
@@ -191,18 +192,15 @@ public: // modify
   // only for frame
   void apply(ui_size);
 
-  // only for text
-  void apply(text::present *);
-
   // third stage
   void apply(ui_position);
 
   void discard();
 
 private:
-  celement element{};
+  element element{};
   hierarchy_t hierarchy;
   info_t info;
 };
 
-}; // namespace iuic
+}; // namespace iuic::computing

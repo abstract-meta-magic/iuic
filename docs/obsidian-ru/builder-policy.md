@@ -2,7 +2,11 @@
 Используется для задания политик элемента.
 ## Пример
 ```c++
-b.policy.hovered(policy::hovered::propagate);
+ctx.make([](context::builder &b) {
+  b.element.frame([](context::builder &b){
+    b.policy.hovered(policy::hovered::propagate);
+  });
+});
 ```
 ## Политики
 ### Hovered

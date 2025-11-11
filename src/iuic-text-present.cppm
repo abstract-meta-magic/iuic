@@ -4,6 +4,7 @@ module;
 
 #include <map>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 export module iuic.core:text.present;
@@ -19,35 +20,41 @@ struct present_node : token {
 };
 
 struct present {
-  ui_rect rect;
   std::vector<present_node> nodes;
-  // ..
 };
 
 }; // namespace iuic::text
 
 namespace iuic::text {
 
-class text_present_aggregator {
-public:
-  void attach_present(trk_t trk, size_t id) {
-    if (presents.contains(id)) {
-      presents[id].second = trk;
-    } else {
-      // make new
-      presents.insert({id, {{}, trk}});
-    };
-  };
+struct aggregation_bondle {
+  token::sequence sequence{};
+  present present{};
+  bool is_applyed{false};
+};
 
-  std::pair<present, trk_t> *get_present(size_t id) {
-    if (presents.contains(id)) {
-      return &presents[id];
-    } else {
-      return nullptr;
-    };
-  };
+class present_aggregator {
+  friend void iuic::advance(present_aggregator &);
+
+public:
+  // подготовка места для present, под token::sequence
+  void reserve_present(size_t id, token::sequence &&sq);
+
+  void reserve_present(size_t id, const token::sequence &sq);
+
+  void apply_present(size_t id, present &&present);
+
+  const token::sequence &get_linked_text(size_t id) const;
+
+  const present &get_present(size_t id);
+
+  bool is_reserved(size_t id) const;
+
+  bool is_applied(size_t id) const;
 
 private:
-  std::map<size_t, std::pair<present, trk_t>> presents;
+  static constexpr aggregation_bondle null{};
+
+  std::map<size_t, aggregation_bondle> presents;
 };
 }; // namespace iuic::text

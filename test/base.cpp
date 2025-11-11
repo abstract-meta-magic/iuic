@@ -6,35 +6,14 @@
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
-#include <chrono>
-#include <concepts>
-#include <cstddef>
-#include <ctime>
-#include <iostream>
-#include <memory>
 #include <print>
-#include <string_view>
 #include <strings.h>
 #include <sys/types.h>
 #include <type_traits>
 #include <variant>
 
-#include <coroutine>
-
 import iuic.core;
 import iuic.kitty_kit;
-
-constexpr auto s_1 = []() {
-  iuic::style::decl res{};
-
-  res.shape.min_size = {iuic::upixel_t{120}, iuic::upixel_t{240}};
-
-  res.shape.margin.top = iuic::upixel_t{20};
-  res.shape.margin.left = iuic::upixel_t{30};
-
-  res.decoration.background = iuic::color::css::red{};
-  return res;
-}();
 
 SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
   SDL_FRect res;
@@ -49,10 +28,49 @@ SDL_FRect to_sdl_rect(const iuic::ui_rect &val) {
 
 using builder_ui = iuic::context::builder;
 
+struct settings_t {};
+
+struct app {
+  settings_t settings;
+
+  bool quit{false};
+};
+
+void main_window(iuic::context::builder &b, app &app) {
+  kitty_kit::button(b, []() { std::println("first"); });
+  kitty_kit::button(b, []() { std::println("second"); });
+  kitty_kit::button(b, [&]() { app.quit = true; });
+
+  kitty_kit::text_button(b, "ok", []() {});
+};
+
+void sdl_event_to_iuic(iuic::context &ctx, app &app) {
+  SDL_Event e;
+
+  while (SDL_PollEvent(&e)) {
+    if (e.type == SDL_EVENT_QUIT) {
+      app.quit = true;
+    } else if (e.type == SDL_EVENT_KEY_DOWN) {
+      ctx.event.key(iuic::key_code{static_cast<iuic::key_t>(e.key.scancode)});
+    } else if (e.type == SDL_EVENT_MOUSE_MOTION) {
+      // test pointer event
+
+      ctx.event.pointer_move({(int)e.motion.x, (int)e.motion.y});
+    } else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+      ctx.event.key(iuic::key_code{e.button.button});
+    };
+  }
+};
+
+void check_resize(iuic::context &ctx, SDL_Window *window) {
+  int w, h;
+  SDL_GetWindowSizeInPixels(window, &w, &h);
+  ctx.set_view_size(
+      {static_cast<iuic::upixel_t>(w), static_cast<iuic::upixel_t>(h)});
+}
+
 int main() {
   using namespace iuic;
-
-  context ctx;
 
   // SDL BASE
   SDL_Init(SDL_INIT_VIDEO);
@@ -67,195 +85,47 @@ int main() {
   // END
 
   if (not window) {
-    std::cout << "ERR : Window not ceated" << std::endl;
+    std::println("ERR : Window not ceated");
   }
   if (not renderer) {
-    std::cout << "ERR : Renderer not ceated" << std::endl;
+    std::println("ERR : Renderer not ceated");
   }
-  SDL_Event e;
 
-  bool quit{false};
+  // IUIC
+  context ctx;
+  app app;
 
-  std::string msg{"Hello world"};
+  while (not app.quit) {
 
-  struct idle_t;
-  struct focused_t;
-  static auto idle = iuic::pseudo_state::make<idle_t>();
-  static auto focused = iuic::pseudo_state::make<focused_t>();
-  while (!quit) {
+    ctx.make([&](auto &b) { main_window(b, app); }); // iuic test
 
-    ctx.make([&](auto &b) {
-      // frame(create_info,childs_lambda)
-      b.element.frame([&](auto &b) {
-        // b.state.pseudo.init_value(idle);
+    sdl_event_to_iuic(ctx, app);
 
-        b.element.frame([&](auto &b) {
-          static constexpr auto style = []() {
-            iuic::style::decl res{};
-            res.shape.min_size = {iuic::upixel_t{240}, iuic::upixel_t{60}};
+    check_resize(ctx, window);
 
-            res.decoration.background = iuic::color::css::blue();
-
-            return res;
-          }();
-
-          auto inner = b.uid.make("app-box-inner");
-          b.element.frame(
-              inner,
-              [&](auto &b) {
-                b.state.pseudo_init_value(inner, idle);
-
-                b.policy.hovered(iuic::policy::hovered::block);
-
-                if (b.state.pseudo(inner) == focused) {
-                  b.style.override(iuic::style::decoration{
-                      .background = iuic::color_t{44, 22, 99, 255}});
-                }
-
-                b.event([](iuic::event::local::key e) {
-                  if (e.utils.state.pseudo(e.uid) != focused) {
-                    std::println("Set to focuse");
-                    if (e.code == iuic::key_map::mouse("left")) {
-                      e.utils.state.pseudo(e.uid) = focused;
-                    }
-                  }
-                });
-
-                b.event([](iuic::event::global::key e) {
-                  if (e.utils.state.pseudo(e.uid) == focused &&
-                      not e.utils.state.hovered(e.uid) &&
-                      e.code == iuic::key_map::mouse("left")) {
-                    e.utils.state.pseudo(e.uid) = idle;
-                  } else if (e.utils.state.pseudo(e.uid) == focused) {
-                    std::println("In focuse");
-                  };
-                });
-
-                static auto liner_color =
-                    [](iuic::context::transition_utils &utils,
-                       iuic::color_t from, iuic::color_t to,
-                       std::chrono::duration<float> d) {
-                      auto el = std::chrono::duration<float>(
-                          std::chrono::steady_clock::now() - utils.time_point);
-
-                      auto sc = el / d;
-
-                      if (sc > 1) {
-                        utils.style.override(
-                            iuic::style::decoration{.background{to}});
-                      } else {
-                        std::uint8_t r = from.r + (to.r - from.r) * sc;
-                        std::uint8_t g = from.g + (to.g - from.g) * sc;
-                        std::uint8_t b = from.b + (to.b - from.b) * sc;
-                        std::uint8_t a = from.a + (to.a - from.a) * sc;
-                        utils.style.override(iuic::style::decoration{
-                            .background{iuic::color_t{r, g, b, a}}});
-                      }
-                    };
-
-                b.state.transition(
-                    inner, idle, focused,
-                    [](iuic::context::transition_utils utils)
-                        -> iuic::state_transition {
-                      for (;;) {
-                        liner_color(utils, iuic::color::css::blue{},
-                                    iuic::color::css::red{},
-                                    std::chrono::milliseconds{320});
-
-                        if (auto el = std::chrono::duration<float>(
-                                std::chrono::steady_clock::now() -
-                                utils.time_point);
-                            el > std::chrono::seconds{4}) {
-                          co_return idle;
-                        } else {
-                          co_yield iuic::null;
-                        }
-                      }
-                    });
-
-                b.state.transition(inner, focused, idle,
-                                   [](iuic::context::transition_utils utils)
-                                       -> iuic::state_transition {
-                                     for (;;) {
-                                       liner_color(
-                                           utils, iuic::color::css::red{},
-                                           iuic::color::css::blue{},
-                                           std::chrono::milliseconds{150});
-                                       co_yield iuic::null;
-                                     }
-
-                                     co_return focused;
-                                   });
-              },
-              style);
-
-          b.policy.hovered(iuic::policy::hovered::propagate);
-
-          b.event([](iuic::event::local::key e) { std::println("outer"); });
-        });
-
-        if (kitty_kit::radio_button(b)) {
-          kitty_kit::button(b, [&]() { std::println("first - 1"); });
-          kitty_kit::button(b, [&]() { std::println("first - 2"); });
-        }
-        if (kitty_kit::radio_button(b)) {
-          kitty_kit::button(b, [&]() { std::println("second - 1"); });
-          kitty_kit::button(b, [&]() { std::println("second - 2"); });
-        };
-        kitty_kit::radio_button(b);
-      });
-
-      // b.text("ok");
-
-      kitty_kit::button(b, [&]() { std::println("yo {}", msg); });
-
-      kitty_kit::button(b, []() { std::println("my pritty btn"); });
-
-      kitty_kit::button(b, []() { std::println("my pritty btn with style"); });
-    });
-
-    // SDL
-    while (SDL_PollEvent(&e)) {
-      if (e.type == SDL_EVENT_QUIT) {
-        quit = true;
-      } else if (e.type == SDL_EVENT_KEY_DOWN) {
-        ctx.event.key(iuic::key_code{static_cast<iuic::key_t>(e.key.scancode)});
-      } else if (e.type == SDL_EVENT_MOUSE_MOTION) {
-        // test pointer event
-
-        ctx.event.pointer_move({(int)e.motion.x, (int)e.motion.y});
-      } else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-        ctx.event.key(key_code{e.button.button});
-      };
-    }
-
-    int w, h;
-    SDL_GetWindowSizeInPixels(window, &w, &h);
-    ctx.set_view_size({static_cast<upixel_t>(w), static_cast<upixel_t>(h)});
-
+    //
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
     // std::cout << "GO" << std::endl;
     auto &tree = ctx.get_tree();
     for (auto &&r : tree) {
-      auto rect = to_sdl_rect(r.area);
 
-      auto &b = r.style.get_decoration().background;
-      std::visit(
-          [&](auto &obj) {
-            using type = std::remove_cvref_t<decltype(obj)>;
-            if constexpr (std::same_as<type, iuic::color_t>) {
-              SDL_SetRenderDrawColor(renderer, obj.r, obj.g, obj.b, obj.a);
-              SDL_RenderFillRect(renderer, &rect);
-            }
-          },
-          b);
+      if (r.text) {
+
+      } else {
+        auto rect = to_sdl_rect(r.rect);
+        std::visit(
+            [&](auto &bg) {
+              using type = std::remove_cvref_t<decltype(bg)>;
+              if constexpr (std::same_as<type, iuic::color_t>) {
+                SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+                SDL_RenderFillRect(renderer, &rect);
+              }
+            },
+            r.style.get_decoration().background);
+      }
     }
-
-    SDL_RenderDebugText(renderer, 0, 0, "penis");
-
-    // std::cout << "GO" << std::endl;
 
     SDL_RenderPresent(renderer);
   }

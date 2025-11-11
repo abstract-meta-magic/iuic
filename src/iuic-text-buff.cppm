@@ -131,7 +131,7 @@ public: // other api
 
   // bool is_dirty() const noexcept;
 private:
-  void format__() { fmt_text = fmt->proccess(get_text()); };
+  void format__() { fmt_text = fmt->process(get_text()); };
 
 private:
   // basic buff , mb use SSO ?
@@ -144,6 +144,6 @@ private:
 
   // pmr::allocator |
   std::unique_ptr<tokenizer> fmt;
-  std::vector<token> fmt_text;
+  token::sequence fmt_text;
 };
 }; // namespace iuic::text

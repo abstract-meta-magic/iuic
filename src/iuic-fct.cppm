@@ -14,12 +14,12 @@ module;
 #include <variant>
 #include <vector>
 
-export module iuic.core:fct;
+export module iuic.core:computing.tree;
 import :base;
 import :layout;
-import :computing_context;
+import :computing.context;
 
-namespace iuic {
+namespace iuic::computing {
 
 /*
   Специайльный layout для корневого элемента.
@@ -131,7 +131,10 @@ struct : public frame_layout {
 // Так как вычислительное дерево одно на контекст
 // в целом его можно сделать пожирнее,
 // но исключительно в рамках НУЖНЫХ инструментов
-struct FCTree final : private computing_hierarchy {
+// Reaname to iuic::computing::tree
+// iuic::computing::element
+// etc
+struct tree final : private computing_hierarchy {
 public: // base proxy struct's
   struct sentinel;
   struct range_based_for_proxy;
@@ -140,12 +143,12 @@ public: // base proxy struct's
   struct const_reverse_range_based_for_proxy;
 
 public: // BIG-VI
-  ~FCTree() = default;
-  FCTree() = default;
-  FCTree(const FCTree &) = delete;
-  FCTree &operator=(const FCTree &) = delete;
-  FCTree(FCTree &&) = delete;
-  FCTree &operator=(FCTree &&) = delete;
+  ~tree() = default;
+  tree() = default;
+  tree(const tree &) = delete;
+  tree &operator=(const tree &) = delete;
+  tree(tree &&) = delete;
+  tree &operator=(tree &&) = delete;
 
 public: // Public Interface
   /*
@@ -170,37 +173,37 @@ public: // Public Interface
   /*
     Получение последнего элемента.
   */
-  computing_context *last() noexcept;
+  computing::context *last() noexcept;
 
   /*
     Получение последнего элемента.
     Может возвращать корневой элемент.
   */
-  const computing_context *last() const noexcept;
+  const computing::context *last() const noexcept;
 
-  computing_context *current() noexcept;
+  computing::context *current() noexcept;
 
-  const computing_context *current() const noexcept;
-
-  /*
-    Получение элемента по индексу.
-  */
-  computing_context *at(size_t);
+  const computing::context *current() const noexcept;
 
   /*
     Получение элемента по индексу.
   */
-  const computing_context *at(size_t) const;
+  computing::context *at(size_t);
+
+  /*
+    Получение элемента по индексу.
+  */
+  const computing::context *at(size_t) const;
 
   /*
     Получение корневого элемента.
   */
-  computing_context *root() noexcept;
+  computing::context *root() noexcept;
 
   /*
     Получение корневого элемента.
   */
-  const computing_context *root() const noexcept;
+  const computing::context *root() const noexcept;
 
   /*
     Размер дерева, без учета корневого элемента.
@@ -248,47 +251,48 @@ public: // root style pubic interface
   void set_root_size(ui_size);
 
 private: // Private Hierarhy Interface
-  computing_context *get_parent(computing_context *ctx) override;
+  computing::context *get_parent(computing::context *ctx) override;
 
-  std::vector<computing_context *> get_childs(computing_context *ctx) override;
+  std::vector<computing::context *>
+  get_childs(computing::context *ctx) override;
 
-  computing_context *get_root(computing_context *) override;
+  computing::context *get_root(computing::context *) override;
 
-  void update_context_state(computing_context *) override;
+  void update_context_state(computing::context *) override;
 
-  computing_context *get_context_by_id(size_t id) override;
+  computing::context *get_context_by_id(size_t id) override;
 
-  size_t get_id(computing_context *) override;
+  size_t get_id(computing::context *) override;
 
 private: // Data
   struct root_t {
     static constexpr auto id = std::numeric_limits<size_t>::max();
-    root_t(FCTree *ctree)
+    root_t(tree *ctree)
         : style{}, last_child{}, ctx{&root_element_layout, &style, ctree, id} {}
-    style::decl style;     // можно унифицировать стиль
-    size_t last_child;     // помошник в построении макета
-    computing_context ctx; // сам контекст
+    style::decl style;      // можно унифицировать стиль
+    size_t last_child;      // помошник в построении макета
+    computing::context ctx; // сам контекст
   } root_{this};
-  std::vector<computing_context> nodes;
+  std::vector<computing::context> nodes;
   // parent\last_brather
   std::stack<size_t> current_{};
   std::stack<std::pair<size_t, size_t>> parent{};
 };
 
-struct FCTree::sentinel final {};
+struct tree::sentinel final {};
 
 // TODO : Сделать все proxy no move\copy
 // и в деструкторе вызывать метод FCT который
 // работает с тегами
-struct FCTree::range_based_for_proxy {
-  range_based_for_proxy(FCTree &);
+struct tree::range_based_for_proxy {
+  range_based_for_proxy(tree &);
   struct iterator {
     iterator &operator++() {
       ++ptr;
       return *this;
     };
 
-    iterator(computing_context *ptr_, void *end_) : ptr{ptr_}, end{end_} {}
+    iterator(computing::context *ptr_, void *end_) : ptr{ptr_}, end{end_} {}
 
     // должен игнорировать discarted элементы
     iterator operator++(int) {
@@ -297,12 +301,12 @@ struct FCTree::range_based_for_proxy {
       return tmp;
     };
 
-    computing_context &operator*() { return *ptr; };
+    computing::context &operator*() { return *ptr; };
 
     bool is_valide() const { return ptr != nullptr && ptr < end; };
 
   private:
-    computing_context *ptr;
+    computing::context *ptr;
     void *end;
   };
 
@@ -314,8 +318,8 @@ private:
   iterator begin_;
 };
 
-struct FCTree::const_range_based_for_proxy {
-  const_range_based_for_proxy(const FCTree &);
+struct tree::const_range_based_for_proxy {
+  const_range_based_for_proxy(const tree &);
 
   struct const_iterator {
     const_iterator &operator++() {
@@ -323,7 +327,7 @@ struct FCTree::const_range_based_for_proxy {
       return *this;
     };
 
-    const_iterator(const computing_context *ptr_, const void *end_)
+    const_iterator(const computing::context *ptr_, const void *end_)
         : ptr{ptr_}, end{end_} {}
 
     // должен игнорировать discarted элементы
@@ -333,12 +337,12 @@ struct FCTree::const_range_based_for_proxy {
       return tmp;
     };
 
-    const computing_context &operator*() { return *ptr; };
+    const computing::context &operator*() { return *ptr; };
 
     bool is_valide() const { return ptr != nullptr && ptr < end; };
 
   private:
-    const computing_context *ptr;
+    const computing::context *ptr;
     const void *end;
   };
 
@@ -350,16 +354,16 @@ private:
   const_iterator begin_;
 };
 
-struct FCTree::reverse_range_based_for_proxy {
+struct tree::reverse_range_based_for_proxy {
 
-  reverse_range_based_for_proxy(FCTree &);
+  reverse_range_based_for_proxy(tree &);
   struct reverse_iterator {
     reverse_iterator &operator++() {
       --ptr;
       return *this;
     };
 
-    reverse_iterator(computing_context *ptr_, void *end_)
+    reverse_iterator(computing::context *ptr_, void *end_)
         : ptr{ptr_}, end{end_} {}
 
     // должен игнорировать discarted элементы
@@ -369,12 +373,12 @@ struct FCTree::reverse_range_based_for_proxy {
       return tmp;
     };
 
-    computing_context &operator*() { return *ptr; };
+    computing::context &operator*() { return *ptr; };
 
     bool is_valide() const { return ptr != nullptr && ptr > end; };
 
   private:
-    computing_context *ptr;
+    computing::context *ptr;
     void *end;
   };
 
@@ -386,15 +390,15 @@ private:
   reverse_iterator begin_;
 };
 
-struct FCTree::const_reverse_range_based_for_proxy {
-  const_reverse_range_based_for_proxy(const FCTree &);
+struct tree::const_reverse_range_based_for_proxy {
+  const_reverse_range_based_for_proxy(const tree &);
   struct const_reverse_iterator {
     const_reverse_iterator &operator++() {
       --ptr;
       return *this;
     };
 
-    const_reverse_iterator(const computing_context *ptr_, const void *end_)
+    const_reverse_iterator(const computing::context *ptr_, const void *end_)
         : ptr{ptr_}, end{end_} {}
 
     // должен игнорировать discarted элементы
@@ -404,12 +408,12 @@ struct FCTree::const_reverse_range_based_for_proxy {
       return tmp;
     };
 
-    const computing_context &operator*() { return *ptr; };
+    const computing::context &operator*() { return *ptr; };
 
     bool is_valide() const { return ptr != nullptr && ptr > end; };
 
   private:
-    const computing_context *ptr;
+    const computing::context *ptr;
     const void *end;
   };
 
@@ -421,28 +425,27 @@ private:
   const_reverse_iterator begin_;
 };
 
-constexpr bool operator==(const FCTree::range_based_for_proxy::iterator &it,
-                          const FCTree::sentinel &s) {
+constexpr bool operator==(const tree::range_based_for_proxy::iterator &it,
+                          const tree::sentinel &s) {
   return not it.is_valide();
 };
 
 constexpr bool
-operator!=(const FCTree::const_range_based_for_proxy::const_iterator &it,
-           const FCTree::sentinel &s) {
+operator!=(const tree::const_range_based_for_proxy::const_iterator &it,
+           const tree::sentinel &s) {
   return it.is_valide();
 };
 
 constexpr bool
-operator==(const FCTree::reverse_range_based_for_proxy::reverse_iterator &it,
-           const FCTree::sentinel &s) {
+operator==(const tree::reverse_range_based_for_proxy::reverse_iterator &it,
+           const tree::sentinel &s) {
   return not it.is_valide();
 };
 
 constexpr bool operator!=(
-    const FCTree::const_reverse_range_based_for_proxy::const_reverse_iterator
-        &it,
-    const FCTree::sentinel &s) {
+    const tree::const_reverse_range_based_for_proxy::const_reverse_iterator &it,
+    const tree::sentinel &s) {
   return it.is_valide();
 };
 
-}; // namespace iuic
+}; // namespace iuic::computing

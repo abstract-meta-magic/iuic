@@ -15,12 +15,12 @@ import :layout.def;
 import :text.token;
 import :text.buff;
 import :text.present;
-import :computing_context;
+import :computing.context;
 
 namespace iuic {
 
 struct layout_utils_base {
-  layout_utils_base(computing_context *ctx_) noexcept : ctx{ctx_} {};
+  layout_utils_base(computing::context *ctx_) noexcept : ctx{ctx_} {};
   // Обычное сообщение для отладки
   void log(std::string_view message) const noexcept;
   // Предупреждение об исключительной ситвации.
@@ -49,28 +49,28 @@ struct layout_utils_base {
   void defer();
 
 protected: // общие нужды
-  computing_context *ctx{nullptr};
+  computing::context *ctx{nullptr};
 
 private: // реализация базовых концепций логирования
 };
 
 struct measure_child_request {
 
-  constexpr measure_child_request(computing_context *of_) : of{of_} {}
+  constexpr measure_child_request(computing::context *of_) : of{of_} {}
 
-  request_size value() const noexcept;
+  request_size value() const;
 
   style::cref style_of() const noexcept;
 
 private:
-  computing_context *of;
+  computing::context *of;
 };
 
 // Структура которая помогает
 // при вычислении собственной позиции
 struct frame_measure_utils : layout_utils_base {
 
-  frame_measure_utils(computing_context *self) noexcept;
+  frame_measure_utils(computing::context *self) noexcept;
 
   std::vector<measure_child_request> get_requests();
 
@@ -101,7 +101,7 @@ struct frame_measure_utils : layout_utils_base {
 };
 
 export struct area_request {
-  constexpr area_request(computing_context *of_) noexcept : of{of_} {}
+  constexpr area_request(computing::context *of_) noexcept : of{of_} {}
 
   constexpr area_request(const area_request &) = default;
 
@@ -113,19 +113,19 @@ export struct area_request {
 
   style::cref style_of() const;
 
-  request_size value() const noexcept;
+  request_size value() const;
 
 private:
-  computing_context *of;
+  computing::context *of;
 };
 // Набор команд и свойс
 // для точного определения позиций
 // и размеров
 struct frame_arrange_utils : layout_utils_base {
-  frame_arrange_utils(computing_context *ctx_) noexcept
+  frame_arrange_utils(computing::context *ctx_) noexcept
       : layout_utils_base{ctx_} {};
 
-  ui_size self_size() const noexcept;
+  ui_size self_size() const;
 
   std::vector<area_request> get_requests();
 
@@ -177,7 +177,7 @@ struct frame_arrange_utils : layout_utils_base {
 };
 
 struct position_request {
-  constexpr position_request(computing_context *owner_) noexcept
+  constexpr position_request(computing::context *owner_) noexcept
       : owner{owner_} {}
 
   void apply(ui_position);
@@ -186,19 +186,19 @@ struct position_request {
 
   style::cref style_of() const noexcept;
 
-  ui_size size_of() const noexcept;
+  ui_size size_of() const;
 
 private:
-  computing_context *owner;
+  computing::context *owner;
 };
 
 struct frame_position_utils : layout_utils_base {
-  frame_position_utils(computing_context *ctx_) noexcept
+  frame_position_utils(computing::context *ctx_) noexcept
       : layout_utils_base{ctx_} {};
 
-  ui_position self_position() const noexcept;
+  ui_position self_position() const;
 
-  ui_size self_size() const noexcept;
+  ui_size self_size() const;
 
   std::vector<position_request> content();
 
@@ -207,18 +207,19 @@ struct frame_position_utils : layout_utils_base {
 };
 
 struct text_measure_utils : layout_utils_base {
-  text_measure_utils(computing_context *ctx_, text::buffer *buff_)
-      : layout_utils_base{ctx_}, buff{buff_} {};
+  text_measure_utils(computing::context *ctx_, const text::token::sequence &sq_)
+      : layout_utils_base{ctx_}, sq{sq_} {};
 
-  const std::vector<text::token> &tokens() const;
+  const text::token::sequence &tokens() const;
 
 private:
-  text::buffer *buff;
+  const text::token::sequence &sq;
 };
 
 struct text_arrange_utils : layout_utils_base {
-  text_arrange_utils(computing_context *ctx_, text::present *present_)
-      : layout_utils_base{ctx_}, present{present_} {}
+  text_arrange_utils(computing::context *ctx_, text::present &present_,
+                     const text::token::sequence &sq_)
+      : layout_utils_base{ctx_}, sq{sq_}, present{present_} {}
 
   ui_size self_size() const noexcept;
 
@@ -226,9 +227,12 @@ struct text_arrange_utils : layout_utils_base {
 
   // mb take present_node ???
   text::present &get_present();
+
+  const text::token::sequence &get_tokens() const;
   // make present ...
 private:
-  text::present *present;
+  text::present &present;
+  const text::token::sequence &sq;
   static constexpr std::string_view err_token{"err..."};
 };
 } // namespace iuic
