@@ -47,7 +47,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-state-transition.cppm"
 	"src/iuic-base-color.cppm"
 	"src/iuic-policy.cppm"
-	"src/iuic-relement.cppm"
+	"src/iuic-scheme.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC
