@@ -8,7 +8,8 @@ import :text.present;
 
 namespace iuic::text {
 
-void present_aggregator::reserve_present(std::size_t id, token::sequence &&sq) {
+void present::aggregator::reserve_present(std::size_t id,
+                                          token::sequence &&sq) {
   if (not is_reserved(id)) {
     presents.insert({id, aggregation_bondle{.sequence{std::move(sq)}}});
   } else {
@@ -17,7 +18,8 @@ void present_aggregator::reserve_present(std::size_t id, token::sequence &&sq) {
   }
 };
 
-void present_aggregator::reserve_present(size_t id, const token::sequence &sq) {
+void present::aggregator::reserve_present(size_t id,
+                                          const token::sequence &sq) {
   if (not is_reserved(id)) {
     presents.insert({id, aggregation_bondle{.sequence{std::move(sq)}}});
   } else {
@@ -26,14 +28,14 @@ void present_aggregator::reserve_present(size_t id, const token::sequence &sq) {
   }
 };
 
-void present_aggregator::apply_present(size_t id, present &&present) {
+void present::aggregator::apply_present(size_t id, present &&present) {
   if (is_reserved(id)) {
     std::swap(presents.at(id).present, present);
     presents.at(id).is_applyed = true;
   }
 };
 
-const token::sequence &present_aggregator::get_linked_text(size_t id) const {
+const token::sequence &present::aggregator::get_linked_text(size_t id) const {
   if (is_reserved(id)) {
     return presents.at(id).sequence;
   }
@@ -41,7 +43,7 @@ const token::sequence &present_aggregator::get_linked_text(size_t id) const {
   return null.sequence;
 };
 
-const present &present_aggregator::get_present(size_t id) {
+const present &present::aggregator::get_present(size_t id) {
   if (is_applied(id)) {
     return presents.at(id).present;
   }
@@ -49,11 +51,11 @@ const present &present_aggregator::get_present(size_t id) {
   return null.present;
 };
 
-bool present_aggregator::is_reserved(size_t id) const {
+bool present::aggregator::is_reserved(size_t id) const {
   return presents.contains(id);
 };
 
-bool present_aggregator::is_applied(size_t id) const {
+bool present::aggregator::is_applied(size_t id) const {
   if (is_reserved(id)) {
     return presents.at(id).is_applyed;
   }

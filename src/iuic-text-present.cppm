@@ -20,6 +20,7 @@ struct present_node : token {
 };
 
 struct present {
+  class aggregator;
   std::vector<present_node> nodes;
 };
 
@@ -33,8 +34,8 @@ struct aggregation_bondle {
   bool is_applyed{false};
 };
 
-class present_aggregator {
-  friend void iuic::advance(present_aggregator &);
+class present::aggregator {
+  friend void iuic::advance(aggregator &);
 
 public:
   // подготовка места для present, под token::sequence

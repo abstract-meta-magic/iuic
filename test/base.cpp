@@ -7,6 +7,8 @@
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
 #include <print>
+#include <string>
+#include <string_view>
 #include <strings.h>
 #include <sys/types.h>
 #include <type_traits>
@@ -108,24 +110,30 @@ int main() {
     SDL_RenderClear(renderer);
 
     // std::cout << "GO" << std::endl;
-    auto &tree = ctx.get_tree();
-    for (auto &&r : tree) {
 
-      if (r.text) {
+    ctx.scheme.explore(
+        [&](iuic::scheme::frame frame) {
+          auto sdl_rect = to_sdl_rect(frame.rect);
 
-      } else {
-        auto rect = to_sdl_rect(r.rect);
-        std::visit(
-            [&](auto &bg) {
-              using type = std::remove_cvref_t<decltype(bg)>;
-              if constexpr (std::same_as<type, iuic::color_t>) {
-                SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
-                SDL_RenderFillRect(renderer, &rect);
-              }
-            },
-            r.style.get_decoration().background);
-      }
-    }
+          std::visit(
+              [&](auto &bg) {
+                using type = std::remove_cvref_t<decltype(bg)>;
+                if constexpr (std::same_as<type, iuic::color_t>) {
+                  SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+                  SDL_RenderFillRect(renderer, &sdl_rect);
+                }
+              },
+              frame.style.get_decoration().background);
+        },
+        [&](iuic::scheme::text text) {
+          // text
+          auto sdl_rect = to_sdl_rect(text.rect);
+
+          SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+          SDL_RenderDebugText(renderer, text.rect.position.x,
+                              text.rect.position.y,
+                              std::string{text.text.nodes[0].text}.c_str());
+        });
 
     SDL_RenderPresent(renderer);
   }

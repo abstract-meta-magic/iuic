@@ -69,9 +69,11 @@ measure_result short_text::measure(text_measure_utils utils) const noexcept {
 bool short_text::arrange(text_arrange_utils utils) const noexcept {
 
   auto &tokens = utils.get_tokens().tokens;
+  auto &present = utils.get_present();
 
   for (auto &token : tokens) {
     // std::println("text : {}", token.text);
+    present.nodes.push_back({token, .rect = {0, 0, 0, 0}});
   }
 
   return true;

@@ -20,8 +20,6 @@ namespace iuic {
 
 void context::set_view_size(ui_size size) { ctree.set_root_size(size); };
 
-const std::vector<relement> &context::get_tree() { return to_render; }
-
 // Refactor and move to other file
 template <> void advance(context::builder &builder) {
   builder.uids[0].index = 0;
@@ -43,7 +41,6 @@ template <> void advance(computing::tree &ctree) { ctree.reset(); };
 // TODO : replace all to advance
 void context::reset() {
   iuic::advance(ctree);
-  to_render.clear();
   iuic::advance(object);
   iuic::advance(text);
   frame_resource__.release();
@@ -180,18 +177,21 @@ void context::build_render_list() {
   // после чего составить простой список
   // отрисовки
 
+  scheme::incomplete inc;
+
   for (auto &cc : ctree.range_for()) {
     if (not cc.is_discarted()) {
       if (std::holds_alternative<const frame_layout *>(cc.get_layout())) {
-        to_render.push_back(
-            {.rect{cc.get_rect().value()}, .style = cc.get_info().style});
+        inc.push_frame(cc.get_rect().value(), cc.get_info().style);
       } else {
-        to_render.push_back(
-            {.rect{cc.get_rect().value()},
-             .text{&tpa.get_present(cc.get_hierarchy().interface->get_id(&cc))},
-             .style = cc.get_info().style});
+        inc.push_text(
+            cc.get_rect().value(),
+            &tpa.get_present(cc.get_hierarchy().interface->get_id(&cc)),
+            cc.get_info().style);
       }
     }
   }
+
+  scheme = std::move(inc);
 }
 }; // namespace iuic

@@ -17,7 +17,6 @@ void advance(auto &);
 };
 
 export namespace iuic {
-struct relement;
 
 // using hash_t
 // using srk
@@ -138,6 +137,9 @@ struct ui_size {
 struct ui_rect {
   ui_position position;
   ui_size size;
+  std::tuple<pixel_t, pixel_t, upixel_t, upixel_t> xywh() const {
+    return {position.x, position.y, size.w, size.h};
+  };
   constexpr auto operator<=>(const ui_rect &) const = default;
 };
 

@@ -62,9 +62,21 @@
               "icon": "lucide-file",
               "title": "builder-element"
             }
+          },
+          {
+            "id": "808d31366008c3aa",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.10.3"
+              },
+              "icon": "lucide-book-up",
+              "title": "примечания к выпуску 1.10.3"
+            }
           }
         ],
-        "currentTab": 3
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -212,7 +224,7 @@
       "bases:Создать новую базу": false
     }
   },
-  "active": "71a38c9dae8d39f0",
+  "active": "808d31366008c3aa",
   "lastOpenFiles": [
     "builder-policy.md",
     "builder.md",

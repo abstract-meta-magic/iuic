@@ -22,7 +22,7 @@ export import :layout.def;
 import :layout.frame.box;
 import :layout.text.box;
 import :computing.tree;
-export import :relement; // wrong
+export import :scheme; // wrong
 export import :policy;
 export import :storage.def;
 export import :storage.object;
@@ -433,9 +433,6 @@ public: // api
 
   template <typename Call = void> void make(Call call);
 
-  // TODO : rename to blueprint
-  const std::vector<relement> &get_tree();
-
 private:
   void reset();
   // первичное вычисление своего размера
@@ -454,6 +451,8 @@ public:
 
   event_reciver event{object, text, state};
 
+  scheme::explorer scheme{scheme::incomplete{}};
+
 private:
   template <typename T> T *frame_memory() {
     // TODO : wrap throw ?
@@ -464,13 +463,11 @@ private:
   managed_state_holder state{};
   state_transition_scheduler state_tr{state};
 
-  text::present_aggregator tpa{};
+  text::present::aggregator tpa{};
   // плоское дерево вычислений
   computing::tree ctree;
   // дерево событий
   event_collector event_collector;
-  // плоский список отрисовки
-  std::vector<relement> to_render;
   // ядро построения
   builder b{builder_base{*this}};
 
