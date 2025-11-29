@@ -27,6 +27,8 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"src/iuic-base.cppm"
+	"src/iuic-text-font.cppm"
+	"src/iuic-style.cppm"
 	"src/iuic-hash.cppm"
 	"src/iuic-fct.cppm"
 	"src/iuic-storage.def.cppm"

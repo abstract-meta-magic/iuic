@@ -12,6 +12,7 @@ module;
 
 export module iuic.core:scheme;
 import :base;
+import :style;
 import :text.present;
 
 namespace iuic {

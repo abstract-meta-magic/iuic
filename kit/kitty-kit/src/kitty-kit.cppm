@@ -6,6 +6,7 @@ module;
 #include <cstdint>
 #include <print>
 #include <string_view>
+#include <variant>
 
 export module iuic.kitty_kit;
 export import iuic.core;
@@ -581,8 +582,8 @@ void button(builder &b, std::invocable<> auto &&callback) {
   static constexpr style::decl style_{[]() {
     style::decl res{};
 
-    res.shape.min_size.h = vw_t{3};
-    res.shape.min_size.w = vw_t{18};
+    res.shape.min_size.h = vh_t{3};
+    res.shape.min_size.w = vh_t{18};
     res.shape.margin.top = upixel_t{20};
     res.shape.margin.bottom = upixel_t{20};
     res.shape.margin.left = upixel_t{20};
@@ -628,11 +629,54 @@ void button(builder &b, std::invocable<> auto &&callback) {
 };
 
 void text_button(builder &b, std::string_view text,
-                 std::invocable<> auto &&call) {
+                 std::invocable<> auto &&callback) {
   static layout::short_text text_layout;
-  static style::decl style{};
-  b.element.frame([&](builder &b) {
-    b.element.text(text::token{text}, style, text_layout);
-  });
+  static layout::text_button button_layout;
+  static constexpr style::decl style{[]() {
+    style::decl res{};
+
+    res.shape.min_size.h = vh_t{3};
+    res.shape.min_size.w = vh_t{18};
+    res.shape.margin.top = upixel_t{20};
+    res.shape.margin.bottom = upixel_t{20};
+    res.shape.margin.left = upixel_t{20};
+    res.shape.margin.right = upixel_t{20};
+
+    res.decoration.background = color::catppuccin::macchiato::surface_2{};
+
+    return res;
+  }()};
+
+  static constexpr style::decl text_style{};
+
+  auto uid = b.uid.make(iuic::policy::unique{}, "text-button");
+
+  b.element.frame(
+      uid,
+      [&](builder &b) {
+        auto ork = b.storage.object.persist(uid, "button-callback");
+
+        b.storage.object.init_if_not(
+            ork, [&]() { return std::forward<decltype(callback)>(callback); });
+
+        b.policy.hovered(policy::hovered::propagate);
+
+        if (b.state.hovered(uid)) {
+          b.style.override(style::decoration{
+              .background{color::catppuccin::macchiato::surface_0{}}});
+        }
+
+        using callback_type = std::remove_cvref_t<decltype(callback)>;
+        b.event(
+            [](event::local::key e) {
+              if (e.code == key_map::mouse("left")) {
+                e.utils.object.try_visit(
+                    e.ork, [](callback_type &callback) { callback(); });
+              }
+            },
+            ork);
+        b.element.text(text::token{text}, text_style, text_layout);
+      },
+      style, button_layout);
 }
 }; // namespace kitty_kit

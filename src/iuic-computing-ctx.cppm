@@ -13,6 +13,7 @@ module;
 
 export module iuic.core:computing.context;
 import :base;
+import :style;
 import :layout.def;
 import :policy;
 

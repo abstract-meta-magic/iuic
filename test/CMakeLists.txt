@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.30)
 
 find_package(SDL3 REQUIRED)
+find_package(Raylib REQUIRED)
 
 add_executable(te base.cpp)
 
@@ -14,7 +15,7 @@ set_target_properties(xxLib PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/tmp
 target_link_libraries(te xxLib)
 ## xxHash - END
 
-target_link_libraries(te iuic::core iuic::kit::kitty SDL3::SDL3)
+target_link_libraries(te iuic::core iuic::kit::kitty SDL3::SDL3 raylib)
 
 # -Wall -Wextra
 target_compile_options(te PRIVATE  -O0 -fcolor-diagnostics)

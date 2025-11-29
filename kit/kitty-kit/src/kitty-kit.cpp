@@ -1,5 +1,4 @@
 
-
 module;
 #include <print>
 #include <type_traits>
@@ -12,6 +11,7 @@ namespace kitty_kit::layout {
 measure_result text_button::measure(frame_measure_utils utils) const noexcept {
 
   auto rqs = utils.get_requests();
+  auto style = utils.self_style();
 
   if (rqs.empty() || rqs.size() > 1) {
     return {};
@@ -21,7 +21,7 @@ measure_result text_button::measure(frame_measure_utils utils) const noexcept {
 
   // do ...
 
-  return {{upixel_t{200}, upixel_t{200}}};
+  return {{style.get_shape().min_size.w, style.get_shape().min_size.h}};
 }
 
 bool text_button::arrange(frame_arrange_utils utils) const noexcept {
@@ -39,7 +39,22 @@ bool text_button::arrange(frame_arrange_utils utils) const noexcept {
 
 // simple-button always empty
 void text_button::position(frame_position_utils utils) const noexcept {
-  // centring ?
+
+  if (auto rqs = utils.content(); not rqs.empty()) {
+    auto position = utils.self_position();
+
+    auto self_size = utils.self_size();
+
+    auto center = ui_position{position.x + ((pixel_t)self_size.w / 2),
+                              position.y + (pixel_t)self_size.h / 2};
+
+    auto &rq = rqs[0];
+
+    auto rq_size = rq.size_of();
+
+    rq.apply(ui_position{center.x - (pixel_t)rq_size.w / 2,
+                         center.y - (pixel_t)rq_size.h / 2});
+  }
 }
 
 measure_result simple_box::measure(frame_measure_utils utils) const noexcept {
@@ -63,6 +78,23 @@ void simple_box::position(frame_position_utils utils) const noexcept {
 };
 
 measure_result short_text::measure(text_measure_utils utils) const noexcept {
+  auto style = utils.self_style();
+
+  auto &font = style.get_advance().font;
+
+  auto line_height = style.get_advance().font.height;
+
+  auto &decoder = font.atlas->get_decoder();
+
+  auto &tokens = utils.tokens();
+
+  for (auto &&tk : tokens.tokens) {
+    auto indeses = decoder.decode(tk);
+
+    for (auto index : indeses) {
+    }
+  }
+
   return {{upixel_t{20}, upixel_t{20}}};
 };
 
