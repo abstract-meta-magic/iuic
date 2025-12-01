@@ -173,9 +173,5 @@ ui_size frame_arrange_utils::self_size() const {
   };
 };
 
-text::present &text_arrange_utils::get_present() { return present; };
-
-const text::token::sequence &text_arrange_utils::get_tokens() const {
-  return sq;
-};
+text::token::sequence text_arrange_utils::get_tokens() const { return sq; };
 }; // namespace iuic

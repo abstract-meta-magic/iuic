@@ -19,9 +19,30 @@ export module iuic.core:base;
 
 namespace iuic {
 void advance(auto &);
-};
+
+template <typename T> consteval auto remove_all_pointer() {
+  if constexpr (std::is_pointer_v<T>) {
+    return remove_all_pointer<std::remove_pointer_t<T>>();
+  } else {
+    return std::type_identity<T>{};
+  }
+}
+
+}; // namespace iuic
 
 export namespace iuic {
+
+template <typename T>
+using pure_t =
+    std::remove_cvref_t<typename decltype(remove_all_pointer<T>())::type>;
+
+template <typename T>
+concept is_pure =
+    std::same_as<std::remove_cvref_t<T>, T> && not std::is_pointer_v<T>;
+
+namespace unit {
+struct percent {};
+}; // namespace unit
 
 // using hash_t
 // using srk

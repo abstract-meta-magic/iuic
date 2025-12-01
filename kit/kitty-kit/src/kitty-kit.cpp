@@ -78,37 +78,20 @@ void simple_box::position(frame_position_utils utils) const noexcept {
 };
 
 measure_result short_text::measure(text_measure_utils utils) const noexcept {
-  auto style = utils.self_style();
-
-  auto &font = style.get_advance().font;
-
-  auto line_height = style.get_advance().font.height;
-
-  auto &decoder = font.atlas->get_decoder();
-
-  auto &tokens = utils.tokens();
-
-  for (auto &&tk : tokens.tokens) {
-    auto indeses = decoder.decode(tk);
-
-    for (auto index : indeses) {
-    }
-  }
 
   return {{upixel_t{20}, upixel_t{20}}};
 };
 
-bool short_text::arrange(text_arrange_utils utils) const noexcept {
+iuic::text::glyph::sequence
+short_text::arrange(text_arrange_utils utils) const noexcept {
 
-  auto &tokens = utils.get_tokens().tokens;
-  auto &present = utils.get_present();
+  auto tokens = utils.get_tokens();
 
   for (auto &token : tokens) {
     // std::println("text : {}", token.text);
-    present.nodes.push_back({token, .rect = {0, 0, 0, 0}});
   }
 
-  return true;
+  return {};
 };
 // scroll_box
 }; // namespace kitty_kit::layout

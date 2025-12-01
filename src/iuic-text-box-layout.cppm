@@ -14,8 +14,9 @@ struct text_def_layout : text_layout {
     return {{0, 0}};
   };
 
-  bool arrange(text_arrange_utils utils) const noexcept override {
-    return false;
+  text::glyph::sequence
+  arrange(text_arrange_utils utils) const noexcept override {
+    return {};
   };
 
 } constexpr text_def_layout{};

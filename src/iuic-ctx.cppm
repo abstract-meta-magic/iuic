@@ -575,12 +575,13 @@ void context::builder_element_interface::text(text::token &&token,
 
   text::token::sequence sq{};
 
-  sq.tokens.push_back(std::move(token));
+  auto *mem = ctx.frame_memory<text::token>();
 
-  ctx.tpa.reserve_present(ctx.ctree.current_index(), std::move(sq));
+  new (mem) text::token{std::move(token)};
 
-  // wrong ctx.tpa.attach_present(key, ctx.ctree.current_index());
-  // WARNING : установить данные для отрисовки текста
+  ctx.tpa.reserve_present(ctx.ctree.current_index(),
+                          text::token::sequence{mem, mem + 1}); // like span
+
   ctx.ctree.up();
 }
 

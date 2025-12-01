@@ -562,7 +562,8 @@ struct simple_box : public frame_layout {
 
 struct short_text : public text_layout {
   measure_result measure(text_measure_utils utils) const noexcept override;
-  bool arrange(text_arrange_utils utils) const noexcept override;
+  iuic::text::glyph::sequence
+  arrange(text_arrange_utils utils) const noexcept override;
 };
 }; // namespace kitty_kit::layout
 

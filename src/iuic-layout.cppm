@@ -210,29 +210,22 @@ struct text_measure_utils : layout_utils_base {
   text_measure_utils(computing::context *ctx_, const text::token::sequence &sq_)
       : layout_utils_base{ctx_}, sq{sq_} {};
 
-  const text::token::sequence &tokens() const;
+  text::token::sequence tokens() const;
 
 private:
-  const text::token::sequence &sq;
+  text::token::sequence sq;
 };
 
 struct text_arrange_utils : layout_utils_base {
-  text_arrange_utils(computing::context *ctx_, text::present &present_,
-                     const text::token::sequence &sq_)
-      : layout_utils_base{ctx_}, sq{sq_}, present{present_} {}
+  text_arrange_utils(computing::context *ctx_, text::token::sequence sq_)
+      : layout_utils_base{ctx_}, sq{sq_} {}
 
   ui_size self_size() const noexcept;
 
-  void apply();
-
-  // mb take present_node ???
-  text::present &get_present();
-
-  const text::token::sequence &get_tokens() const;
+  text::token::sequence get_tokens() const;
   // make present ...
 private:
-  text::present &present;
-  const text::token::sequence &sq;
+  text::token::sequence sq;
   static constexpr std::string_view err_token{"err..."};
 };
 } // namespace iuic

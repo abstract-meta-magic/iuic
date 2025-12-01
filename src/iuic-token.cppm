@@ -2,6 +2,7 @@
 
 module;
 
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -13,13 +14,13 @@ export namespace iuic::text {
 struct token {
   struct info;
 
-  struct sequence;
-
   static const info &default_token_info();
 
   std::string_view text{"NULL"};
 
   const info &metadata{default_token_info()};
+
+  using sequence = std::span<const token>;
 };
 
 struct token::info {
@@ -32,11 +33,6 @@ struct token::info {
 
 const token::info &token::default_token_info() {
   return text::default_token_info;
-};
-
-struct token::sequence {
-  // ...
-  std::vector<token> tokens{};
 };
 
 struct tokenizer {

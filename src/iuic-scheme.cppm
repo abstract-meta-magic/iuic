@@ -4,6 +4,7 @@ module;
 #include <cstddef>
 #include <optional>
 #include <print>
+#include <span>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -21,7 +22,7 @@ namespace scheme {
 
 struct element {
   ui_rect rect; // x,y w,h
-  const iuic::text::present *text{nullptr};
+  text::glyph::sequence text{};
   z_order_t order;
   style::cref style;
   enum class mask {
@@ -31,9 +32,8 @@ struct element {
 
 struct incomplete {
 
-  void push_text(ui_rect rect, const text::present *present,
-                 style::cref style) {
-    elements.push_back(element{.rect = rect, .text = present, .style = style});
+  void push_text(ui_rect rect, text::glyph::sequence text_, style::cref style) {
+    elements.push_back(element{.rect = rect, .text = text_, .style = style});
   };
 
   void push_frame(ui_rect rect, style::cref style) {
@@ -55,7 +55,7 @@ export struct frame {
 
 export struct text {
   ui_rect rect;
-  const iuic::text::present &text;
+  iuic::text::glyph::sequence text;
   style::cref style;
 };
 
@@ -77,17 +77,17 @@ concept frame_visit_cpt =
 
 template <typename T>
 concept text_visit_cpt =
-    requires(T obj, const ui_rect &rect, const iuic::text::present &present,
+    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
              const style::cref &style) { obj.text(rect, present, style); } ||
-    requires(T obj, const ui_rect &rect, const iuic::text::present &present,
+    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
              const style::cref &style) {
       obj.operator()(rect, present, style);
     } ||
-    requires(T obj, const ui_rect &rect, const iuic::text::present &present,
+    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
              const style::cref &style) {
       obj.operator()({rect, present, style});
     } ||
-    requires(T obj, const ui_rect &rect, const iuic::text::present &present,
+    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
              const style::cref &style) { obj.text({rect, present, style}); };
 
 // TODO : mb rename to any_*
@@ -189,23 +189,23 @@ void explorer::visit(const element &el, frame_visit_cpt auto &visitor) const {
 };
 
 void explorer::visit(const element &el, text_visit_cpt auto &visitor) const {
-  if (not el.text) {
+  if (el.text.empty()) {
     // err
     return;
   }
 
-  if constexpr (requires() { visitor(el.rect, *el.text, el.style); }) {
-    visitor(el.rect, *el.text, el.style);
+  if constexpr (requires() { visitor(el.rect, el.text, el.style); }) {
+    visitor(el.rect, el.text, el.style);
   } else if constexpr (requires() {
-                         visitor.frame(el.rect, *el.text, el.style);
+                         visitor.frame(el.rect, el.text, el.style);
                        }) {
-    visitor.frame(el.rect, *el.text, el.style);
-  } else if constexpr (requires() { visitor({el.rect, *el.text, el.style}); }) {
-    visitor({el.rect, *el.text, el.style});
+    visitor.frame(el.rect, el.text, el.style);
+  } else if constexpr (requires() { visitor({el.rect, el.text, el.style}); }) {
+    visitor({el.rect, el.text, el.style});
   } else if constexpr (requires() {
-                         visitor.frame({el.rect, *el.text, el.style});
+                         visitor.frame({el.rect, el.text, el.style});
                        }) {
-    visitor.frame({el.rect, *el.text, el.style});
+    visitor.frame({el.rect, el.text, el.style});
   }
 };
 
@@ -252,10 +252,10 @@ void explorer::explore(has_visit_cpt auto &&...visitors) const
   requires(sizeof...(visitors) > 0)
 {
   for (auto &&element : elements) {
-    if (element.text) {
-      visit_text_element(element, visitors...);
-    } else {
+    if (element.text.empty()) {
       visit_frame_element(element, visitors...);
+    } else {
+      visit_text_element(element, visitors...);
     }
   }
 }
@@ -266,10 +266,10 @@ void explorer::explore(const dump_t &dump,
 {
   // wrong
   for (auto &&element : elements) {
-    if (element.text) {
-      visit_text_element(element, visitors...);
-    } else {
+    if (element.text.empty()) {
       visit_frame_element(element, visitors...);
+    } else {
+      visit_text_element(element, visitors...);
     }
   }
 }

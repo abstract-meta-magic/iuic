@@ -73,8 +73,8 @@ void context::proccess_measure() {
                                             const text_layout *>) {
 
             auto res = layout->measure(
-                {&cc, tpa.get_linked_text(
-                          cc.get_hierarchy().interface->get_id(&cc))});
+                {&cc,
+                 tpa.get_tokens(cc.get_hierarchy().interface->get_id(&cc))});
             if (res) {
               cc.apply(res.value().rq);
             } else {
@@ -157,11 +157,9 @@ void context::proccess_arrange() {
                                             const text_layout *>) {
             auto id = cc.get_hierarchy().interface->get_id(&cc);
 
-            // apply rect ?
-            text::present present;
-
-            if (layout->arrange({&cc, present, tpa.get_linked_text(id)})) {
-              tpa.apply_present(id, std::move(present));
+            if (auto res = layout->arrange({&cc, tpa.get_tokens(id)});
+                not res.empty()) {
+              tpa.apply_present(id, res);
             } else {
               cc.discard();
             }
@@ -186,7 +184,7 @@ void context::build_render_list() {
       } else {
         inc.push_text(
             cc.get_rect().value(),
-            &tpa.get_present(cc.get_hierarchy().interface->get_id(&cc)),
+            tpa.get_present(cc.get_hierarchy().interface->get_id(&cc)),
             cc.get_info().style);
       }
     }

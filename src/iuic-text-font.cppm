@@ -1,9 +1,13 @@
 
 
 module;
+
 #include <cstdint>
+#include <expected>
 #include <functional>
 #include <memory>
+#include <stdexcept>
+#include <string_view>
 #include <unordered_map>
 
 export module iuic.core:text.font;
@@ -15,10 +19,19 @@ export namespace iuic::text {
 struct glyph {
   upm_t width;
   upm_t height;
-  // ...
-  using index_t = std::uint32_t;
+  upm_t advance;
+  upm_t vertical_offset;
+  upm_t horisontal_offset;
   struct decoder;
   struct atlas;
+  struct present;
+  using index_t = std::uint32_t;
+  using sequence = std::span<const present>;
+};
+
+struct glyph::present {
+  glyph::index_t id;
+  ui_position position;
 };
 
 struct glyph::atlas {
@@ -30,7 +43,7 @@ struct glyph::atlas {
   // see iuic::glyph::atlas protocol object
   std::span<const std::byte> get_proto_obj() const;
 
-  bool is_kerning_support() const { return not kerning.empty(); };
+  bool is_monospace() const { return kerning.empty(); };
 
   ui_position get_kerning(index_t l, index_t r) const {
     if (kerning.contains({l, r})) {
@@ -41,7 +54,7 @@ struct glyph::atlas {
   };
 
   const glyph *get_glyph(index_t i) const {
-    if (cpu_present.size() >= i) {
+    if (cpu_present.size() > i) {
       return &cpu_present[i];
     }
 
@@ -70,9 +83,11 @@ private:
 };
 
 struct glyph::decoder {
+  struct error;
+
   virtual ~decoder() = default;
 
-  // by single symbol
-  virtual std::vector<index_t> decode(const iuic::text::token &) const = 0;
+  virtual std::expected<std::vector<index_t>, error>
+  decode(const iuic::text::token &) const noexcept = 0;
 };
 }; // namespace iuic::text

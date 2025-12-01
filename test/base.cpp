@@ -49,6 +49,14 @@ int main() {
   context ctx;
   app app;
 
+  // auto font_id = ctx.font.atlases.append("ru-stable",atlas);
+  // auto& = ctx.font.atlases.get("ru-stable");
+  // auto& = ctx.font.atlases.get(font_id);
+  // ctx.font.set_proto_builder(...);
+  // only text_utils
+  // auto& a_1 = utils.atlas_by_id(font_id);
+  // auto& a_2 = utils.atlas_by_name("ru-stable");
+
   ctx.set_view_size({600, 800});
 
   auto mouse_position = GetMousePosition();
@@ -90,11 +98,7 @@ int main() {
               frame.style.get_decoration().background);
         },
         [](iuic::scheme::text text) {
-          auto &ntext = text.text.nodes[0];
-          std::string str{};
-          str += ntext.text;
-          DrawText(str.c_str(), text.rect.position.x, text.rect.position.y, 12,
-                   RED);
+          // ...
         });
 
     DrawFPS(0, 0);

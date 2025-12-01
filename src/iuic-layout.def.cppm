@@ -6,6 +6,7 @@ module;
 #include <variant>
 export module iuic.core:layout.def;
 import :base;
+import :text.font;
 
 export namespace iuic {
 
@@ -54,7 +55,7 @@ struct text_layout {
 
   virtual measure_result measure(text_measure_utils) const noexcept = 0;
 
-  virtual bool arrange(text_arrange_utils) const noexcept = 0;
+  virtual text::glyph::sequence arrange(text_arrange_utils) const noexcept = 0;
 };
 
 }; // namespace iuic
