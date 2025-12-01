@@ -86,6 +86,14 @@ iuic::text::glyph::sequence
 short_text::arrange(text_arrange_utils utils) const noexcept {
 
   auto tokens = utils.get_tokens();
+  auto style = utils.self_style();
+  // auto atlas = utils.get_atlas(); get atlas by font-id
+  // font_id font = iuic::text::font::make_id("backgrount-base");
+  // font::decl
+  // font::ref
+  // font::cref
+
+  iuic::text::glyph::placement pl{};
 
   for (auto &token : tokens) {
     // std::println("text : {}", token.text);

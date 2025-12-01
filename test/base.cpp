@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdint>
 #include <expected>
+#include <initializer_list>
 #include <iostream>
 #include <map>
 #include <print>
@@ -35,6 +36,18 @@ void main_window(iuic::context::builder &b, app &app) {
   kitty_kit::text_button(b, "exit", [&]() { app.quit = true; });
 };
 
+constexpr iuic::style::font::decl base{};
+
+constexpr iuic::style::font::decl regular{base};
+
+constexpr iuic::style::font::decl italic{base, regular};
+
+constexpr iuic::style::font::decl bold{base, italic};
+
+constexpr iuic::style::font::decl bold_second{bold};
+
+constexpr iuic::style::font::decl bold_third{bold_second};
+
 int main() {
   using namespace iuic;
 
@@ -60,6 +73,10 @@ int main() {
   ctx.set_view_size({600, 800});
 
   auto mouse_position = GetMousePosition();
+
+  std::println("index 0 {}", bold.get_index());
+  std::println("index 1 {}", bold.get_underlying()->get_index());
+  std::println("index 1 {}", italic.get_underlying()->get_index());
 
   while (not WindowShouldClose() && not app.quit) {
 

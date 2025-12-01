@@ -24,12 +24,12 @@ struct glyph {
   upm_t horisontal_offset;
   struct decoder;
   struct atlas;
-  struct present;
+  struct placement;
   using index_t = std::uint32_t;
-  using sequence = std::span<const present>;
+  using sequence = std::span<const placement>;
 };
 
-struct glyph::present {
+struct glyph::placement {
   glyph::index_t id;
   ui_position position;
 };
