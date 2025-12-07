@@ -127,16 +127,7 @@ struct transform {
   ui_position offset{0, 0};
 
   float scale;
-
-  struct override {
-    struct valign {};
-    struct halign {};
-    struct position {};
-    struct scale {};
-  };
 };
-
-constexpr std::span<const std::byte> text_fragment_shader[]{};
 
 struct text {
   upixel_t height;

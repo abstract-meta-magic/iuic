@@ -29,6 +29,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base.cppm"
 	"src/iuic-text-font.cppm"
 	"src/iuic-style.cppm"
+	"src/iuic-text-fontset.cppm"
 	"src/iuic-hash.cppm"
 	"src/iuic-fct.cppm"
 	"src/iuic-storage.def.cppm"
@@ -61,6 +62,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-computing-ctx.cpp"
 	"src/iuic-state.cpp"
 	"src/iuic-state-transition.cpp"
+	"src/iuic-text-font.cpp"
 )
 ## set hash
 

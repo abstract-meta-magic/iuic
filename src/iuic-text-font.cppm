@@ -30,18 +30,24 @@ struct glyph {
 };
 
 struct glyph::placement {
-  glyph::index_t id;
-  ui_position position;
+  glyph::index_t id{0};
+  float scale{1.0f};
+  ui_position position{0, 0};
 };
 
+// TODO : error code
+static_assert(sizeof(glyph::placement) == 16, "...");
+
 struct glyph::atlas {
+  atlas(std::unique_ptr<decoder> &&d_);
+  atlas(std::unique_ptr<decoder> &&d_, std::unique_ptr<extern_binding> &&e_);
   atlas(const atlas &) = delete;
   atlas &operator=(const atlas &) = delete;
   atlas(atlas &&) = default;
   atlas &operator=(atlas &&) = default;
 
   // see iuic::glyph::atlas protocol object
-  std::span<const std::byte> get_proto_obj() const;
+  const extern_binding &get_binding() const { return *binding; };
 
   bool is_monospace() const { return kerning.empty(); };
 
@@ -73,21 +79,22 @@ private:
   upixel_t height; // высота строки
 
   static constexpr auto phash = [](auto &&r) -> std::size_t {
-    return r.first + r.second;
+    return r.first ^ (0 << r.second);
   };
 
   std::unordered_map<std::pair<index_t, index_t>, ui_position, decltype(phash)>
       kerning;
   std::vector<glyph> cpu_present; // [][]
-  std::vector<std::byte> proto_object;
+  std::unique_ptr<extern_binding> binding{new extern_binding{}};
 };
 
 struct glyph::decoder {
-  struct error;
+  struct error {};
 
   virtual ~decoder() = default;
 
   virtual std::expected<std::vector<index_t>, error>
   decode(const iuic::text::token &) const noexcept = 0;
 };
+
 }; // namespace iuic::text

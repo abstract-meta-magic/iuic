@@ -157,7 +157,8 @@ void context::proccess_arrange() {
                                             const text_layout *>) {
             auto id = cc.get_hierarchy().interface->get_id(&cc);
 
-            if (auto res = layout->arrange({&cc, tpa.get_tokens(id)});
+            if (auto res = layout->arrange(
+                    {&cc, tpa.get_tokens(id), frame_resource__});
                 not res.empty()) {
               tpa.apply_present(id, res);
             } else {

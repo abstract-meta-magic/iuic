@@ -10,6 +10,7 @@ module;
 #include <print>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -31,6 +32,70 @@ template <typename T> consteval auto remove_all_pointer() {
 }; // namespace iuic
 
 export namespace iuic {
+
+struct ctype_base {
+  const ctype_base *const self{this};
+};
+
+template <auto seed = {}> struct ctype : ctype_base {
+  consteval ctype() = default;
+
+  consteval explicit ctype(const ctype &base) noexcept
+      : ctype_base{}, base{&base} {}
+
+  constexpr bool operator==(const ctype &other) const noexcept {
+    return self == other.self;
+  };
+
+  operator std::size_t() const noexcept {
+    return reinterpret_cast<std::size_t>(self);
+  };
+
+  std::size_t type_id() const noexcept { return *this; };
+
+  constexpr bool base_of(const ctype &other) const noexcept {
+
+    const ctype *current = static_cast<const ctype *>(self);
+
+    for (;;) {
+      auto &_ = *current;
+      if (_ == other) {
+        return true;
+      } else if (_.self == _.base) {
+        break;
+      }
+
+      current = current->base;
+    }
+
+    return false;
+  };
+
+  const ctype *const base{this};
+};
+
+template <auto decl__ = []() {}> consteval decltype(auto) anonim_tag() {
+  struct {
+  } decl;
+  return decl;
+};
+
+using extern_type = ctype<anonim_tag()>;
+
+constexpr inline extern_type extern_null{};
+
+struct extern_binding {
+
+  constexpr virtual ~extern_binding() = default;
+
+  constexpr virtual const extern_type &type() const noexcept {
+    return extern_null;
+  };
+
+  constexpr virtual std::string_view info() const noexcept {
+    return "Extern binding interface";
+  };
+};
 
 template <typename T>
 using pure_t =

@@ -3,6 +3,7 @@
 module;
 
 #include <expected>
+#include <memory_resource>
 #include <print>
 #include <string_view>
 #include <type_traits>
@@ -217,15 +218,21 @@ private:
 };
 
 struct text_arrange_utils : layout_utils_base {
-  text_arrange_utils(computing::context *ctx_, text::token::sequence sq_)
-      : layout_utils_base{ctx_}, sq{sq_} {}
+  text_arrange_utils(computing::context *ctx_, text::token::sequence sq_,
+                     std::pmr::memory_resource &tmp_)
+      : layout_utils_base{ctx_}, sq{sq_}, tmp_resource{tmp_} {}
 
   ui_size self_size() const noexcept;
 
+  const text::glyph::atlas &get_atlas(style::font::cref);
+
   text::token::sequence get_tokens() const;
+
+  text::glyph::sequence capture_glyphs(text::glyph::sequence sq) const;
   // make present ...
 private:
   text::token::sequence sq;
+  std::pmr::memory_resource &tmp_resource;
   static constexpr std::string_view err_token{"err..."};
 };
 } // namespace iuic

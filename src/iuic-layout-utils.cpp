@@ -1,6 +1,7 @@
 
 module;
 
+#include <memory>
 #include <print>
 #include <string_view>
 #include <variant>
@@ -174,4 +175,60 @@ ui_size frame_arrange_utils::self_size() const {
 };
 
 text::token::sequence text_arrange_utils::get_tokens() const { return sq; };
+
+const text::glyph::atlas &text_arrange_utils::get_atlas(style::font::cref) {
+  struct ascii_decoder : text::glyph::decoder {
+    std::expected<std::vector<text::glyph::index_t>, error>
+    decode(const text::token &tt) const noexcept override {
+      std::vector<text::glyph::index_t> res;
+
+      // validate ascii
+
+      for (auto &&ch : tt.text) {
+        res.push_back(ch);
+      }
+
+      return res;
+    };
+  };
+
+  static text::glyph::atlas atlas{
+      std::unique_ptr<text::glyph::decoder>(new ascii_decoder{}),
+  };
+
+  return atlas;
+};
+
+text::glyph::sequence
+text_arrange_utils::capture_glyphs(text::glyph::sequence sq) const {
+
+  if (sq.empty()) {
+    return {};
+  } else {
+    auto mem = static_cast<text::glyph::placement *>(
+        tmp_resource.allocate(sizeof(text::glyph::placement) * sq.size(),
+                              alignof(text::glyph::placement)));
+
+    if (mem) {
+      auto current = mem;
+
+      for (auto &&glyph : sq) {
+        new (current) text::glyph::placement{glyph};
+        ++current;
+      }
+
+      return {mem, current};
+    }
+  }
+  return {};
+};
+
+ui_size text_arrange_utils::self_size() const noexcept {
+  auto size = ctx->get_size();
+  if (size) {
+    return size.value();
+  }
+
+  return {0, 0};
+};
 }; // namespace iuic

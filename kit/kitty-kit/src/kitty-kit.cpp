@@ -85,21 +85,31 @@ measure_result short_text::measure(text_measure_utils utils) const noexcept {
 iuic::text::glyph::sequence
 short_text::arrange(text_arrange_utils utils) const noexcept {
 
+  auto size = utils.self_size();
+  // position ?
   auto tokens = utils.get_tokens();
   auto style = utils.self_style();
-  // auto atlas = utils.get_atlas(); get atlas by font-id
-  // font_id font = iuic::text::font::make_id("backgrount-base");
-  // font::decl
-  // font::ref
-  // font::cref
 
-  iuic::text::glyph::placement pl{};
+  auto &atlas = utils.get_atlas(style.get_advance().text.font);
 
-  for (auto &token : tokens) {
-    // std::println("text : {}", token.text);
+  auto &decoder = atlas.get_decoder();
+  auto &ext = atlas.get_binding();
+
+  if (ext.type() == extern_null) {
+    std::println("extern-text");
   }
 
-  return {};
+  // 20 glyph lock
+  std::vector<iuic::text::glyph::placement> pl{};
+
+  for (auto &token : tokens) {
+    auto indexes = decoder.decode(token);
+    for (auto &index : indexes.value()) {
+      pl.push_back({.id = index});
+    }
+  }
+
+  return utils.capture_glyphs(pl);
 };
 // scroll_box
 }; // namespace kitty_kit::layout

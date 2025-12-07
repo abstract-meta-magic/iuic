@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <map>
@@ -10,6 +11,7 @@
 #include <strings.h>
 #include <sys/types.h>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -48,6 +50,10 @@ constexpr iuic::style::font::decl bold_second{bold};
 
 constexpr iuic::style::font::decl bold_third{bold_second};
 
+constexpr iuic::extern_type opengl{};
+
+constexpr iuic::extern_type opengl_text{opengl};
+
 int main() {
   using namespace iuic;
 
@@ -62,13 +68,16 @@ int main() {
   context ctx;
   app app;
 
-  // auto font_id = ctx.font.atlases.append("ru-stable",atlas);
-  // auto& = ctx.font.atlases.get("ru-stable");
-  // auto& = ctx.font.atlases.get(font_id);
-  // ctx.font.set_proto_builder(...);
-  // only text_utils
-  // auto& a_1 = utils.atlas_by_id(font_id);
-  // auto& a_2 = utils.atlas_by_name("ru-stable");
+  // fontset my{};
+  // сосотоит из атласов и линкуеться к ctx
+  // ctx.font.link(my);            // std::shared_ptr ???
+  // ctx.font.get(by font::cref);  // const atlas &
+
+  // auto f (= ctx.font.get(base);
+  // f.discriptor;
+  // vertex \ frag \ texture \ [ubo\ssbo]
+
+  // dset
 
   ctx.set_view_size({600, 800});
 
@@ -101,7 +110,11 @@ int main() {
     // std::cout << "GO" << std::endl;
     BeginDrawing();
     ClearBackground(WHITE);
+    // сначала эксперимент на gl
 
+    //
+
+    std::println("---------------------- BEGIN");
     ctx.scheme.explore(
         [](iuic::scheme::frame frame) {
           std::visit(
@@ -115,8 +128,17 @@ int main() {
               frame.style.get_decoration().background);
         },
         [](iuic::scheme::text text) {
+          // ctx.font.get(text.style.get_advance().text.font);
+
+          std::println("---------------------- TTB");
+          for (auto &&glyph : text.text) {
+            std::println("glyph info : id-{} , x-{} , y-{}", glyph.id,
+                         glyph.position.x, glyph.position.y);
+          }
+          std::println("---------------------- TTE");
           // ...
         });
+    std::println("---------------------- END");
 
     DrawFPS(0, 0);
 
