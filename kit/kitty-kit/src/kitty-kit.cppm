@@ -568,6 +568,44 @@ struct short_text : public text_layout {
 }; // namespace kitty_kit::layout
 
 export namespace kitty_kit {
+
+namespace style {
+
+constexpr inline iuic::style::font::decl font_base;
+
+constexpr inline iuic::style::font::decl font_base_hovered{font_base};
+
+constexpr iuic::style::decl base{[]() {
+  iuic::style::decl res{};
+
+  res.shape.min_size.h = iuic::percent_t{100};
+  res.shape.min_size.w = iuic::percent_t{100};
+
+  res.decoration.background = color::catppuccin::macchiato::surface_2{};
+
+  res.advence.text.font = font_base;
+
+  return res;
+}()};
+
+constexpr iuic::style::decl button{[]() {
+  iuic::style::decl res{};
+
+  res.shape.min_size.h = iuic::vh_t{3};
+  res.shape.min_size.w = iuic::vh_t{18};
+  res.shape.margin.top = iuic::upixel_t{20};
+  res.shape.margin.bottom = iuic::upixel_t{20};
+  res.shape.margin.left = iuic::upixel_t{20};
+  res.shape.margin.right = iuic::upixel_t{20};
+
+  res.decoration.background = color::catppuccin::macchiato::surface_2{};
+
+  res.advence.text.font = font_base;
+
+  return res;
+}()};
+}; // namespace style
+
 enum class theme_e {
   latte,
   frappe,
@@ -580,24 +618,7 @@ using namespace iuic;
 using builder = iuic::context::builder;
 
 void button(builder &b, std::invocable<> auto &&callback) {
-  static constexpr style::decl style_{[]() {
-    style::decl res{};
-
-    res.shape.min_size.h = vh_t{3};
-    res.shape.min_size.w = vh_t{18};
-    res.shape.margin.top = upixel_t{20};
-    res.shape.margin.bottom = upixel_t{20};
-    res.shape.margin.left = upixel_t{20};
-    res.shape.margin.right = upixel_t{20};
-
-    res.decoration.background = color::catppuccin::macchiato::surface_2{};
-
-    return res;
-  }()};
-
   static layout::simple_box layout_;
-
-  style::ref ref{style_};
 
   auto uid = b.uid.make(policy::unique{}, "kitty-kit-button");
   b.frame(
@@ -611,7 +632,7 @@ void button(builder &b, std::invocable<> auto &&callback) {
         b.policy.hovered(policy::hovered::propagate);
 
         if (b.state.hovered(uid)) {
-          b.style.override(style::decoration{
+          b.style.override(iuic::style::decoration{
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
 
@@ -626,29 +647,13 @@ void button(builder &b, std::invocable<> auto &&callback) {
             ork);
       },
 
-      style_, layout_);
+      style::button, layout_);
 };
 
 void text_button(builder &b, std::string_view text,
                  std::invocable<> auto &&callback) {
   static layout::short_text text_layout;
   static layout::text_button button_layout;
-  static constexpr style::decl style{[]() {
-    style::decl res{};
-
-    res.shape.min_size.h = vh_t{3};
-    res.shape.min_size.w = vh_t{18};
-    res.shape.margin.top = upixel_t{20};
-    res.shape.margin.bottom = upixel_t{20};
-    res.shape.margin.left = upixel_t{20};
-    res.shape.margin.right = upixel_t{20};
-
-    res.decoration.background = color::catppuccin::macchiato::surface_2{};
-
-    return res;
-  }()};
-
-  static constexpr style::decl text_style{};
 
   auto uid = b.uid.make(iuic::policy::unique{}, "text-button");
 
@@ -663,7 +668,7 @@ void text_button(builder &b, std::string_view text,
         b.policy.hovered(policy::hovered::propagate);
 
         if (b.state.hovered(uid)) {
-          b.style.override(style::decoration{
+          b.style.override(iuic::style::decoration{
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
 
@@ -676,8 +681,8 @@ void text_button(builder &b, std::string_view text,
               }
             },
             ork);
-        b.element.text(text::token{text}, text_style, text_layout);
+        b.element.text(text::token{text}, style::base, text_layout);
       },
-      style, button_layout);
+      style::button, button_layout);
 }
 }; // namespace kitty_kit

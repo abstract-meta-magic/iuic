@@ -174,29 +174,16 @@ ui_size frame_arrange_utils::self_size() const {
   };
 };
 
+text::token::sequence text_measure_utils::get_tokens() const { return sq; };
+
+const text::glyph::atlas &text_measure_utils::get_atlas(style::font::cref ref) {
+  return font.get(ref);
+};
+
 text::token::sequence text_arrange_utils::get_tokens() const { return sq; };
 
-const text::glyph::atlas &text_arrange_utils::get_atlas(style::font::cref) {
-  struct ascii_decoder : text::glyph::decoder {
-    std::expected<std::vector<text::glyph::index_t>, error>
-    decode(const text::token &tt) const noexcept override {
-      std::vector<text::glyph::index_t> res;
-
-      // validate ascii
-
-      for (auto &&ch : tt.text) {
-        res.push_back(ch);
-      }
-
-      return res;
-    };
-  };
-
-  static text::glyph::atlas atlas{
-      std::unique_ptr<text::glyph::decoder>(new ascii_decoder{}),
-  };
-
-  return atlas;
+const text::glyph::atlas &text_arrange_utils::get_atlas(style::font::cref ref) {
+  return font.get(ref);
 };
 
 text::glyph::sequence

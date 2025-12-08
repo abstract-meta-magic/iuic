@@ -16,6 +16,7 @@ import :layout.def;
 import :text.token;
 import :text.buff;
 import :text.present;
+import :text.fontset;
 import :computing.context;
 
 namespace iuic {
@@ -208,19 +209,24 @@ struct frame_position_utils : layout_utils_base {
 };
 
 struct text_measure_utils : layout_utils_base {
-  text_measure_utils(computing::context *ctx_, const text::token::sequence &sq_)
-      : layout_utils_base{ctx_}, sq{sq_} {};
+  text_measure_utils(computing::context *ctx_, const text::token::sequence &sq_,
+                     const text::fontslot &font_)
+      : layout_utils_base{ctx_}, sq{sq_}, font{font_} {};
 
-  text::token::sequence tokens() const;
+  text::token::sequence get_tokens() const;
+
+  const text::glyph::atlas &get_atlas(style::font::cref);
 
 private:
   text::token::sequence sq;
+  const text::fontslot &font;
 };
 
 struct text_arrange_utils : layout_utils_base {
   text_arrange_utils(computing::context *ctx_, text::token::sequence sq_,
+                     const text::fontslot &font_,
                      std::pmr::memory_resource &tmp_)
-      : layout_utils_base{ctx_}, sq{sq_}, tmp_resource{tmp_} {}
+      : layout_utils_base{ctx_}, sq{sq_}, font{font_}, tmp_resource{tmp_} {}
 
   ui_size self_size() const noexcept;
 
@@ -232,6 +238,7 @@ struct text_arrange_utils : layout_utils_base {
   // make present ...
 private:
   text::token::sequence sq;
+  const text::fontslot &font;
   std::pmr::memory_resource &tmp_resource;
   static constexpr std::string_view err_token{"err..."};
 };

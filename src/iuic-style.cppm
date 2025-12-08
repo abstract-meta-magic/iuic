@@ -73,6 +73,10 @@ struct cref {
 
   constexpr const decl &operator->() { return *this; }
 
+  constexpr bool operator==(const cref &other) const noexcept {
+    return decl == other.decl;
+  };
+
 private:
   const decl *decl;
 };

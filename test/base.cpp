@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <print>
 #include <string>
 #include <string_view>
@@ -16,6 +17,7 @@
 #include <variant>
 
 #include <raylib.h>
+#include <vector>
 
 import iuic.core;
 import iuic.kitty_kit;
@@ -65,19 +67,36 @@ int main() {
   // END
 
   // IUIC
+
   context ctx;
+
+  // ctx font init
+  struct d : text::glyph::decoder {
+    // test
+    constexpr std::expected<std::vector<text::glyph::index_t>, error>
+    decode(const text::token &) const noexcept override {
+      return std::vector<text::glyph::index_t>{0};
+    };
+  };
+
+  struct b : iuic::extern_binding {
+    // test
+    constexpr const extern_type &type() const noexcept override {
+      return opengl_text;
+    };
+
+    constexpr std::string_view info() const noexcept override {
+      return "Kitty kit gl binding";
+    };
+  };
+  std::shared_ptr<text::fontset> base_font = text::fontset{}.bind(
+      kitty_kit::style::font_base,
+      text::glyph::atlas{std::unique_ptr<text::glyph::decoder>{new d{}},
+                         std::unique_ptr<extern_binding>{new b{}}});
+
+  ctx.font.link(base_font);
+
   app app;
-
-  // fontset my{};
-  // сосотоит из атласов и линкуеться к ctx
-  // ctx.font.link(my);            // std::shared_ptr ???
-  // ctx.font.get(by font::cref);  // const atlas &
-
-  // auto f (= ctx.font.get(base);
-  // f.discriptor;
-  // vertex \ frag \ texture \ [ubo\ssbo]
-
-  // dset
 
   ctx.set_view_size({600, 800});
 
@@ -112,9 +131,8 @@ int main() {
     ClearBackground(WHITE);
     // сначала эксперимент на gl
 
-    //
+    // code
 
-    std::println("---------------------- BEGIN");
     ctx.scheme.explore(
         [](iuic::scheme::frame frame) {
           std::visit(
@@ -126,19 +144,26 @@ int main() {
                 }
               },
               frame.style.get_decoration().background);
-        },
-        [](iuic::scheme::text text) {
-          // ctx.font.get(text.style.get_advance().text.font);
 
-          std::println("---------------------- TTB");
-          for (auto &&glyph : text.text) {
-            std::println("glyph info : id-{} , x-{} , y-{}", glyph.id,
-                         glyph.position.x, glyph.position.y);
+          auto fref = frame.style.get_advance().text.font;
+        },
+        [&](iuic::scheme::text text) {
+          auto fref = text.style.get_advance().text.font;
+
+          if (fref == kitty_kit::style::font_base) {
+            std::println("kitty font");
           }
-          std::println("---------------------- TTE");
-          // ...
+
+          auto &atlas = ctx.font.get(fref);
+
+          auto &b = atlas.get_binding();
+
+          if (b.type() == opengl_text) {
+            // do render
+
+            std::println("BINFO : {}", b.info());
+          }
         });
-    std::println("---------------------- END");
 
     DrawFPS(0, 0);
 

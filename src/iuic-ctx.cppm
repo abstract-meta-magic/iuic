@@ -30,6 +30,7 @@ export import :storage.text;
 export import :text.font;
 export import :text.token;
 export import :text.present;
+export import :text.fontset;
 export import :style;
 export import :state;
 export import :state.transition;
@@ -447,6 +448,8 @@ private:
   void build_render_list();
 
 public:
+  text::fontslot font;
+
   managed_object_storage object;
 
   managed_text_storage text;

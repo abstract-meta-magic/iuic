@@ -91,13 +91,7 @@ short_text::arrange(text_arrange_utils utils) const noexcept {
   auto style = utils.self_style();
 
   auto &atlas = utils.get_atlas(style.get_advance().text.font);
-
   auto &decoder = atlas.get_decoder();
-  auto &ext = atlas.get_binding();
-
-  if (ext.type() == extern_null) {
-    std::println("extern-text");
-  }
 
   // 20 glyph lock
   std::vector<iuic::text::glyph::placement> pl{};
