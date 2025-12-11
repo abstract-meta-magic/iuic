@@ -21,7 +21,7 @@ namespace iuic {
 void context::set_view_size(ui_size size) { ctree.set_root_size(size); };
 
 // Refactor and move to other file
-template <> void advance(context::builder &builder) {
+template <> void advance(scheme::builder &builder) {
   builder.uids[0].index = 0;
 };
 
@@ -53,53 +53,58 @@ void context::proccess_measure() {
 
   auto rtree = ctree.reverse_range_for();
 
-  for (auto &&cc : ctree.reverse_range_for()) {
-    if (cc.is_discarted()) {
+  computing::kernel_hardware &kernel = ctree;
+
+  auto elements = kernel.range_for();
+
+  for (auto current = elements.rbegin(), end = elements.rend(); current != end;
+       ++current) {
+    auto el = *current;
+    if (el.meta & computing::element::discarded) {
       continue;
     }
 
     std::visit(
         [&](auto layout) {
           if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
-            auto res = layout->measure({&cc});
+            auto res = layout->measure({kernel, el});
 
             // TODO : fix me
             if (res) {
-              cc.apply(res.value().rq); // this wrong. no check measure result
+              kernel.apply(el, res.value().rq);
             } else {
-              cc.discard();
+              kernel.discard(el);
             }
           } else if constexpr (std::same_as<decltype(layout),
                                             const text_layout *>) {
 
-            auto res = layout->measure(
-                {&cc, tpa.get_tokens(cc.get_hierarchy().interface->get_id(&cc)),
-                 font});
+            auto res = layout->measure({kernel, tpa.get_tokens(el.self), font});
             if (res) {
-              cc.apply(res.value().rq);
+              kernel.apply(el, res.value().rq);
             } else {
-              cc.discard();
+              kernel.discard(el);
             }
             // TODO compute
           }
         },
-        cc.get_layout());
+        kernel.get_layout(el));
   }
 
   // mda root calc
+  computing::element root{computing::element::root};
   std::visit(
       [&](auto layout) {
         if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
-          auto res = layout->measure({ctree.root()});
+          auto res = layout->measure({kernel, root});
 
           if (res) {
-            ctree.root()->apply(res.value().rq);
+            kernel.apply(root, res.value().rq);
           } else {
-            ctree.root()->discard();
+            kernel.discard(root);
           };
         }
       },
-      ctree.root()->get_layout());
+      kernel.get_layout(root));
 };
 
 void context::proccess_position() {

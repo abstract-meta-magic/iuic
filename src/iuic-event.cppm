@@ -11,7 +11,7 @@ module;
 
 export module iuic.core:event;
 import :base;
-import :computing.tree;
+import :computing.kernel;
 import :storage.def;
 import :state;
 export import :key_code;

@@ -17,14 +17,14 @@ import :text.token;
 import :text.buff;
 import :text.present;
 import :text.fontset;
-import :computing.kernal;
+import :computing.kernel;
 
 namespace iuic {
 
 struct layout_utils_base {
-  layout_utils_base(computing::kernel_hardware *kernal_,
+  layout_utils_base(computing::kernel_hardware &kernel_,
                     computing::element e_) noexcept
-      : kernal{kernal_}, element{e_} {};
+      : kernel{kernel_}, element{e_} {};
   // Обычное сообщение для отладки
   void log(std::string_view message) const noexcept;
   // Предупреждение об исключительной ситвации.
@@ -55,7 +55,7 @@ struct layout_utils_base {
   void defer();
 
 protected: // общие нужды
-  computing::kernel_hardware *kernal{nullptr};
+  computing::kernel_hardware &kernel;
   computing::element element;
 
 private: // реализация базовых концепций логирования
@@ -65,7 +65,7 @@ private: // реализация базовых концепций логиро�
 // при вычислении собственной позиции
 struct frame_measure_utils : layout_utils_base {
 
-  frame_measure_utils(computing::kernel_hardware *kernal,
+  frame_measure_utils(computing::kernel_hardware &kernel,
                       computing::element e_) noexcept;
 
   std::vector<computing::request> get_requests();
@@ -100,11 +100,11 @@ struct frame_measure_utils : layout_utils_base {
 // для точного определения позиций
 // и размеров
 struct frame_arrange_utils : layout_utils_base {
-  frame_arrange_utils(computing::kernel_hardware *kernel_hardware_,
+  frame_arrange_utils(computing::kernel_hardware &kernel_hardware_,
                       computing::element e_) noexcept
       : layout_utils_base{kernel_hardware_, e_} {};
 
-  ui_size self_size() const;
+  ui_rect self_area() const;
 
   std::vector<computing::request> get_requests();
 
@@ -122,7 +122,7 @@ struct frame_arrange_utils : layout_utils_base {
           if constexpr (std::same_as<type, upixel_t>) {
             return value;
           } else if constexpr (std::same_as<type, percent_t>) {
-            return self_size().w * value;
+            return self_area().size.w * value;
           } else if constexpr (std::same_as<type, vh_t>) {
             return vh(value);
           } else if constexpr (std::same_as<type, vw_t>) {
@@ -144,7 +144,7 @@ struct frame_arrange_utils : layout_utils_base {
           if constexpr (std::same_as<type, upixel_t>) {
             return val;
           } else if constexpr (std::same_as<type, percent_t>) {
-            return self_size().h * val;
+            return self_area().size.h * val;
           } else if constexpr (std::same_as<type, vh_t>) {
             return vh(val);
           } else if constexpr (std::same_as<type, vw_t>) {
@@ -160,7 +160,7 @@ struct frame_arrange_utils : layout_utils_base {
 };
 
 struct text_measure_utils : layout_utils_base {
-  text_measure_utils(computing::kernel_hardware *kernel_hardware_,
+  text_measure_utils(computing::kernel_hardware &kernel_hardware_,
                      computing::element e_, const text::token::sequence &sq_,
                      const text::fontslot &font_)
       : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_} {};
@@ -175,14 +175,14 @@ private:
 };
 
 struct text_arrange_utils : layout_utils_base {
-  text_arrange_utils(computing::kernel_hardware *kernel_hardware_,
+  text_arrange_utils(computing::kernel_hardware &kernel_hardware_,
                      computing::element e_, text::token::sequence sq_,
                      const text::fontslot &font_,
                      std::pmr::memory_resource &tmp_)
       : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_},
         tmp_resource{tmp_} {}
 
-  ui_size self_size() const noexcept;
+  ui_rect self_rect() const noexcept;
 
   ui_position self_position() const noexcept;
 

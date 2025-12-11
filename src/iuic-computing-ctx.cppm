@@ -12,7 +12,7 @@ module;
 #include <variant>
 #include <vector>
 
-export module iuic.core:computing.kernal;
+export module iuic.core:computing.kernel;
 import :base;
 import :style;
 import :policy;
@@ -62,6 +62,8 @@ struct kernel_user {
   virtual std::variant<const frame_layout *, const text_layout *>
       get_layout(element) const noexcept;
 
+  virtual element get_parent(element);
+
   virtual std::vector<element> get_childs(element) const noexcept;
 
   virtual std::expected<const style::cref *, int>
@@ -85,14 +87,47 @@ struct kernel_user {
 // tmp-object
 // present-object
 
-struct memory_module {
-  int get_discriptor(int);
+struct object {
 
-  bool update_livetime(int);
+  void destruct();
 
-  void *persist_located(int);
+private:
+};
 
-  void *tmp_located(int);
+struct memory_model {
+  using key = std::uint64_t;
+
+  struct type {
+
+    template <is_pure T> static const type *from() {
+      static constexpr type res{
+          &res, std::is_trivially_destructible_v<T>, sizeof(T), alignof(T),
+          [](void *obj) static { delete static_cast<T *>(obj); }};
+      return &res;
+    };
+
+    const void *const id;
+    const bool trivial_dctor;
+    const std::size_t size;
+    const std::size_t align;
+    void (*const dctor)(void *);
+  };
+
+  virtual ~memory_model() = default;
+
+  virtual key make_key(std::span<const std::byte>) const;
+
+  virtual void *persist(key, const type *);
+
+  virtual bool is_init(key) const;
+
+  virtual bool update_livetime(key) const;
+
+  virtual bool is_exist(key) const;
+
+  virtual bool as(key, const type *) const;
+
+  virtual void *tmp(const type *, size_t count);
 };
 
 struct kernel_root : kernel_user {
@@ -107,15 +142,17 @@ struct kernel_root : kernel_user {
   // select parent
   virtual element launch(element) noexcept;
 
+  virtual element discard(element) noexcept;
+
   virtual bool validate() const;
 
   virtual void reset() noexcept;
 
-  virtual void override(element, style::decoration) noexcept;
+  virtual void override(element, style::decoration *) noexcept;
 
-  virtual void override(element, style::shape) noexcept;
+  virtual void override(element, style::shape *) noexcept;
 
-  virtual void override(element, style::transform) noexcept;
+  virtual void override(element, style::transform *) noexcept;
 
   virtual void override(element, z_order_t) noexcept;
 
@@ -123,9 +160,9 @@ struct kernel_root : kernel_user {
 
   virtual void override(element, policy::event) noexcept;
 
-  virtual memory_module *memory();
+  virtual memory_model *memory();
 
-  virtual const memory_module *memory() const;
+  virtual const memory_model *memory() const;
 };
 
 struct kernel_hardware : kernel_root {

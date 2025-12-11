@@ -7,7 +7,7 @@ module;
 #include <vector>
 
 module iuic.core;
-import :computing.context;
+import :computing.kernel;
 import :text.present;
 
 namespace iuic::computing {

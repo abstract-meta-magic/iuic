@@ -19,7 +19,7 @@ module;
 export module iuic.core:computing.tree;
 import :base;
 import :layout;
-import :computing.kernal;
+import :computing.kernel;
 import :policy;
 
 namespace iuic::computing {
