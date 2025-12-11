@@ -9,6 +9,7 @@ module;
 
 module iuic.core;
 import :layout;
+import :computing.kernal;
 
 namespace iuic {
 
@@ -218,4 +219,16 @@ ui_size text_arrange_utils::self_size() const noexcept {
 
   return {0, 0};
 };
+
+ui_position text_arrange_utils::self_position() const noexcept {
+  auto size = ctx->get_rect();
+  if (size) {
+    return size.value().position;
+  }
+
+  std::println("null-rect");
+
+  return {0, 0};
+};
+
 }; // namespace iuic

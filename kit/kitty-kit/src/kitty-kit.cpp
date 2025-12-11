@@ -1,5 +1,6 @@
 
 module;
+#include <expected>
 #include <print>
 #include <type_traits>
 #include <variant>
@@ -52,6 +53,8 @@ void text_button::position(frame_position_utils utils) const noexcept {
 
     auto rq_size = rq.size_of();
 
+    // rq.apply(ui_position{center.x - (pixel_t)rq_size.w / 2,
+    //                      center.y - (pixel_t)rq_size.h / 2});
     rq.apply(ui_position{center.x - (pixel_t)rq_size.w / 2,
                          center.y - (pixel_t)rq_size.h / 2});
   }
@@ -78,14 +81,19 @@ void simple_box::position(frame_position_utils utils) const noexcept {
 };
 
 measure_result short_text::measure(text_measure_utils utils) const noexcept {
+  if (utils.get_tokens().empty()) {
+    return {std::unexpected{measure_err{}}};
+  }
+  upixel_t width = utils.get_tokens()[0].text.size() * 6;
 
-  return {{upixel_t{20}, upixel_t{20}}};
+  return {{width, upixel_t{12}}};
 };
 
 iuic::text::glyph::sequence
 short_text::arrange(text_arrange_utils utils) const noexcept {
 
   auto size = utils.self_size();
+  auto position = utils.self_position();
   // position ?
   auto tokens = utils.get_tokens();
   auto style = utils.self_style();
@@ -99,7 +107,8 @@ short_text::arrange(text_arrange_utils utils) const noexcept {
   for (auto &token : tokens) {
     auto indexes = decoder.decode(token);
     for (auto &index : indexes.value()) {
-      pl.push_back({.id = index});
+      pl.push_back({.id = index, .position = position});
+      position.x += 6;
     }
   }
 

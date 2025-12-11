@@ -43,8 +43,6 @@ struct frame_layout {
   virtual measure_result measure(frame_measure_utils) const noexcept = 0;
 
   virtual bool arrange(frame_arrange_utils) const noexcept = 0;
-
-  virtual void position(frame_position_utils) const noexcept = 0;
 };
 
 struct text_measure_utils;

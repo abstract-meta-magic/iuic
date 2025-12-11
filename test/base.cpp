@@ -1,3 +1,4 @@
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <expected>
@@ -74,8 +75,12 @@ int main() {
   struct d : text::glyph::decoder {
     // test
     constexpr std::expected<std::vector<text::glyph::index_t>, error>
-    decode(const text::token &) const noexcept override {
-      return std::vector<text::glyph::index_t>{0};
+    decode(const text::token &t) const noexcept override {
+      std::vector<text::glyph::index_t> res{};
+      for (auto &c : t.text) {
+        res.push_back(c);
+      }
+      return res;
     };
   };
 
@@ -101,10 +106,6 @@ int main() {
   ctx.set_view_size({600, 800});
 
   auto mouse_position = GetMousePosition();
-
-  std::println("index 0 {}", bold.get_index());
-  std::println("index 1 {}", bold.get_underlying()->get_index());
-  std::println("index 1 {}", italic.get_underlying()->get_index());
 
   while (not WindowShouldClose() && not app.quit) {
 
@@ -133,6 +134,11 @@ int main() {
 
     // code
 
+    struct rect {
+      ui_rect bordered;
+      ui_rect borderless;
+    };
+
     ctx.scheme.explore(
         [](iuic::scheme::frame frame) {
           std::visit(
@@ -140,7 +146,10 @@ int main() {
                 using type = std::remove_cvref_t<decltype(obj)>;
                 if constexpr (std::same_as<type, iuic::color_t>) {
                   auto [x, y, w, h] = frame.rect.xywh();
-                  DrawRectangle(x, y, w, h, Color{obj.r, obj.g, obj.b, obj.a});
+                  Rectangle rect{(float)x, (float)y, (float)w, (float)h};
+                  Color color{obj.r, obj.g, obj.b, obj.a};
+                  DrawRectangleRec(rect, color);
+                  // DrawRectangleRounded(rect, .80f, 20, color);
                 }
               },
               frame.style.get_decoration().background);
@@ -150,18 +159,20 @@ int main() {
         [&](iuic::scheme::text text) {
           auto fref = text.style.get_advance().text.font;
 
-          if (fref == kitty_kit::style::font_base) {
-            std::println("kitty font");
-          }
-
           auto &atlas = ctx.font.get(fref);
 
           auto &b = atlas.get_binding();
 
-          if (b.type() == opengl_text) {
-            // do render
+          Color color{.r = 0, .g = 0, .b = 0, .a = 255};
+          //         auto [x, y, w, h] = text.rect.xywh();
+          // DrawRectangle(x - 4, y, w + 8, h, color);
 
-            std::println("BINFO : {}", b.info());
+          if (b.type() == opengl_text) {
+            for (auto &&g : text.text) {
+              DrawRectangle(g.position.x, g.position.y, 6, 12, color);
+              color.r += 40;
+              color.g += 40;
+            }
           }
         });
 

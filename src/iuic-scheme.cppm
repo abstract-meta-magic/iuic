@@ -22,7 +22,7 @@ namespace scheme {
 
 struct element {
   ui_rect rect; // x,y w,h
-  text::glyph::sequence text{};
+  std::optional<text::glyph::sequence> text{std::nullopt};
   z_order_t order;
   style::cref style;
   enum class mask {
@@ -189,23 +189,25 @@ void explorer::visit(const element &el, frame_visit_cpt auto &visitor) const {
 };
 
 void explorer::visit(const element &el, text_visit_cpt auto &visitor) const {
-  if (el.text.empty()) {
+  if (!el.text) {
     // err
     return;
   }
 
-  if constexpr (requires() { visitor(el.rect, el.text, el.style); }) {
-    visitor(el.rect, el.text, el.style);
+  if constexpr (requires() { visitor(el.rect, el.text.value(), el.style); }) {
+    visitor(el.rect, el.text.value(), el.style);
   } else if constexpr (requires() {
-                         visitor.frame(el.rect, el.text, el.style);
+                         visitor.frame(el.rect, el.text.value(), el.style);
                        }) {
     visitor.frame(el.rect, el.text, el.style);
-  } else if constexpr (requires() { visitor({el.rect, el.text, el.style}); }) {
-    visitor({el.rect, el.text, el.style});
   } else if constexpr (requires() {
-                         visitor.frame({el.rect, el.text, el.style});
+                         visitor({el.rect, el.text.value(), el.style});
                        }) {
-    visitor.frame({el.rect, el.text, el.style});
+    visitor({el.rect, el.text.value(), el.style});
+  } else if constexpr (requires() {
+                         visitor.frame({el.rect, el.text.value(), el.style});
+                       }) {
+    visitor.frame({el.rect, el.text.value(), el.style});
   }
 };
 
@@ -252,10 +254,10 @@ void explorer::explore(has_visit_cpt auto &&...visitors) const
   requires(sizeof...(visitors) > 0)
 {
   for (auto &&element : elements) {
-    if (element.text.empty()) {
-      visit_frame_element(element, visitors...);
-    } else {
+    if (element.text) {
       visit_text_element(element, visitors...);
+    } else {
+      visit_frame_element(element, visitors...);
     }
   }
 }
@@ -266,10 +268,10 @@ void explorer::explore(const dump_t &dump,
 {
   // wrong
   for (auto &&element : elements) {
-    if (element.text.empty()) {
-      visit_frame_element(element, visitors...);
-    } else {
+    if (element.text) {
       visit_text_element(element, visitors...);
+    } else {
+      visit_frame_element(element, visitors...);
     }
   }
 }

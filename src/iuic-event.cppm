@@ -96,7 +96,7 @@ struct revent {
   variadic_callback call;
   object_registry_key ork;
   text_registry_key trk;
-  size_t id;
+  computing::element e;
 };
 
 struct hovered_test {
@@ -131,30 +131,30 @@ public:
 
   void push(revent &&e) { events.push_back(e); };
 
-  event_pack build_pack(const computing::tree &ctree) {
+  event_pack build_pack(const computing::kernel_user &kernel) {
     event_pack res;
 
-    for (auto &cc : ctree.range_for()) {
-      if (cc.get_info().hovered_p != policy::hovered::none) {
-        if (auto rect = cc.get_rect()) {
-          auto &info = cc.get_info();
-          res.htest.push_back(hovered_test{.rect = rect.value(),
-                                           .order = info.order,
-                                           .policy = info.hovered_p,
-                                           .uid = info.uid});
+    for (auto &e : kernel.range_for()) {
+      if (e.meta ^ computing::element::discarded |
+          computing::element::arrange) {
+        if (auto rect = kernel.get_rect(e)) {
+
+          res.htest.push_back(
+              hovered_test{.rect = rect.value(),
+                           .order = kernel.get_zorder(e).value(),
+                           .policy = kernel.get_hovered_policy(e).value(),
+                           .uid = kernel.get_uid(e).value()});
         }
       }
     }
 
     // sort htest by order
 
-    for (auto &e : events) {
+    for (auto &ev : events) {
       // TODO : Make pack
-      auto element = ctree.at(e.id);
 
-      auto &info = element->get_info();
-
-      if (info.hovered_p == policy::hovered::none) {
+      if (auto policy = kernel.get_hovered_policy(ev.e);
+          policy.value() == policy::hovered::none) {
         continue;
       }
 
@@ -166,24 +166,24 @@ public:
             if constexpr (std::same_as<type, global_key_event_fpt> ||
                           std::same_as<type, global_pointer_move_event_fpt>) {
               res.global.push_back({
-                  .call = e.call,
-                  .policy = info.event_p,
-                  .ork = e.ork,
-                  .trk = e.trk,
-                  .uid = info.uid,
+                  .call = ev.call,
+                  .policy = kernel.get_event_policy(ev.e).value(),
+                  .ork = ev.ork,
+                  .trk = ev.trk,
+                  .uid = kernel.get_uid(ev.e).value(),
               });
             } else {
 
               res.local.push_back({
-                  .call = e.call,
-                  .policy = info.event_p,
-                  .ork = e.ork,
-                  .trk = e.trk,
-                  .uid = info.uid,
+                  .call = ev.call,
+                  .policy = kernel.get_event_policy(ev.e).value(),
+                  .ork = ev.ork,
+                  .trk = ev.trk,
+                  .uid = kernel.get_uid(ev.e).value(),
               });
             }
           },
-          e.call);
+          ev.call);
     };
 
     events.clear();

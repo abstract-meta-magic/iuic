@@ -169,13 +169,13 @@ private: // builder.def
     builder_order_interface(builder_base &&bb) : builder_base{bb} {}
 
     void group(std::uint16_t value) {
-      ctx.ctree.current()->get_info().order.group = value;
+      // ctx.ctree.current()->get_info().order.group = value;
     };
 
-    void up() { ctx.ctree.current()->get_info().order.priority += 1; };
+    void up() { ctx.ctree.get_info(ctx.ctree.current())->order.priority += 1; };
 
     void set(std::uint16_t value) {
-      ctx.ctree.current()->get_info().order.priority += value;
+      // ctx.ctree.current()->get_info().order.priority += value;
     };
   };
 
@@ -183,11 +183,11 @@ private: // builder.def
     builder_policy_interface(builder_base &&bb) : builder_base{bb} {};
 
     void hovered(policy::hovered p) {
-      ctx.ctree.current()->get_info().hovered_p = p;
+      // ctx.ctree.current()->get_info().hovered_p = p;
     };
 
     void event(policy::event p) {
-      ctx.ctree.current()->get_info().event_p = p;
+      // ctx.ctree.current()->get_info().event_p = p;
     };
   };
 
@@ -213,7 +213,7 @@ private: // builder.def
       auto current = ctx.ctree.current_index();
 
       for (size_t i{0}; i < sh.up; ++i) {
-        current = ctx.ctree.at(current)->get_hierarchy().parent;
+        //       current = ctx.ctree.at(current)->get_hierarchy().parent;
       }
 
       std::stringstream ss;
@@ -233,13 +233,14 @@ private: // builder.def
       ss << ctx.ctree.current_index();
 
       auto cur = ctx.ctree.current();
+      computing::kernal &kernal = ctx.ctree;
 
-      auto ch = cur->get_hierarchy().interface->get_childs(cur);
+      auto ch = kernal.get_childs(cur);
       if (ch.empty()) {
-        ss << ctx.ctree.current()->get_info().uid;
+        // ss << ctx.ctree.current()->get_info().uid;
       } else {
-        ss << ch.back()->get_hierarchy().interface->get_id(ch.back());
-        ss << ch.back()->get_info().uid;
+        // ss << ch.back()->get_hierarchy().interface->get_id(ch.back());
+        // ss << ch.back()->get_info().uid;
       }
 
       auto hash_string = ss.str();
@@ -252,14 +253,16 @@ private: // builder.def
       ss << str;
       ss << &default_anchor;
 
-      ss << ctx.ctree.current()->get_hierarchy().parent;
+      // ss << ctx.ctree.current()->get_hierarchy().parent;
       ss << ++uids.back().index; // save | always contains root
 
       auto hash_string = ss.str();
       return hash::make(hash_string.c_str(), hash_string.length());
     };
 
-    uid_t self() const noexcept { return ctx.ctree.current()->get_info().uid; };
+    uid_t self() const noexcept {
+      return ctx.ctree.get_info(ctx.ctree.current())->uid;
+    };
 
   private:
     uid_t __make_uid_from_ptr(const void *ptr) const noexcept {

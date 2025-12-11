@@ -2,7 +2,9 @@
 module;
 
 #include <cstddef>
+#include <cstdint>
 #include <deque>
+#include <expected>
 #include <iostream>
 #include <limits>
 #include <list>
@@ -17,115 +19,10 @@ module;
 export module iuic.core:computing.tree;
 import :base;
 import :layout;
-import :computing.context;
+import :computing.kernal;
+import :policy;
 
 namespace iuic::computing {
-
-/*
-  Специайльный layout для корневого элемента.
- */
-struct : public frame_layout {
-  measure_result measure(frame_measure_utils utils) const noexcept override {
-    return {{percent_t{100}, percent_t{100}}};
-  };
-
-  bool arrange(frame_arrange_utils utils) const noexcept override {
-    auto self_size = utils.self_size();
-    auto available_size = self_size;
-
-    auto requests = utils.get_requests();
-
-    // что мне нужно для вычисление
-    // нужно не выйти за пределы от self_size
-    for (auto &&rq : requests) {
-      auto rq_value = rq.value();
-      auto &min = rq.style_of().get_shape().min_size;
-
-      bool valide{true};
-
-      ui_size res = {.w = utils.width_upixel_of(rq_value.width),
-                     .h = utils.height_upixel_of(rq_value.height)};
-
-      auto style_min_width = utils.width_upixel_of(min.w);
-      if (style_min_width > res.w) {
-        res.w = style_min_width;
-      }
-
-      auto style_min_height = utils.height_upixel_of(min.h);
-      if (style_min_height > res.h) {
-        res.h = style_min_height;
-      }
-
-      rq.apply(res);
-    }
-
-    return true;
-  };
-
-  static upixel_t margin_top(frame_position_utils &utils,
-                             position_request &rq) noexcept {
-    return std::visit(
-        [&](auto &margin_top) -> upixel_t {
-          using type = std::remove_cvref_t<decltype(margin_top)>;
-          if constexpr (std::same_as<type, upixel_t>) {
-            return margin_top;
-          } else if constexpr (std::same_as<type, percent_t>) {
-            return utils.self_size().h * margin_top;
-          } else if constexpr (std::same_as<type, vh_t>) {
-            return utils.root_size().h * margin_top;
-          } else if constexpr (std::same_as<type, vh_t>) {
-            return utils.root_size().w * margin_top;
-          } else if constexpr (std::same_as<type, rem_t>) {
-            return utils.rem(margin_top);
-          } else {
-            return {};
-          }
-        },
-        rq.style_of().get_shape().margin.top);
-  };
-
-  static upixel_t margin_left(frame_position_utils &utils,
-                              position_request &rq) noexcept {
-    return std::visit(
-        [&](auto &margin_left) -> upixel_t {
-          using type = std::remove_cvref_t<decltype(margin_left)>;
-          if constexpr (std::same_as<type, upixel_t>) {
-            return margin_left;
-          } else if constexpr (std::same_as<type, ui_auto>) {
-            return upixel_t{};
-          } else if constexpr (std::same_as<type, percent_t>) {
-            return utils.self_size().w * margin_left;
-          } else if constexpr (std::same_as<type, vh_t>) {
-            return utils.root_size().h * margin_left;
-          } else if constexpr (std::same_as<type, vh_t>) {
-            return utils.root_size().w * margin_left;
-          } else if constexpr (std::same_as<type, rem_t>) {
-            return utils.rem(margin_left);
-          } else {
-            return {};
-          }
-        },
-        rq.style_of().get_shape().margin.left);
-  };
-  void position(frame_position_utils utils) const noexcept override {
-    auto current_pos = utils.self_position();
-
-    auto content = utils.content();
-    for (auto &&rq : content) {
-      auto size = rq.size_of(); // ordered
-
-      // fix me
-      current_pos.y += margin_top(utils, rq);
-      current_pos.x += margin_left(utils, rq);
-
-      rq.apply(current_pos);
-
-      current_pos.y += size.h;
-
-      current_pos.x = 0;
-    }
-  };
-} constexpr root_element_layout{};
 
 // с computing_context
 // Так как вычислительное дерево одно на контекст
@@ -134,13 +31,36 @@ struct : public frame_layout {
 // Reaname to iuic::computing::tree
 // iuic::computing::element
 // etc
-struct tree final : private computing_hierarchy {
+
+constexpr inline style::decl root_style_decl{};
+
+struct tree final : public kernel_hardware {
 public: // base proxy struct's
-  struct sentinel;
-  struct range_based_for_proxy;
-  struct const_range_based_for_proxy;
-  struct reverse_range_based_for_proxy;
   struct const_reverse_range_based_for_proxy;
+  struct node {
+    union {
+      request_size area_request;
+      struct {
+        ui_rect bordered_area;
+        ui_rect borderless_area;
+      };
+      // err_handler
+      // text_request
+    };
+    style::ref style;
+  };
+
+  struct info {
+    union {
+      const frame_layout *frame_layout;
+      const text_layout *text_layout;
+    };
+    element hierarchy;
+    uid_t uid;
+    z_order_t order;
+    policy::hovered hovered_p{policy::hovered::none};
+    policy::event event_p;
+  };
 
 public: // BIG-VI
   ~tree() = default;
@@ -151,301 +71,78 @@ public: // BIG-VI
   tree &operator=(tree &&) = delete;
 
 public: // Public Interface
-  /*
-    Отчистка девева.
-    Инвалидирует все итераторы и range_proxy.
-  */
   void reset();
 
-  /*
-    Добовление нового элемента и вход в его контекст.
-    Инвалидирует все итераторы и range_proxy.
-  */
   void add(style::ref, const frame_layout *layout);
 
   void add(style::ref, const text_layout *layout);
 
-  /*
-    Выход из контекста родительского элемента.
-  */
   void up();
 
-  /*
-    Получение последнего элемента.
-  */
-  computing::context *last() noexcept;
+  computing::element last() const noexcept;
 
-  /*
-    Получение последнего элемента.
-    Может возвращать корневой элемент.
-  */
-  const computing::context *last() const noexcept;
+  computing::element current() const noexcept;
 
-  computing::context *current() noexcept;
+  computing::element at(size_t) const;
 
-  const computing::context *current() const noexcept;
+  computing::element root() const noexcept;
 
-  /*
-    Получение элемента по индексу.
-  */
-  computing::context *at(size_t);
-
-  /*
-    Получение элемента по индексу.
-  */
-  const computing::context *at(size_t) const;
-
-  /*
-    Получение корневого элемента.
-  */
-  computing::context *root() noexcept;
-
-  /*
-    Получение корневого элемента.
-  */
-  const computing::context *root() const noexcept;
-
-  /*
-    Размер дерева, без учета корневого элемента.
-  */
   size_t size() const noexcept;
 
-  /*
-    Получение индекса последнего элемента.
-    Может возвращать индекс корневого элемента.
-  */
   size_t index_at_last() const noexcept;
 
   size_t current_index() const noexcept;
 
-  /*
-   for(auto&& cc : ctree.range_for()) { ... }.
-   Перебо всего дерева от начала до конца.
-  */
-  range_based_for_proxy range_for();
+  const info *current_info() const noexcept;
 
-  /*
-    for(auto&& cc : ctree.range_for()) { ... }.
-    Перебо всего дерева от начала до конца.
-  */
-  const_range_based_for_proxy range_for() const;
+  info *current_info() noexcept;
 
-  /*
-   for(auto&& cc : ctree.reverse_range_for()) { ... }.
-   Перебо всего дерева от конца к началу.
-  */
-  reverse_range_based_for_proxy reverse_range_for();
+  using iterator = std::vector<element>::const_iterator;
+  using reverse_iterator = std::vector<element>::const_reverse_iterator;
 
-  /*
-   for(auto&& cc : ctree.reverse_range_for()) { ... }.
-   Перебо всего дерева от конца к началу.
-  */
-  const_reverse_range_based_for_proxy reverse_range_for() const;
+  iterator begin() const;
 
-  /*
-    Вывести текущее дерево с его состоянием в std::cout.
-  */
-  void print_tree() const noexcept;
+  iterator end() const;
+
+  reverse_iterator rbegin() const;
+
+  reverse_iterator rend() const;
+
+  const info *get_info(element) const;
 
 public: // root style pubic interface
   void set_root_size(ui_size);
 
-private: // Private Hierarhy Interface
-  computing::context *get_parent(computing::context *ctx) override;
+private: // kernal
+  std::expected<ui_rect, int> get_rect(element) const noexcept override;
 
-  std::vector<computing::context *>
-  get_childs(computing::context *ctx) override;
+  std::expected<const style::cref *, int>
+      get_style(element) const noexcept override;
 
-  computing::context *get_root(computing::context *) override;
+  std::vector<request> get_requests(element) const noexcept override;
 
-  void update_context_state(computing::context *) override;
+  std::variant<const frame_layout *, const text_layout *>
+      get_layout(element) const noexcept override;
 
-  computing::context *get_context_by_id(size_t id) override;
+  std::vector<element> get_childs(element) const noexcept override;
 
-  size_t get_id(computing::context *) override;
+  void attach(element, request_size) noexcept override;
+
+  void apply(element, ui_rect bordered) noexcept override;
+
+  void apply(element, ui_rect bordered, ui_rect borderless) noexcept override;
 
 private: // Data
   struct root_t {
-    static constexpr auto id = std::numeric_limits<size_t>::max();
-    root_t(tree *ctree)
-        : style{}, last_child{}, ctx{&root_element_layout, &style, ctree, id} {}
-    style::decl style;      // можно унифицировать стиль
-    size_t last_child;      // помошник в построении макета
-    computing::context ctx; // сам контекст
-  } root_{this};
-  std::vector<computing::context> nodes;
+    node node{.style = root_style_decl}; // сам контекст
+    info info{};
+  } root_{};
+  std::vector<node> nodes;
+  std::vector<info> info;
+  std::vector<computing::element> elements;
   // parent\last_brather
+
   std::stack<size_t> current_{};
   std::stack<std::pair<size_t, size_t>> parent{};
 };
-
-struct tree::sentinel final {};
-
-// TODO : Сделать все proxy no move\copy
-// и в деструкторе вызывать метод FCT который
-// работает с тегами
-struct tree::range_based_for_proxy {
-  range_based_for_proxy(tree &);
-  struct iterator {
-    iterator &operator++() {
-      ++ptr;
-      return *this;
-    };
-
-    iterator(computing::context *ptr_, void *end_) : ptr{ptr_}, end{end_} {}
-
-    // должен игнорировать discarted элементы
-    iterator operator++(int) {
-      auto tmp = *this;
-      ++ptr;
-      return tmp;
-    };
-
-    computing::context &operator*() { return *ptr; };
-
-    bool is_valide() const { return ptr != nullptr && ptr < end; };
-
-  private:
-    computing::context *ptr;
-    void *end;
-  };
-
-  iterator begin() { return begin_; };
-
-  sentinel end() { return {}; };
-
-private:
-  iterator begin_;
-};
-
-struct tree::const_range_based_for_proxy {
-  const_range_based_for_proxy(const tree &);
-
-  struct const_iterator {
-    const_iterator &operator++() {
-      ++ptr;
-      return *this;
-    };
-
-    const_iterator(const computing::context *ptr_, const void *end_)
-        : ptr{ptr_}, end{end_} {}
-
-    // должен игнорировать discarted элементы
-    const_iterator operator++(int) {
-      auto tmp = *this;
-      ++ptr;
-      return tmp;
-    };
-
-    const computing::context &operator*() { return *ptr; };
-
-    bool is_valide() const { return ptr != nullptr && ptr < end; };
-
-  private:
-    const computing::context *ptr;
-    const void *end;
-  };
-
-  const_iterator begin() { return begin_; };
-
-  sentinel end() { return {}; };
-
-private:
-  const_iterator begin_;
-};
-
-struct tree::reverse_range_based_for_proxy {
-
-  reverse_range_based_for_proxy(tree &);
-  struct reverse_iterator {
-    reverse_iterator &operator++() {
-      --ptr;
-      return *this;
-    };
-
-    reverse_iterator(computing::context *ptr_, void *end_)
-        : ptr{ptr_}, end{end_} {}
-
-    // должен игнорировать discarted элементы
-    reverse_iterator operator++(int) {
-      auto tmp = *this;
-      --ptr;
-      return tmp;
-    };
-
-    computing::context &operator*() { return *ptr; };
-
-    bool is_valide() const { return ptr != nullptr && ptr > end; };
-
-  private:
-    computing::context *ptr;
-    void *end;
-  };
-
-  reverse_iterator begin() { return begin_; };
-
-  sentinel end() { return {}; };
-
-private:
-  reverse_iterator begin_;
-};
-
-struct tree::const_reverse_range_based_for_proxy {
-  const_reverse_range_based_for_proxy(const tree &);
-  struct const_reverse_iterator {
-    const_reverse_iterator &operator++() {
-      --ptr;
-      return *this;
-    };
-
-    const_reverse_iterator(const computing::context *ptr_, const void *end_)
-        : ptr{ptr_}, end{end_} {}
-
-    // должен игнорировать discarted элементы
-    const_reverse_iterator operator++(int) {
-      auto tmp = *this;
-      --ptr;
-      return tmp;
-    };
-
-    const computing::context &operator*() { return *ptr; };
-
-    bool is_valide() const { return ptr != nullptr && ptr > end; };
-
-  private:
-    const computing::context *ptr;
-    const void *end;
-  };
-
-  const_reverse_iterator begin() { return begin_; };
-
-  sentinel end() { return {}; };
-
-private:
-  const_reverse_iterator begin_;
-};
-
-constexpr bool operator==(const tree::range_based_for_proxy::iterator &it,
-                          const tree::sentinel &s) {
-  return not it.is_valide();
-};
-
-constexpr bool
-operator!=(const tree::const_range_based_for_proxy::const_iterator &it,
-           const tree::sentinel &s) {
-  return it.is_valide();
-};
-
-constexpr bool
-operator==(const tree::reverse_range_based_for_proxy::reverse_iterator &it,
-           const tree::sentinel &s) {
-  return not it.is_valide();
-};
-
-constexpr bool operator!=(
-    const tree::const_reverse_range_based_for_proxy::const_reverse_iterator &it,
-    const tree::sentinel &s) {
-  return it.is_valide();
-};
-
 }; // namespace iuic::computing

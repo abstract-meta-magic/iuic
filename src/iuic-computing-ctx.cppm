@@ -6,21 +6,17 @@ module;
 #include <exception>
 #include <expected>
 #include <limits>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <variant>
 #include <vector>
 
-export module iuic.core:computing.context;
+export module iuic.core:computing.kernal;
 import :base;
 import :style;
-import :layout.def;
 import :policy;
-
-// forward decl
-namespace iuic::text {
-struct present;
-};
+import :layout.def;
 
 namespace iuic::computing {
 
@@ -33,175 +29,78 @@ struct violated_order : std::runtime_error {
             "this message, your release of the library is broken."} {}
 };
 
-struct context;
+struct element {
+  std::uint16_t self;
+  std::uint16_t broder;
+  std::uint16_t parent;
+  enum : std::uint16_t {
+    null = 0,
+    root = 1 << 1,
+    root_child = 1 << 2,
+    text = 1 << 3,
+    discarded = 1 << 4,
+    request = 1 << 5,
+    arrange = 1 << 6,
+  } meta;
+};
 
 // Дле представления используется
 // Альтернативная блочная модель
-struct element {
-  enum struct attribute_tags_t : std::uint8_t {
-    null = 0,
-    discarded = 1 << 1,
-    text = 1 << 2,
-    root = 1 << 3,
-  } attribute_tags;
-  enum struct stage_t : std::uint8_t {
-    measure = 1,
-    frame_arrange,
-    frame_position, // text_layout skip this stage
-    text_arrange,
-    text_position,
-    complite,
-    undefined,
-  } stage{stage_t::measure};
-
-  // область которую занимает элемент
-  // Разрешаю сам себе вплоть до 24-28
-  union {
-    request_size area_request;
-    ui_size applyed_size;
-    ui_rect full_area;
-    // err_handler
-    // text_request
-  };
-  union {
-    const frame_layout *frame_layout;
-    const text_layout *text_layout;
-  };
+struct request {
+  request_size size;
+  element element;
 };
 
-constexpr element::attribute_tags_t operator+(element::attribute_tags_t lhs,
-                                              element::attribute_tags_t rhs) {
-  return static_cast<element::attribute_tags_t>(
-      static_cast<std::underlying_type_t<element::attribute_tags_t>>(lhs) |
-      static_cast<std::underlying_type_t<element::attribute_tags_t>>(rhs));
-}
+struct kernel_user {
+  virtual ~kernel_user() = default;
 
-constexpr element::attribute_tags_t &operator+=(element::attribute_tags_t &lhs,
-                                                element::attribute_tags_t rhs) {
-  lhs = lhs + rhs;
-  return lhs;
-}
+  virtual std::expected<ui_rect, int> get_rect(element) const noexcept;
 
-constexpr element::attribute_tags_t operator-(element::attribute_tags_t lhs,
-                                              element::attribute_tags_t rhs) {
+  virtual std::vector<request> get_requests(element) const noexcept;
 
-  return static_cast<element::attribute_tags_t>(
-      static_cast<std::underlying_type_t<element::attribute_tags_t>>(lhs) &
-      ~static_cast<std::underlying_type_t<element::attribute_tags_t>>(rhs));
-}
+  virtual std::variant<const frame_layout *, const text_layout *>
+      get_layout(element) const noexcept;
 
-constexpr element::attribute_tags_t &operator-=(element::attribute_tags_t &lhs,
-                                                element::attribute_tags_t rhs) {
-  lhs = lhs - rhs;
-  return lhs;
-}
+  virtual std::vector<element> get_childs(element) const noexcept;
 
-constexpr bool operator&(element::attribute_tags_t lhs,
-                         element::attribute_tags_t rhs) {
+  virtual std::expected<const style::cref *, int>
+      get_style(element) const noexcept;
 
-  return static_cast<element::attribute_tags_t>(
-             static_cast<std::underlying_type_t<element::attribute_tags_t>>(
-                 lhs) &
-             static_cast<std::underlying_type_t<element::attribute_tags_t>>(
-                 rhs)) != element::attribute_tags_t::null;
-}
+  virtual std::expected<z_order_t, int> get_zorder(element) const noexcept;
 
-// Это интерфейс отвечает за возможность
-// взаимодействия с иерархией
-struct computing_hierarchy {
-  virtual ~computing_hierarchy() = default;
+  virtual std::expected<iuic::uid_t, int> get_uid(element) const noexcept;
 
-  virtual context *get_root(context *) = 0;
+  virtual std::expected<policy::hovered, int>
+      get_hovered_policy(element) const noexcept;
 
-  virtual context *get_parent(context *) = 0;
-
-  virtual std::vector<context *> get_childs(context *) = 0;
-
-  virtual void update_context_state(context *) = 0;
-
-  virtual context *get_context_by_id(size_t) = 0;
-
-  virtual size_t get_id(context *) = 0;
+  virtual std::expected<policy::event, int>
+      get_event_policy(element) const noexcept;
+  virtual std::span<const element> range_for() const;
 };
 
-// а еще хочеться нормальные интерфейс
-// а еще хочеться чтобы была попытка соблюдения SRP
-struct context {
-  struct hierarchy_t {
-    computing_hierarchy *interface{nullptr};
-    size_t parent{std::numeric_limits<size_t>::max()};
-    size_t brother{
-        parent}; // ссылка на брата. Если равно parent, то элемент последний.
-  };
+struct kernel_root : kernel_user {
+  virtual ~kernel_root() = default;
 
-  struct info_t {
-    style::ref style;
-    uid_t uid;
-    z_order_t order;
-    policy::hovered hovered_p{policy::hovered::none};
-    policy::event event_p;
-  };
-  friend class tree; // TODO : end of friend
+  virtual void override(element, style::decoration) noexcept;
 
-  // конструктор для вычисления фрейма
-  context(const frame_layout *layout_, style::ref style_,
-          computing_hierarchy *hierarchy_, size_t parent_)
-      : hierarchy{hierarchy_, parent_}, info{style_} {
-    element.frame_layout = layout_;
-    if (not hierarchy_) {
-      throw std::runtime_error{"Null hierarchy"};
-    }
-  };
+  virtual void override(element, style::shape) noexcept;
 
-  // конструктор для вычисления текста
-  context(const text_layout *layout_, style::ref style_,
-          computing_hierarchy *hierarchy_, size_t parent_)
-      : hierarchy{hierarchy_, parent_}, info{style_} {
-    element.attribute_tags += element::attribute_tags_t::text;
-    element.text_layout = layout_;
-    if (not hierarchy_) {
-      throw std::runtime_error{"Null hierarchy"};
-    }
-  };
+  virtual void override(element, style::transform) noexcept;
 
-public: // get's ordered
-  std::expected<request_size, element::stage_t> get_request() const noexcept;
+  virtual void override(element, z_order_t) noexcept;
 
-  std::expected<ui_size, element::stage_t> get_size() const noexcept;
+  virtual void override(element, policy::hovered) noexcept;
 
-  std::expected<ui_rect, element::stage_t> get_rect() const noexcept;
-
-public: // get's free
-  std::variant<const frame_layout *, const text_layout *>
-  get_layout() const noexcept;
-
-  info_t &get_info();
-
-  const info_t &get_info() const;
-
-  hierarchy_t &get_hierarchy();
-
-  const hierarchy_t &get_hierarchy() const;
-
-public:                               // setters ordered
-  bool is_discarted() const noexcept; // ???
-
-public: // modify
-  // first stage
-  void apply(request_size);
-
-  // only for frame
-  void apply(ui_size);
-
-  // third stage
-  void apply(ui_position);
-
-  void discard();
-
-private:
-  element element{};
-  hierarchy_t hierarchy;
-  info_t info;
+  virtual void override(element, policy::event) noexcept;
 };
 
-}; // namespace iuic::computing
+struct kernel_hardware : kernel_root {
+  virtual ~kernel_hardware() = default;
+
+  virtual void attach(element, request_size) noexcept;
+
+  virtual void apply(element, ui_rect bordered) noexcept;
+
+  virtual void apply(element, ui_rect bordered, ui_rect borderless) noexcept;
+};
+} // namespace iuic::computing

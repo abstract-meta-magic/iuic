@@ -17,12 +17,14 @@ import :text.token;
 import :text.buff;
 import :text.present;
 import :text.fontset;
-import :computing.context;
+import :computing.kernal;
 
 namespace iuic {
 
 struct layout_utils_base {
-  layout_utils_base(computing::context *ctx_) noexcept : ctx{ctx_} {};
+  layout_utils_base(computing::kernel_hardware *kernal_,
+                    computing::element e_) noexcept
+      : kernal{kernal_}, element{e_} {};
   // Обычное сообщение для отладки
   void log(std::string_view message) const noexcept;
   // Предупреждение об исключительной ситвации.
@@ -32,6 +34,8 @@ struct layout_utils_base {
 
   // получение ссылки на собственный стиль
   style::cref self_style() const;
+
+  style::cref style_of(computing::element el) const;
 
   // получение ссылки на родительский стиль
   style::cref parent_style() const;
@@ -51,30 +55,20 @@ struct layout_utils_base {
   void defer();
 
 protected: // общие нужды
-  computing::context *ctx{nullptr};
+  computing::kernel_hardware *kernal{nullptr};
+  computing::element element;
 
 private: // реализация базовых концепций логирования
-};
-
-struct measure_child_request {
-
-  constexpr measure_child_request(computing::context *of_) : of{of_} {}
-
-  request_size value() const;
-
-  style::cref style_of() const noexcept;
-
-private:
-  computing::context *of;
 };
 
 // Структура которая помогает
 // при вычислении собственной позиции
 struct frame_measure_utils : layout_utils_base {
 
-  frame_measure_utils(computing::context *self) noexcept;
+  frame_measure_utils(computing::kernel_hardware *kernal,
+                      computing::element e_) noexcept;
 
-  std::vector<measure_child_request> get_requests();
+  std::vector<computing::request> get_requests();
 
   enum err_r { AUTO, PERCENT, ERR };
 
@@ -102,34 +96,21 @@ struct frame_measure_utils : layout_utils_base {
   };
 };
 
-export struct area_request {
-  constexpr area_request(computing::context *of_) noexcept : of{of_} {}
-
-  constexpr area_request(const area_request &) = default;
-
-  // применить измененное решение
-  void apply(ui_size);
-
-  // выкинуть элемент = игнорировать его
-  void discard();
-
-  style::cref style_of() const;
-
-  request_size value() const;
-
-private:
-  computing::context *of;
-};
 // Набор команд и свойс
 // для точного определения позиций
 // и размеров
 struct frame_arrange_utils : layout_utils_base {
-  frame_arrange_utils(computing::context *ctx_) noexcept
-      : layout_utils_base{ctx_} {};
+  frame_arrange_utils(computing::kernel_hardware *kernel_hardware_,
+                      computing::element e_) noexcept
+      : layout_utils_base{kernel_hardware_, e_} {};
 
   ui_size self_size() const;
 
-  std::vector<area_request> get_requests();
+  std::vector<computing::request> get_requests();
+
+  void apply_request(computing::element, ui_rect);
+
+  void apply_request(computing::element, ui_rect, ui_rect);
 
   enum class side_e { WIDTH, HEIGHT };
 
@@ -178,40 +159,11 @@ struct frame_arrange_utils : layout_utils_base {
   }
 };
 
-struct position_request {
-  constexpr position_request(computing::context *owner_) noexcept
-      : owner{owner_} {}
-
-  void apply(ui_position);
-
-  void discard();
-
-  style::cref style_of() const noexcept;
-
-  ui_size size_of() const;
-
-private:
-  computing::context *owner;
-};
-
-struct frame_position_utils : layout_utils_base {
-  frame_position_utils(computing::context *ctx_) noexcept
-      : layout_utils_base{ctx_} {};
-
-  ui_position self_position() const;
-
-  ui_size self_size() const;
-
-  std::vector<position_request> content();
-
-  // тут могут быть статические методы для
-  // помощи в вычислении позиций
-};
-
 struct text_measure_utils : layout_utils_base {
-  text_measure_utils(computing::context *ctx_, const text::token::sequence &sq_,
+  text_measure_utils(computing::kernel_hardware *kernel_hardware_,
+                     computing::element e_, const text::token::sequence &sq_,
                      const text::fontslot &font_)
-      : layout_utils_base{ctx_}, sq{sq_}, font{font_} {};
+      : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_} {};
 
   text::token::sequence get_tokens() const;
 
@@ -223,12 +175,16 @@ private:
 };
 
 struct text_arrange_utils : layout_utils_base {
-  text_arrange_utils(computing::context *ctx_, text::token::sequence sq_,
+  text_arrange_utils(computing::kernel_hardware *kernel_hardware_,
+                     computing::element e_, text::token::sequence sq_,
                      const text::fontslot &font_,
                      std::pmr::memory_resource &tmp_)
-      : layout_utils_base{ctx_}, sq{sq_}, font{font_}, tmp_resource{tmp_} {}
+      : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_},
+        tmp_resource{tmp_} {}
 
   ui_size self_size() const noexcept;
+
+  ui_position self_position() const noexcept;
 
   const text::glyph::atlas &get_atlas(style::font::cref);
 

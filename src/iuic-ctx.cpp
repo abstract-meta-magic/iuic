@@ -122,6 +122,17 @@ void context::proccess_position() {
         [&](auto layout) {
           if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
             layout->position({&cc});
+          } else if constexpr (std::same_as<decltype(layout),
+                                            const text_layout *>) {
+            auto id = cc.get_hierarchy().interface->get_id(&cc);
+
+            if (auto res = layout->arrange(
+                    {&cc, tpa.get_tokens(id), font, frame_resource__});
+                not res.empty()) {
+              tpa.apply_present(id, res);
+            } else {
+              cc.discard();
+            }
           }
         },
         cc.get_layout());
@@ -151,17 +162,6 @@ void context::proccess_arrange() {
         [&](auto layout) {
           if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
             if (not layout->arrange({&cc})) {
-              cc.discard();
-            }
-          } else if constexpr (std::same_as<decltype(layout),
-                                            const text_layout *>) {
-            auto id = cc.get_hierarchy().interface->get_id(&cc);
-
-            if (auto res = layout->arrange(
-                    {&cc, tpa.get_tokens(id), font, frame_resource__});
-                not res.empty()) {
-              tpa.apply_present(id, res);
-            } else {
               cc.discard();
             }
           }
