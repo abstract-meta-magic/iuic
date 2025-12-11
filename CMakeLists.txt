@@ -51,6 +51,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base-color.cppm"
 	"src/iuic-policy.cppm"
 	"src/iuic-scheme.cppm"
+	"src/iuic-scheme-builder.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC

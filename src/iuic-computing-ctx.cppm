@@ -31,16 +31,17 @@ struct violated_order : std::runtime_error {
 
 struct element {
   std::uint16_t self;
-  std::uint16_t broder;
+  std::uint16_t brother;
   std::uint16_t parent;
   enum : std::uint16_t {
     null = 0,
-    root = 1 << 1,
-    root_child = 1 << 2,
-    text = 1 << 3,
-    discarded = 1 << 4,
-    request = 1 << 5,
-    arrange = 1 << 6,
+    alive = 1 << 1,
+    root = 1 << 2,
+    root_child = 1 << 3,
+    text = 1 << 4,
+    discarded = 1 << 5,
+    request = 1 << 6,
+    arrange = 1 << 7,
   } meta;
 };
 
@@ -76,10 +77,39 @@ struct kernel_user {
   virtual std::expected<policy::event, int>
       get_event_policy(element) const noexcept;
   virtual std::span<const element> range_for() const;
+
+  // if nothin selected return null element
+  virtual element get_selected() const noexcept;
+};
+
+// tmp-object
+// present-object
+
+struct memory_module {
+  int get_discriptor(int);
+
+  bool update_livetime(int);
+
+  void *persist_located(int);
+
+  void *tmp_located(int);
 };
 
 struct kernel_root : kernel_user {
   virtual ~kernel_root() = default;
+
+  // select new element
+  virtual element instance(const frame_layout *, style::ref) noexcept;
+
+  // select new element
+  virtual element instance(const text_layout *, style::ref) noexcept;
+
+  // select parent
+  virtual element launch(element) noexcept;
+
+  virtual bool validate() const;
+
+  virtual void reset() noexcept;
 
   virtual void override(element, style::decoration) noexcept;
 
@@ -92,6 +122,10 @@ struct kernel_root : kernel_user {
   virtual void override(element, policy::hovered) noexcept;
 
   virtual void override(element, policy::event) noexcept;
+
+  virtual memory_module *memory();
+
+  virtual const memory_module *memory() const;
 };
 
 struct kernel_hardware : kernel_root {

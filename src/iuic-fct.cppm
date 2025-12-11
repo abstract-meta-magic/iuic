@@ -71,7 +71,7 @@ public: // BIG-VI
   tree &operator=(tree &&) = delete;
 
 public: // Public Interface
-  void reset();
+  void reset() noexcept override;
 
   void add(style::ref, const frame_layout *layout);
 
