@@ -23,7 +23,7 @@
 import iuic.core;
 import iuic.kitty_kit;
 
-using builder_ui = iuic::context::builder;
+using builder_ui = iuic::scheme::builder;
 
 struct settings_t {};
 
@@ -33,7 +33,7 @@ struct app {
   bool quit{false};
 };
 
-void main_window(iuic::context::builder &b, app &app) {
+void main_window(iuic::scheme::builder &b, app &app) {
   kitty_kit::button(b, []() { std::println("my"); });
   kitty_kit::button(b, []() { std::println("my"); });
   kitty_kit::button(b, []() { std::println("my"); });

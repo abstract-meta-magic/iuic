@@ -62,12 +62,13 @@ frame_measure_utils::frame_measure_utils(computing::kernel_hardware &kernel_,
 
 // ARRANGE
 
-std::vector<computing::request> frame_arrange_utils::get_requests() {
+std::unique_ptr<virtual_iterator<const computing::request>>
+frame_arrange_utils::get_requests() {
   return kernel.get_requests(element);
 }
 
 ui_rect frame_arrange_utils::self_area() const {
-  auto area = kernel.get_rect(element);
+  auto area = kernel.get_rect_bordered(element);
   if (area) {
     return area.value();
   } else {
@@ -112,7 +113,7 @@ text_arrange_utils::capture_glyphs(text::glyph::sequence sq) const {
 };
 
 ui_rect text_arrange_utils::self_rect() const noexcept {
-  auto area = kernel.get_rect(element);
+  auto area = kernel.get_rect_bordered(element);
   if (area) {
     return area.value();
   }

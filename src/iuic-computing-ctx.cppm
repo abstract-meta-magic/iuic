@@ -2,10 +2,12 @@
 
 module;
 
+#include <concepts>
 #include <cstdint>
 #include <exception>
 #include <expected>
 #include <limits>
+#include <memory>
 #include <span>
 #include <stdexcept>
 #include <type_traits>
@@ -15,6 +17,7 @@ module;
 export module iuic.core:computing.kernel;
 import :base;
 import :style;
+import :state;
 import :policy;
 import :layout.def;
 
@@ -52,126 +55,194 @@ struct request {
   element element;
 };
 
+struct state_model {
+  virtual void attach(iuic::uid_t, iuic::state) = 0;
+
+  virtual void detach(iuic::uid_t, iuic::state) = 0;
+
+  // replace to std::ranges::view
+  virtual std::unique_ptr<virtual_iterator<const iuic::state>>
+      get(iuic::uid_t, iuic::state) const = 0;
+
+  virtual bool is_exist(iuic::uid_t) const = 0;
+
+  virtual bool update_livetime(iuic::uid_t) const = 0;
+
+  virtual bool has(iuic::uid_t, iuic::state) const = 0;
+};
+
 struct kernel_user {
   virtual ~kernel_user() = default;
 
-  virtual std::expected<ui_rect, int> get_rect(element) const noexcept;
+  virtual std::expected<ui_rect, int>
+      get_rect_bordered(element) const noexcept = 0;
 
-  virtual std::vector<request> get_requests(element) const noexcept;
+  virtual std::expected<ui_rect, int>
+      get_rect_borderless(element) const noexcept = 0;
+
+  virtual std::unique_ptr<virtual_iterator<const request>>
+  get_requests(element, bool reverse = false) const noexcept = 0;
 
   virtual std::variant<const frame_layout *, const text_layout *>
-      get_layout(element) const noexcept;
+      get_layout(element) const noexcept = 0;
 
-  virtual element get_parent(element);
+  virtual element get_parent(element) = 0;
 
-  virtual std::vector<element> get_childs(element) const noexcept;
+  virtual std::unique_ptr<virtual_iterator<const element>>
+  get_childs(element, bool reverse = false) const noexcept = 0;
 
   virtual std::expected<const style::cref *, int>
-      get_style(element) const noexcept;
+      get_style(element) const noexcept = 0;
 
-  virtual std::expected<z_order_t, int> get_zorder(element) const noexcept;
+  virtual std::expected<z_order_t, int> get_zorder(element) const noexcept = 0;
 
-  virtual std::expected<iuic::uid_t, int> get_uid(element) const noexcept;
+  virtual std::expected<iuic::uid_t, int> get_uid(element) const noexcept = 0;
 
   virtual std::expected<policy::hovered, int>
-      get_hovered_policy(element) const noexcept;
+      get_hovered_policy(element) const noexcept = 0;
 
   virtual std::expected<policy::event, int>
-      get_event_policy(element) const noexcept;
-  virtual std::span<const element> range_for() const;
+      get_event_policy(element) const noexcept = 0;
+
+  // Default - Предок всегда перед потомком
+  // Reverse - Потомок всегда перед предком
+  // Нет Discarded элементов
+  // Нет элементов без alive
+  virtual std::unique_ptr<virtual_iterator<const element>>
+  get_elements(bool reverse = false) const;
 
   // if nothin selected return null element
-  virtual element get_selected() const noexcept;
-};
+  virtual element get_selected() const noexcept = 0;
 
-// tmp-object
-// present-object
+  virtual state_model *state() = 0;
 
-struct object {
-
-  void destruct();
-
-private:
+  virtual const state_model *state() const = 0;
 };
 
 struct memory_model {
-  using key = std::uint64_t;
-
   struct type {
-
     template <is_pure T> static const type *from() {
-      static constexpr type res{
-          &res, std::is_trivially_destructible_v<T>, sizeof(T), alignof(T),
-          [](void *obj) static { delete static_cast<T *>(obj); }};
-      return &res;
+
+      if constexpr (requires() {
+                      { T::livetime } -> std::convertible_to<std::size_t>;
+                    }) {
+        static constexpr type res{&res,
+                                  std::is_trivially_destructible_v<T>,
+                                  sizeof(T),
+                                  alignof(T),
+                                  T::livetime,
+                                  [](const void *const obj) static {
+                                    delete static_cast<const T *const>(obj);
+                                  }};
+        return &res;
+      } else {
+        static constexpr type res{&res,
+                                  std::is_trivially_destructible_v<T>,
+                                  sizeof(T),
+                                  alignof(T),
+                                  0,
+                                  [](const void *const obj) static {
+                                    delete static_cast<const T *const>(obj);
+                                  }};
+        return &res;
+      }
+    };
+
+    static const type *none() {
+      struct _ {};
+      return from<_>();
     };
 
     const void *const id;
     const bool trivial_dctor;
     const std::size_t size;
     const std::size_t align;
-    void (*const dctor)(void *);
+    const std::size_t livetime; //  in frames
+    void (*const dctor)(const void *const);
+
+  private:
+    constexpr type(const void *const i, bool td, std::size_t s, std::size_t a,
+                   std::size_t lt, void (*const d)(const void *const)) noexcept
+        : id{i}, trivial_dctor{td}, size{s}, align{a}, livetime{lt},
+          dctor{d} {};
+  };
+
+  enum meta {
+    none_exist,
+    reserve_none_type,
+    reserve_other_type,
+    reserve_this_type,
+    alive_other_type,
+    alive_this_type,
+    garbage_other_type,
+    garbage_this_type
   };
 
   virtual ~memory_model() = default;
 
-  virtual key make_key(std::span<const std::byte>) const;
+  // Заререзвировать объект.
+  // Возможны преаллокации.
+  virtual void reserve(iuic::uid_t, const type * = type::none()) = 0;
 
-  virtual void *persist(key, const type *);
+  // Если объект reserve_none | reserve_this аллацировать память.
+  // Если объект alive_this, то вернуть его локацию.
+  // В иных случаях вернуть nullptr.
+  virtual void *locate(iuic::uid_t, const type *) = 0;
 
-  virtual bool is_init(key) const;
+  virtual meta meta(iuic::uid_t, const type * = type::none()) const = 0;
 
-  virtual bool update_livetime(key) const;
+  virtual bool update_livetime(iuic::uid_t) const = 0;
 
-  virtual bool is_exist(key) const;
+  virtual void launch(iuic::uid_t, const type *) = 0;
 
-  virtual bool as(key, const type *) const;
+  virtual bool as(iuic::uid_t, const type *) const = 0;
 
-  virtual void *tmp(const type *, size_t count);
+  virtual void *tmp(const type *, size_t count) = 0;
 };
 
 struct kernel_root : kernel_user {
   virtual ~kernel_root() = default;
 
-  // select new element
-  virtual element instance(const frame_layout *, style::ref) noexcept;
+  // create and select new element
+  virtual element instance(const frame_layout *, style::ref) noexcept = 0;
 
-  // select new element
-  virtual element instance(const text_layout *, style::ref) noexcept;
+  // create and select new element
+  virtual element instance(const text_layout *, style::ref) noexcept = 0;
 
-  // select parent
-  virtual element launch(element) noexcept;
+  // make element alive and select parent
+  virtual element launch(element) noexcept = 0;
 
-  virtual element discard(element) noexcept;
+  virtual element discard(element) noexcept = 0;
 
-  virtual bool validate() const;
+  virtual bool validate() const = 0;
 
-  virtual void reset() noexcept;
+  virtual void override(element, style::decoration *) noexcept = 0;
 
-  virtual void override(element, style::decoration *) noexcept;
+  virtual void override(element, style::shape *) noexcept = 0;
 
-  virtual void override(element, style::shape *) noexcept;
+  virtual void override(element, style::transform *) noexcept = 0;
 
-  virtual void override(element, style::transform *) noexcept;
+  virtual void override(element, z_order_t) noexcept = 0;
 
-  virtual void override(element, z_order_t) noexcept;
+  virtual void override(element, policy::hovered) noexcept = 0;
 
-  virtual void override(element, policy::hovered) noexcept;
+  virtual void override(element, policy::event) noexcept = 0;
 
-  virtual void override(element, policy::event) noexcept;
+  virtual memory_model *memory() = 0;
 
-  virtual memory_model *memory();
-
-  virtual const memory_model *memory() const;
+  virtual const memory_model *memory() const = 0;
 };
 
 struct kernel_hardware : kernel_root {
   virtual ~kernel_hardware() = default;
 
-  virtual void attach(element, request_size) noexcept;
+  virtual void attach(element, request_size) noexcept = 0;
 
-  virtual void apply(element, ui_rect bordered) noexcept;
+  virtual void apply(element, ui_rect bordered) noexcept = 0;
 
-  virtual void apply(element, ui_rect bordered, ui_rect borderless) noexcept;
+  virtual void apply(element, ui_rect bordered,
+                     ui_rect borderless) noexcept = 0;
+
+  virtual void advance() noexcept = 0;
 };
 } // namespace iuic::computing

@@ -19,9 +19,6 @@ export import :key_code;
 export namespace iuic {
 
 struct event_extern_components {
-  state_holder &state;
-  object_storage &object;
-  text_storage &text;
   // text_composers ?
   // style ?
 };
@@ -134,10 +131,10 @@ public:
   event_pack build_pack(const computing::kernel_user &kernel) {
     event_pack res;
 
-    for (auto &e : kernel.range_for()) {
+    for (auto &e : kernel.get_elements()->range()) {
       if (e.meta ^ computing::element::discarded |
           computing::element::arrange) {
-        if (auto rect = kernel.get_rect(e)) {
+        if (auto rect = kernel.get_rect_bordered(e)) {
 
           res.htest.push_back(
               hovered_test{.rect = rect.value(),
@@ -206,41 +203,7 @@ class event_reciver final {
 
 public:
   void key(key_code key) {
-
-    for (auto &e : event_pack.global) {
-      std::visit(
-          [&](auto &call) {
-            using type = std::remove_cvref_t<decltype(call)>;
-
-            if constexpr (std::same_as<type, global_key_event_fpt>) {
-              call(event::global::key{extern_component, e.ork, e.trk, e.uid,
-                                      key});
-            }
-          },
-          e.call);
-    }
-
-    auto rbegin = event_pack.local.rbegin();
-    auto rend = event_pack.local.rend();
-
-    for (; rbegin != rend; ++rbegin) {
-      auto &e = *rbegin;
-
-      // лишние действия
-      if (state.hovered(rbegin->uid)) {
-        std::visit(
-            [&](auto &call) {
-              using type = std::remove_cvref_t<decltype(call)>;
-
-              if constexpr (std::same_as<type, local_key_event_fpt>) {
-                call(event::local::key{extern_component, e.ork, e.trk, e.uid,
-                                       key});
-              }
-            },
-            e.call);
-      }
-    }
-    // local
+    // TODO
   };
 
   // set position without events
@@ -255,63 +218,15 @@ public:
 
   // just move the pointer
   void pointer_move(ui_position position) {
-    // hit test
-    // TODO : body
+    // TODO
 
-    auto rbegin = event_pack.htest.rbegin();
-    auto rend = event_pack.htest.rend();
-    auto nbegin = rend;
-    auto nend = rend;
-
-    for (; rbegin != rend; ++rbegin) {
-      if (in__(position, rbegin->rect)) {
-        nbegin = rbegin;
-        break;
-      }
-    }
-
-    if (nbegin != rend) {
-      for (; rbegin != rend; ++rbegin) {
-        if (not in__(position, rbegin->rect)) {
-          nend = rbegin;
-        } else if (rbegin->policy == policy::hovered::block) {
-          nend = rbegin + 1;
-          break;
-        }
-      }
-    }
-
-    std::unordered_set<uid_t> res;
-
-    // WARNING : Из-за строения FCTree тут вынужденный double-check
-    // и возможность некорректной отработки некоторых событий!
-    for (; nbegin != nend; ++nbegin) {
-      if (in__(position, nbegin->rect) &&
-          nbegin->policy != policy::hovered::none) {
-        res.insert(nbegin->uid);
-      }
-    }
-
-    state.update(std::move(res));
-
-    pointer_position = position;
   };
 
-  // in version 0.2
-  void key_buff(key_code);
-
-  // in version 0.2
-  void key_buff_dispatch(key_code);
-
-  event_reciver(object_storage &ostorage_, text_storage &tstorage_,
-                managed_state_holder &state_)
-      : extern_component{state_, ostorage_, tstorage_}, state{state_} {};
+  event_reciver(computing::kernel_root &kernel_) : kernel{kernel_} {};
 
 private:
-  event_extern_components extern_component;
-  managed_state_holder &state;
+  computing::kernel_root &kernel;
   ui_position pointer_position;
-
   event_pack event_pack{};
 };
 

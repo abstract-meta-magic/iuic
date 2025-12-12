@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 3.30)
 find_package(SDL3 REQUIRED)
 find_package(Raylib REQUIRED)
 
+
 add_executable(te base.cpp)
 
+set(CMAKE_CXX_MODULE_STD 1)
 
 ## xxHash - START
 add_library(xxLib STATIC IMPORTED)

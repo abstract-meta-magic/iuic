@@ -14,11 +14,11 @@ measure_result text_button::measure(frame_measure_utils utils) const noexcept {
   auto rqs = utils.get_requests();
   auto style = utils.self_style();
 
-  if (rqs.empty() || rqs.size() > 1) {
+  if (rqs->valid()) {
     return {};
   }
 
-  auto rq = rqs[0].value();
+  auto &rq = *rqs->get();
 
   // do ...
 
@@ -27,37 +27,14 @@ measure_result text_button::measure(frame_measure_utils utils) const noexcept {
 
 bool text_button::arrange(frame_arrange_utils utils) const noexcept {
   auto rqs = utils.get_requests();
-  for (auto &&rq : rqs) {
+  for (auto &&rq : rqs->range()) {
 
-    const auto &rq_value = rq.value();
-    auto height = utils.height_upixel_of(rq_value.height);
-    auto width = utils.width_upixel_of(rq_value.width);
+    auto height = utils.height_upixel_of(rq.size.height);
+    auto width = utils.width_upixel_of(rq.size.width);
 
-    rq.apply({width, height});
+    utils.attach(rq, ui_rect{0, 0, width, height});
   }
   return true;
-}
-
-// simple-button always empty
-void text_button::position(frame_position_utils utils) const noexcept {
-
-  if (auto rqs = utils.content(); not rqs.empty()) {
-    auto position = utils.self_position();
-
-    auto self_size = utils.self_size();
-
-    auto center = ui_position{position.x + ((pixel_t)self_size.w / 2),
-                              position.y + (pixel_t)self_size.h / 2};
-
-    auto &rq = rqs[0];
-
-    auto rq_size = rq.size_of();
-
-    // rq.apply(ui_position{center.x - (pixel_t)rq_size.w / 2,
-    //                      center.y - (pixel_t)rq_size.h / 2});
-    rq.apply(ui_position{center.x - (pixel_t)rq_size.w / 2,
-                         center.y - (pixel_t)rq_size.h / 2});
-  }
 }
 
 measure_result simple_box::measure(frame_measure_utils utils) const noexcept {
@@ -69,15 +46,11 @@ measure_result simple_box::measure(frame_measure_utils utils) const noexcept {
   }}};
 };
 bool simple_box::arrange(frame_arrange_utils utils) const noexcept {
-  for (auto &&rq : utils.get_requests()) {
-    rq.discard();
+  auto rqs = utils.get_requests();
+  for (auto &&rq : rqs->range()) {
+    utils.discard(rq);
   }
   return true;
-};
-void simple_box::position(frame_position_utils utils) const noexcept {
-  for (auto &&c : utils.content()) {
-    c.discard();
-  };
 };
 
 measure_result short_text::measure(text_measure_utils utils) const noexcept {
@@ -92,7 +65,7 @@ measure_result short_text::measure(text_measure_utils utils) const noexcept {
 iuic::text::glyph::sequence
 short_text::arrange(text_arrange_utils utils) const noexcept {
 
-  auto size = utils.self_size();
+  auto size = utils.self_rect();
   auto position = utils.self_position();
   // position ?
   auto tokens = utils.get_tokens();

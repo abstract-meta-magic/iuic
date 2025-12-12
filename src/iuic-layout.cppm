@@ -3,6 +3,7 @@
 module;
 
 #include <expected>
+#include <memory>
 #include <memory_resource>
 #include <print>
 #include <string_view>
@@ -54,6 +55,8 @@ struct layout_utils_base {
   // отложить
   void defer();
 
+  void discard(const computing::request &);
+
 protected: // общие нужды
   computing::kernel_hardware &kernel;
   computing::element element;
@@ -68,7 +71,7 @@ struct frame_measure_utils : layout_utils_base {
   frame_measure_utils(computing::kernel_hardware &kernel,
                       computing::element e_) noexcept;
 
-  std::vector<computing::request> get_requests();
+  std::unique_ptr<virtual_iterator<const computing::request>> get_requests();
 
   enum err_r { AUTO, PERCENT, ERR };
 
@@ -106,11 +109,11 @@ struct frame_arrange_utils : layout_utils_base {
 
   ui_rect self_area() const;
 
-  std::vector<computing::request> get_requests();
+  std::unique_ptr<virtual_iterator<const computing::request>> get_requests();
 
-  void apply_request(computing::element, ui_rect);
+  void attach(const computing::request &, ui_rect);
 
-  void apply_request(computing::element, ui_rect, ui_rect);
+  void attach(const computing::request &, ui_rect, ui_rect);
 
   enum class side_e { WIDTH, HEIGHT };
 

@@ -1,22 +1,30 @@
 cmake_minimum_required(VERSION 3.31)
 
+
+##set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD
+##	0e5b6991-d74f-4b3d-a41c-cf096e0b2508)
+
 ## wrong ?
+set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 ## wrong ?
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
-
 project(iuic LANGUAGES CXX)
 
-
+##set(CMAKE_CXX_MODULE_STD 1)
 
 option(IUIC_PRETTY "Включить pretty" OFF)
 option(IUIC_INFO "Вывод информации" ON)
 
 add_library(${PROJECT_NAME}_core STATIC)
+
+target_compile_features(${PROJECT_NAME}_core
+	PRIVATE cxx_std_23)
+
+target_compile_options(iuic_core PRIVATE -stdlib=libc++)
 
 if(IUIC_INFO)
 message("iuic::core : static")
@@ -117,5 +125,4 @@ endif()
 
 
 add_subdirectory(test)
-add_subdirectory(examples)
 add_subdirectory(kit)

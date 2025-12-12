@@ -71,7 +71,7 @@ public: // BIG-VI
   tree &operator=(tree &&) = delete;
 
 public: // Public Interface
-  void reset() noexcept override;
+  void reset() noexcept;
 
   void add(style::ref, const frame_layout *layout);
 
@@ -114,24 +114,6 @@ public: // root style pubic interface
   void set_root_size(ui_size);
 
 private: // kernal
-  std::expected<ui_rect, int> get_rect(element) const noexcept override;
-
-  std::expected<const style::cref *, int>
-      get_style(element) const noexcept override;
-
-  std::vector<request> get_requests(element) const noexcept override;
-
-  std::variant<const frame_layout *, const text_layout *>
-      get_layout(element) const noexcept override;
-
-  std::vector<element> get_childs(element) const noexcept override;
-
-  void attach(element, request_size) noexcept override;
-
-  void apply(element, ui_rect bordered) noexcept override;
-
-  void apply(element, ui_rect bordered, ui_rect borderless) noexcept override;
-
 private: // Data
   struct root_t {
     node node{.style = root_style_decl}; // сам контекст

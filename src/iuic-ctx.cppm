@@ -21,13 +21,10 @@ export import :base.color;
 export import :layout.def;
 import :layout.frame.box;
 import :layout.text.box;
-import :computing.tree;
+import :computing.kernel;
 export import :scheme;
 export import :scheme.builder;
 export import :policy;
-export import :storage.def;
-export import :storage.object;
-export import :storage.text;
 export import :text.font;
 export import :text.token;
 export import :text.present;
@@ -81,38 +78,21 @@ private:
   // построение списка отрисовки на основе FTC
   void build_render_list();
 
+private:
+  text::present::aggregator tpa{};
+  // плоское дерево вычислений
+  std::unique_ptr<computing::kernel_hardware> kernel;
+
+  event_collector event_collector;
+
+  scheme::builder b{scheme::builder_base{*kernel, event_collector}};
+
 public:
   text::fontslot font;
 
-  managed_object_storage object;
-
-  managed_text_storage text;
-
-  event_reciver event{object, text, state};
+  event_reciver event{*kernel};
 
   scheme::explorer scheme{scheme::incomplete{}};
-
-private:
-  template <typename T> T *frame_memory() {
-    // TODO : wrap throw ?
-    return static_cast<T *>(frame_resource__.allocate(sizeof(T), alignof(T)));
-  };
-
-private:
-  managed_state_holder state{};
-  state_transition_scheduler state_tr{state};
-
-  text::present::aggregator tpa{};
-  // плоское дерево вычислений
-  computing::tree ctree;
-  // дерево событий
-  event_collector event_collector;
-  // ядро построения
-  scheme::builder b{scheme::builder_base{ctree, event_collector}};
-
-  std::byte frame_memory__[1024 * 1024 * 2];
-  std::pmr::monotonic_buffer_resource frame_resource__{frame_memory__,
-                                                       sizeof(frame_memory__)};
 };
 
 // Contex Template Impl
@@ -123,15 +103,10 @@ template <typename Call = void> void context::make(Call call) {
   // построение FCT
   call(b);
 
-  state_tr.process();
-
   proccess_measure();
   proccess_arrange();
-  proccess_position();
 
-  // ctree.print_tree();
-
-  apply_event_pack__(event, event_collector.build_pack(ctree));
+  apply_event_pack__(event, event_collector.build_pack(*kernel));
   // dop
   build_render_list();
 };

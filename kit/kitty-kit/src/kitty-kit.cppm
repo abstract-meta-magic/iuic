@@ -551,13 +551,11 @@ using namespace iuic;
 struct text_button : public frame_layout {
   measure_result measure(frame_measure_utils utils) const noexcept override;
   bool arrange(frame_arrange_utils utils) const noexcept override;
-  void position(frame_position_utils utils) const noexcept override;
 };
 
 struct simple_box : public frame_layout {
   measure_result measure(frame_measure_utils utils) const noexcept override;
   bool arrange(frame_arrange_utils utils) const noexcept override;
-  void position(frame_position_utils utils) const noexcept override;
 };
 
 struct short_text : public text_layout {
@@ -615,7 +613,7 @@ enum class theme_e {
 
 inline std::atomic<theme_e> theme{theme_e::latte};
 using namespace iuic;
-using builder = iuic::context::builder;
+using builder = iuic::scheme::builder;
 
 void button(builder &b, std::invocable<> auto &&callback) {
   static layout::simple_box layout_;
@@ -623,11 +621,13 @@ void button(builder &b, std::invocable<> auto &&callback) {
   auto uid = b.uid.make(policy::unique{}, "kitty-kit-button");
   b.frame(
       uid,
-      [&](builder &b) {
-        auto ork = b.storage.object.persist(uid, "button-callback");
+      [&](auto &b) {
+        using callback_type = std::remove_cvref_t<decltype(callback)>;
 
-        b.storage.object.init_if_not(
-            ork, [&]() { return std::forward<decltype(callback)>(callback); });
+        b.memory.persist(uid);
+
+        b.memory.init_if_not(
+            uid, [&]() { return std::forward<decltype(callback)>(callback); });
 
         b.policy.hovered(policy::hovered::propagate);
 
@@ -635,16 +635,6 @@ void button(builder &b, std::invocable<> auto &&callback) {
           b.style.override(iuic::style::decoration{
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
-
-        using callback_type = std::remove_cvref_t<decltype(callback)>;
-        b.event(
-            [](event::local::key e) {
-              if (e.code == key_map::mouse("left")) {
-                e.utils.object.try_visit(
-                    e.ork, [](callback_type &callback) { callback(); });
-              }
-            },
-            ork);
       },
 
       style::button, layout_);
@@ -660,10 +650,10 @@ void text_button(builder &b, std::string_view text,
   b.element.frame(
       uid,
       [&](builder &b) {
-        auto ork = b.storage.object.persist(uid, "button-callback");
+        b.memory.persist(uid);
 
-        b.storage.object.init_if_not(
-            ork, [&]() { return std::forward<decltype(callback)>(callback); });
+        b.memory.init_if_not(
+            uid, [&]() { return std::forward<decltype(callback)>(callback); });
 
         b.policy.hovered(policy::hovered::propagate);
 
@@ -672,15 +662,6 @@ void text_button(builder &b, std::string_view text,
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
 
-        using callback_type = std::remove_cvref_t<decltype(callback)>;
-        b.event(
-            [](event::local::key e) {
-              if (e.code == key_map::mouse("left")) {
-                e.utils.object.try_visit(
-                    e.ork, [](callback_type &callback) { callback(); });
-              }
-            },
-            ork);
         b.element.text(text::token{text}, style::base, text_layout);
       },
       style::button, button_layout);
