@@ -2,6 +2,7 @@
 module;
 
 #include <concepts>
+#include <functional>
 #include <map>
 #include <print>
 #include <type_traits>
@@ -19,15 +20,52 @@ export import :key_code;
 export namespace iuic {
 
 struct event_extern_components {
-  // text_composers ?
-  // style ?
+  event_extern_components(computing::kernel_root &kernel_) : kernel{kernel_} {}
+  struct component {
+    component(computing::kernel_root &kernel_) : kernel{kernel_} {}
+
+  protected:
+    computing::kernel_root &kernel;
+  };
+
+private:
+  computing::kernel_root &kernel;
+
+public:
+  struct not_function {};
+
+  template <typename T> static consteval auto type(T) -> not_function;
+
+  template <typename T, typename A>
+  static consteval auto type(std::function<T(A &)>) -> A;
+
+  struct : component {
+    void try_visit(iuic::uid_t uid, auto &&call) {
+      using type = decltype(type(std::function{call}));
+      static_assert(not std::same_as<type, not_function>,
+                    "Visit type is void(T&).");
+
+      auto *mem = kernel.memory();
+      auto *mtype = computing::memory_model::type::from<type>();
+
+      if (mem->meta(uid, mtype) ==
+          computing::memory_model::meta::alive_this_type) {
+        call(*static_cast<type *>(mem->locate(uid, mtype)));
+      }
+    };
+  } memory{kernel};
+
+  struct : component {
+    void attach(state){};
+    void detach(state){};
+    bool has(state) { return false; };
+  } state{kernel};
 };
 
 namespace event {
 struct event_base {
-  event_extern_components &utils;
-  object_registry_key ork; // can be null
-  text_registry_key trk;   // can be null
+  event_extern_components utils;
+  uid_t object; // can be null
   uid_t uid;
 };
 namespace global {
@@ -91,8 +129,7 @@ concept custom_event_callback_cpt = requires(T &&call) { make_custom(+call); };
 // хешировать
 struct revent {
   variadic_callback call;
-  object_registry_key ork;
-  text_registry_key trk;
+  uid_t object;
   computing::element e;
 };
 
@@ -106,8 +143,7 @@ struct hovered_test {
 struct pevent {
   variadic_callback call;
   policy::event policy;
-  ork_t ork;
-  trk_t trk;
+  uid_t object;
   uid_t uid;
 };
 
@@ -165,8 +201,7 @@ public:
               res.global.push_back({
                   .call = ev.call,
                   .policy = kernel.get_event_policy(ev.e).value(),
-                  .ork = ev.ork,
-                  .trk = ev.trk,
+                  .object = ev.object,
                   .uid = kernel.get_uid(ev.e).value(),
               });
             } else {
@@ -174,8 +209,7 @@ public:
               res.local.push_back({
                   .call = ev.call,
                   .policy = kernel.get_event_policy(ev.e).value(),
-                  .ork = ev.ork,
-                  .trk = ev.trk,
+                  .object = ev.object,
                   .uid = kernel.get_uid(ev.e).value(),
               });
             }
@@ -203,11 +237,38 @@ class event_reciver final {
 
 public:
   void key(key_code key) {
-    // TODO
+    for (auto &&ev : event_pack.global) {
+      std::visit(
+          [&](auto &&call) {
+            using type = decltype(call);
+            if constexpr (std::same_as<global_key_event_fpt, type>) {
+              call(event::global::key{
+                  event_extern_components{kernel}, ev.object, ev.uid, key, {}});
+            }
+          },
+          ev.call);
+    }
+
+    for (auto &&ev : event_pack.local) {
+      if (kernel.state()->has(ev.uid, state::base::hovered())) {
+        std::visit(
+            [&](auto &&call) {
+              using type = decltype(call);
+              if constexpr (std::same_as<local_key_event_fpt, type>) {
+                call(event::local::key{event_extern_components{kernel},
+                                       ev.object,
+                                       ev.uid,
+                                       key,
+                                       {}});
+              }
+            },
+            ev.call);
+      }
+    }
   };
 
   // set position without events
-  void pointer_set(ui_position position) {};
+  void pointer_set(ui_position position) { pointer_position = position; };
 
   static bool in__(ui_position position, ui_rect rect) {
     return (position.x >= rect.position.x &&
@@ -219,7 +280,41 @@ public:
   // just move the pointer
   void pointer_move(ui_position position) {
     // TODO
+    for (auto &&ev : event_pack.global) {
+      std::visit(
+          [&](auto &&call) {
+            using type = decltype(call);
+            if constexpr (std::same_as<global_pointer_move_event_fpt, type>) {
+              call(event::global::mouse{
+                  event_extern_components{kernel},
+                  ev.object,
+                  ev.uid,
+                  position,
+                  pointer_position,
+              });
+            }
+          },
+          ev.call);
+    }
 
+    for (auto &&ev : event_pack.local) {
+      if (kernel.state()->has(ev.uid, state::base::hovered())) {
+        std::visit(
+            [&](auto &&call) {
+              using type = decltype(call);
+              if constexpr (std::same_as<local_pointer_move_event_fpt, type>) {
+                call(event::local::mouse{event_extern_components{kernel},
+                                         ev.object,
+                                         ev.uid,
+                                         position,
+                                         pointer_position,
+                                         {}});
+              }
+            },
+            ev.call);
+      }
+    }
+    pointer_position = position;
   };
 
   event_reciver(computing::kernel_root &kernel_) : kernel{kernel_} {};

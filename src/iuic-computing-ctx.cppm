@@ -108,6 +108,7 @@ struct kernel_user {
   // Reverse - Потомок всегда перед предком
   // Нет Discarded элементов
   // Нет элементов без alive
+  // может добавить ordered = false, для прохода согласно zorderd
   virtual std::unique_ptr<virtual_iterator<const element>>
   get_elements(bool reverse = false) const;
 
@@ -117,6 +118,8 @@ struct kernel_user {
   virtual state_model *state() = 0;
 
   virtual const state_model *state() const = 0;
+
+  virtual std::uint64_t hash(std::span<const std::byte>) const = 0;
 };
 
 struct memory_model {
@@ -204,10 +207,12 @@ struct kernel_root : kernel_user {
   virtual ~kernel_root() = default;
 
   // create and select new element
-  virtual element instance(const frame_layout *, style::ref) noexcept = 0;
+  virtual element instance(iuic::uid_t, const frame_layout *,
+                           style::ref) noexcept = 0;
 
   // create and select new element
-  virtual element instance(const text_layout *, style::ref) noexcept = 0;
+  virtual element instance(iuic::uid_t, const text_layout *,
+                           style::ref) noexcept = 0;
 
   // make element alive and select parent
   virtual element launch(element) noexcept = 0;

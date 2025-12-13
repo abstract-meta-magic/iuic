@@ -25,7 +25,7 @@ void context::set_view_size(ui_size size) {
 
 // Refactor and move to other file
 template <> void advance(scheme::builder &builder) {
-  builder.uids[0].index = 0;
+  builder.unit.top().index = 0;
 };
 
 // Refactor and move to other file

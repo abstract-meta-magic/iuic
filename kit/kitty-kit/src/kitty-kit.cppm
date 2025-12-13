@@ -6,6 +6,7 @@ module;
 #include <cstdint>
 #include <print>
 #include <string_view>
+#include <type_traits>
 #include <variant>
 
 export module iuic.kitty_kit;
@@ -647,10 +648,14 @@ void text_button(builder &b, std::string_view text,
 
   auto uid = b.uid.make(iuic::policy::unique{}, "text-button");
 
+  static constexpr iuic::state::decl touch{};
+
   b.element.frame(
       uid,
       [&](builder &b) {
-        b.memory.persist(uid);
+        using callback_type = std::remove_cvref_t<decltype(callback)>;
+
+        b.memory.persist<callback_type>(uid);
 
         b.memory.init_if_not(
             uid, [&]() { return std::forward<decltype(callback)>(callback); });
@@ -661,6 +666,14 @@ void text_button(builder &b, std::string_view text,
           b.style.override(iuic::style::decoration{
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
+
+        b.event([](event::local::key e) static {
+          e.utils.memory.try_visit(e.object, [&](callback_type &call) {
+            if (e.code == iuic::key_map::mouse("left")) {
+              call();
+            }
+          });
+        });
 
         b.element.text(text::token{text}, style::base, text_layout);
       },
