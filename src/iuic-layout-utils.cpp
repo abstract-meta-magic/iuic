@@ -9,12 +9,16 @@ module;
 
 module iuic.core;
 import :layout;
-import :computing.kernel;
+import :kernel;
 
 namespace iuic {
 
 style::cref layout_utils_base::self_style() const {
   return *kernel.get_style(element).value();
+};
+
+void layout_utils_base::discard(const kernel::request &rq) {
+  kernel.discard(rq.element);
 };
 
 style::cref layout_utils_base::parent_style() const {
@@ -26,7 +30,7 @@ style::cref layout_utils_base::parent_style() const {
 };
 
 style::cref layout_utils_base::root_style() const {
-  if (auto s = kernel.get_style({computing::element::root})) {
+  if (auto s = kernel.get_style({kernel::element::root})) {
     return *s.value();
   }
 
@@ -56,15 +60,28 @@ void layout_utils_base::log(std::string_view message) const noexcept {}
 void layout_utils_base::warning(std::string_view message) const noexcept {}
 
 // AREA
-frame_measure_utils::frame_measure_utils(computing::kernel_hardware &kernel_,
-                                         computing::element element_) noexcept
+frame_measure_utils::frame_measure_utils(kernel::hardware &kernel_,
+                                         kernel::element element_) noexcept
     : layout_utils_base{kernel_, element_} {}
+std::unique_ptr<virtual_iterator<const kernel::request>>
+frame_measure_utils::get_requests() {
+  return kernel.get_requests(element);
+}
 
 // ARRANGE
 
-std::unique_ptr<virtual_iterator<const computing::request>>
+std::unique_ptr<virtual_iterator<const kernel::request>>
 frame_arrange_utils::get_requests() {
   return kernel.get_requests(element);
+}
+
+void frame_arrange_utils::apply(const kernel::request &rq, ui_rect rect) {
+  kernel.apply(rq.element, rect);
+}
+
+void frame_arrange_utils::apply(const kernel::request &rq, ui_rect brect,
+                                ui_rect rect) {
+  kernel.apply(rq.element, brect, rect);
 }
 
 ui_rect frame_arrange_utils::self_area() const {
@@ -72,7 +89,7 @@ ui_rect frame_arrange_utils::self_area() const {
   if (area) {
     return area.value();
   } else {
-    throw computing::violated_order{};
+    throw kernel::violated_order{};
   };
 };
 

@@ -18,13 +18,12 @@ import :text.token;
 import :text.buff;
 import :text.present;
 import :text.fontset;
-import :computing.kernel;
+import :kernel;
 
 namespace iuic {
 
 struct layout_utils_base {
-  layout_utils_base(computing::kernel_hardware &kernel_,
-                    computing::element e_) noexcept
+  layout_utils_base(kernel::hardware &kernel_, kernel::element e_) noexcept
       : kernel{kernel_}, element{e_} {};
   // Обычное сообщение для отладки
   void log(std::string_view message) const noexcept;
@@ -36,7 +35,7 @@ struct layout_utils_base {
   // получение ссылки на собственный стиль
   style::cref self_style() const;
 
-  style::cref style_of(computing::element el) const;
+  style::cref style_of(kernel::element el) const;
 
   // получение ссылки на родительский стиль
   style::cref parent_style() const;
@@ -55,11 +54,11 @@ struct layout_utils_base {
   // отложить
   void defer();
 
-  void discard(const computing::request &);
+  void discard(const kernel::request &);
 
 protected: // общие нужды
-  computing::kernel_hardware &kernel;
-  computing::element element;
+  kernel::hardware &kernel;
+  kernel::element element;
 
 private: // реализация базовых концепций логирования
 };
@@ -68,10 +67,9 @@ private: // реализация базовых концепций логиро�
 // при вычислении собственной позиции
 struct frame_measure_utils : layout_utils_base {
 
-  frame_measure_utils(computing::kernel_hardware &kernel,
-                      computing::element e_) noexcept;
+  frame_measure_utils(kernel::hardware &kernel, kernel::element e_) noexcept;
 
-  std::unique_ptr<virtual_iterator<const computing::request>> get_requests();
+  std::unique_ptr<virtual_iterator<const kernel::request>> get_requests();
 
   enum err_r { AUTO, PERCENT, ERR };
 
@@ -103,17 +101,17 @@ struct frame_measure_utils : layout_utils_base {
 // для точного определения позиций
 // и размеров
 struct frame_arrange_utils : layout_utils_base {
-  frame_arrange_utils(computing::kernel_hardware &kernel_hardware_,
-                      computing::element e_) noexcept
+  frame_arrange_utils(kernel::hardware &kernel_hardware_,
+                      kernel::element e_) noexcept
       : layout_utils_base{kernel_hardware_, e_} {};
 
   ui_rect self_area() const;
 
-  std::unique_ptr<virtual_iterator<const computing::request>> get_requests();
+  std::unique_ptr<virtual_iterator<const kernel::request>> get_requests();
 
-  void attach(const computing::request &, ui_rect);
+  void apply(const kernel::request &, ui_rect);
 
-  void attach(const computing::request &, ui_rect, ui_rect);
+  void apply(const kernel::request &, ui_rect, ui_rect);
 
   enum class side_e { WIDTH, HEIGHT };
 
@@ -163,8 +161,8 @@ struct frame_arrange_utils : layout_utils_base {
 };
 
 struct text_measure_utils : layout_utils_base {
-  text_measure_utils(computing::kernel_hardware &kernel_hardware_,
-                     computing::element e_, const text::token::sequence &sq_,
+  text_measure_utils(kernel::hardware &kernel_hardware_, kernel::element e_,
+                     const text::token::sequence &sq_,
                      const text::fontslot &font_)
       : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_} {};
 
@@ -178,9 +176,8 @@ private:
 };
 
 struct text_arrange_utils : layout_utils_base {
-  text_arrange_utils(computing::kernel_hardware &kernel_hardware_,
-                     computing::element e_, text::token::sequence sq_,
-                     const text::fontslot &font_,
+  text_arrange_utils(kernel::hardware &kernel_hardware_, kernel::element e_,
+                     text::token::sequence sq_, const text::fontslot &font_,
                      std::pmr::memory_resource &tmp_)
       : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_},
         tmp_resource{tmp_} {}

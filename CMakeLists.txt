@@ -52,7 +52,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-text-box-layout.cppm"
 	"src/iuic-layout.def.cppm"
 	"src/iuic-layout.cppm"
-	"src/iuic-computing-ctx.cppm"
+	"src/iuic-kernel.cppm"
 	"src/iuic-ctx.cppm"
 	"src/iuic-state.cppm"
 	"src/iuic-state-transition.cppm"

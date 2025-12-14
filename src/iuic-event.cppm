@@ -12,7 +12,7 @@ module;
 
 export module iuic.core:event;
 import :base;
-import :computing.kernel;
+import :kernel;
 import :storage.def;
 import :state;
 export import :key_code;
@@ -20,16 +20,16 @@ export import :key_code;
 export namespace iuic {
 
 struct event_extern_components {
-  event_extern_components(computing::kernel_root &kernel_) : kernel{kernel_} {}
+  event_extern_components(kernel::root &kernel_) : kernel{kernel_} {}
   struct component {
-    component(computing::kernel_root &kernel_) : kernel{kernel_} {}
+    component(kernel::root &kernel_) : kernel{kernel_} {}
 
   protected:
-    computing::kernel_root &kernel;
+    kernel::root &kernel;
   };
 
 private:
-  computing::kernel_root &kernel;
+  kernel::root &kernel;
 
 public:
   struct not_function {};
@@ -46,10 +46,10 @@ public:
                     "Visit type is void(T&).");
 
       auto *mem = kernel.memory();
-      auto *mtype = computing::memory_model::type::from<type>();
+      auto *mtype = kernel::memory_model::type::from<type>();
 
       if (mem->meta(uid, mtype) ==
-          computing::memory_model::meta::alive_this_type) {
+          kernel::memory_model::meta::alive_this_type) {
         call(*static_cast<type *>(mem->locate(uid, mtype)));
       }
     };
@@ -130,7 +130,7 @@ concept custom_event_callback_cpt = requires(T &&call) { make_custom(+call); };
 struct revent {
   variadic_callback call;
   uid_t object;
-  computing::element e;
+  kernel::element e;
 };
 
 struct hovered_test {
@@ -164,12 +164,11 @@ public:
 
   void push(revent &&e) { events.push_back(e); };
 
-  event_pack build_pack(const computing::kernel_user &kernel) {
+  event_pack build_pack(const kernel::userspace &kernel) {
     event_pack res;
 
     for (auto &e : kernel.get_elements()->range()) {
-      if (e.meta ^ computing::element::discarded |
-          computing::element::arrange) {
+      if (e.meta ^ kernel::element::discarded | kernel::element::arrange) {
         if (auto rect = kernel.get_rect_bordered(e)) {
 
           res.htest.push_back(
@@ -317,10 +316,10 @@ public:
     pointer_position = position;
   };
 
-  event_reciver(computing::kernel_root &kernel_) : kernel{kernel_} {};
+  event_reciver(kernel::root &kernel_) : kernel{kernel_} {};
 
 private:
-  computing::kernel_root &kernel;
+  kernel::root &kernel;
   ui_position pointer_position;
   event_pack event_pack{};
 };

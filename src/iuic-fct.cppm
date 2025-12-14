@@ -19,7 +19,7 @@ module;
 export module iuic.core:computing.tree;
 import :base;
 import :layout;
-import :computing.kernel;
+import :kernel;
 import :policy;
 
 namespace iuic::computing {
@@ -34,7 +34,7 @@ namespace iuic::computing {
 
 constexpr inline style::decl root_style_decl{};
 
-struct tree final : public kernel_hardware {
+struct tree final {
 public: // base proxy struct's
   struct const_reverse_range_based_for_proxy;
   struct node {
@@ -55,7 +55,7 @@ public: // base proxy struct's
       const frame_layout *frame_layout;
       const text_layout *text_layout;
     };
-    element hierarchy;
+    kernel::element hierarchy;
     uid_t uid;
     z_order_t order;
     policy::hovered hovered_p{policy::hovered::none};
@@ -79,13 +79,13 @@ public: // Public Interface
 
   void up();
 
-  computing::element last() const noexcept;
+  kernel::element last() const noexcept;
 
-  computing::element current() const noexcept;
+  kernel::element current() const noexcept;
 
-  computing::element at(size_t) const;
+  kernel::element at(size_t) const;
 
-  computing::element root() const noexcept;
+  kernel::element root() const noexcept;
 
   size_t size() const noexcept;
 
@@ -97,8 +97,8 @@ public: // Public Interface
 
   info *current_info() noexcept;
 
-  using iterator = std::vector<element>::const_iterator;
-  using reverse_iterator = std::vector<element>::const_reverse_iterator;
+  using iterator = std::vector<kernel::element>::const_iterator;
+  using reverse_iterator = std::vector<kernel::element>::const_reverse_iterator;
 
   iterator begin() const;
 
@@ -108,7 +108,7 @@ public: // Public Interface
 
   reverse_iterator rend() const;
 
-  const info *get_info(element) const;
+  const info *get_info(kernel::element) const;
 
 public: // root style pubic interface
   void set_root_size(ui_size);
@@ -121,7 +121,7 @@ private: // Data
   } root_{};
   std::vector<node> nodes;
   std::vector<info> info;
-  std::vector<computing::element> elements;
+  std::vector<kernel::element> elements;
   // parent\last_brather
 
   std::stack<size_t> current_{};

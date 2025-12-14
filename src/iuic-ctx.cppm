@@ -5,6 +5,7 @@ module;
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <memory_resource>
 #include <print>
 #include <sstream>
@@ -21,7 +22,7 @@ export import :base.color;
 export import :layout.def;
 import :layout.frame.box;
 import :layout.text.box;
-import :computing.kernel;
+export import :kernel;
 export import :scheme;
 export import :scheme.builder;
 export import :policy;
@@ -54,18 +55,13 @@ constexpr style::decl def_style = []() {
   return res;
 }();
 
-// WARRNING : Not Impl eat
-enum class UpdateType { Dynamic, Static, DirtyFlag };
+// future concept
 
-// build contex and run
-// данные можно сохранять в store
-// и даже изменять между обновлениями
 class context {
-
 public: // api
   void set_view_size(ui_size sz);
 
-  template <typename Call = void> void make(Call call);
+  void make(scheme::builder_block_cpt auto &&call);
 
 private:
   void reset();
@@ -79,9 +75,22 @@ private:
   void build_render_list();
 
 private:
+  /* Концепт для поддержки __attribute__((weak))
+  template<kernel_instance base,kernel_instance ...alt> context;
+
+  auto instance__kernel__() {
+    if constexpr (sizeof...(alt) > 0) {
+      return base_kernel_instance ? base_kernel_instance()
+                                  : ((alt ? alt() : nullptr) || ...);
+    } else {
+      return base_kernel_instance();
+    }
+  };
+  */
+
   text::present::aggregator tpa{};
   // плоское дерево вычислений
-  std::unique_ptr<computing::kernel_hardware> kernel;
+  std::unique_ptr<kernel::hardware> kernel{kernel::default_kernel()};
 
   event_collector event_collector;
 
@@ -96,7 +105,7 @@ public:
 };
 
 // Contex Template Impl
-template <typename Call = void> void context::make(Call call) {
+void context::make(scheme::builder_block_cpt auto &&call) {
   // step 1
   reset();
 

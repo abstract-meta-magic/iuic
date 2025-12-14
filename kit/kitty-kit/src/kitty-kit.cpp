@@ -32,7 +32,7 @@ bool text_button::arrange(frame_arrange_utils utils) const noexcept {
     auto height = utils.height_upixel_of(rq.size.height);
     auto width = utils.width_upixel_of(rq.size.width);
 
-    utils.attach(rq, ui_rect{0, 0, width, height});
+    utils.apply(rq, ui_rect{0, 0, width, height});
   }
   return true;
 }
@@ -65,8 +65,7 @@ measure_result short_text::measure(text_measure_utils utils) const noexcept {
 iuic::text::glyph::sequence
 short_text::arrange(text_arrange_utils utils) const noexcept {
 
-  auto size = utils.self_rect();
-  auto position = utils.self_position();
+  auto rect = utils.self_rect();
   // position ?
   auto tokens = utils.get_tokens();
   auto style = utils.self_style();
@@ -80,8 +79,8 @@ short_text::arrange(text_arrange_utils utils) const noexcept {
   for (auto &token : tokens) {
     auto indexes = decoder.decode(token);
     for (auto &index : indexes.value()) {
-      pl.push_back({.id = index, .position = position});
-      position.x += 6;
+      pl.push_back({.id = index, .position = rect.position});
+      rect.position.x += 6;
     }
   }
 

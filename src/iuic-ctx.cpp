@@ -44,7 +44,7 @@ void context::reset() { iuic::advance(b); };
 void context::proccess_measure() {
 
   for (auto &&el : kernel->get_elements(true)->range()) {
-    if (el.meta & computing::element::discarded) {
+    if (el.meta & kernel::element::discarded) {
       continue;
     }
 
@@ -76,7 +76,7 @@ void context::proccess_measure() {
   }
 
   // mda root calc
-  computing::element root{computing::element::root};
+  kernel::element root{kernel::element::root};
   std::visit(
       [&](auto layout) {
         if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
@@ -95,7 +95,7 @@ void context::proccess_measure() {
 void context::proccess_arrange() {
   // TODO : PARALLEL
 
-  computing::element root{computing::element::root};
+  kernel::element root{kernel::element::root};
 
   auto &max_size = kernel->get_style(root).value()->get_shape().max_size;
 
@@ -111,7 +111,7 @@ void context::proccess_arrange() {
       kernel->get_layout(root));
 
   for (auto &el : kernel->get_elements()->range()) {
-    if (el.meta & computing::element::discarded) {
+    if (el.meta & kernel::element::discarded) {
       continue;
     }
 
@@ -136,7 +136,7 @@ void context::build_render_list() {
   scheme::incomplete inc;
 
   for (auto &el : kernel->get_elements()->range()) {
-    if (el.meta & computing::element::arrange) {
+    if (el.meta & kernel::element::arrange) {
       if (std::holds_alternative<const frame_layout *>(
               kernel->get_layout(el))) {
         inc.push_frame(kernel->get_rect_bordered(el).value(),
