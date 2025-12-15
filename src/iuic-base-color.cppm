@@ -1,9 +1,8 @@
 
 module;
 
-#include <cstdint>
-
 export module iuic.core:base.color;
+import std;
 export import :base;
 
 // use https://www.w3schools.com/cssref/css_colors.php

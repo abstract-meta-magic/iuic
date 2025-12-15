@@ -2,12 +2,8 @@
 
 module;
 
-#include <map>
-#include <string_view>
-#include <variant>
-#include <vector>
-
 export module iuic.core:text.present;
+import std;
 import :base;
 import :storage.def;
 import :text.token;
@@ -40,15 +36,15 @@ class present::aggregator {
 
 public:
   // подготовка места для present, под token::sequence
-  void reserve_present(size_t id, token::sequence sq);
+  void reserve_present(std::size_t id, token::sequence sq);
 
-  void apply_present(size_t id, glyph::sequence present);
+  void apply_present(std::size_t id, glyph::sequence present);
 
-  token::sequence get_tokens(size_t id) const;
+  token::sequence get_tokens(std::size_t id) const;
 
-  glyph::sequence get_present(size_t id) const;
+  glyph::sequence get_present(std::size_t id) const;
 
 private:
-  std::map<size_t, aggregation_bondle> presents;
+  std::map<std::size_t, aggregation_bondle> presents;
 };
 }; // namespace iuic::text

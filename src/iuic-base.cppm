@@ -2,22 +2,10 @@
 
 module;
 
-#include <chrono>
-#include <concepts>
-#include <cstdint>
-#include <expected>
-#include <memory>
-#include <optional>
-#include <print>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <variant>
-#include <vector>
-
 // Independ User Interface Core
 
 export module iuic.core:base;
+import std;
 
 namespace iuic {
 void advance(auto &);
@@ -144,12 +132,10 @@ template <typename T> struct virtual_iterator {
 
 struct invalid_virtual_iterator {
   template <typename T> struct iterator : virtual_iterator<T> {
-    void next() override {};
-    void prev() override {};
-    bool valid() const override { return false; };
-    T &get() override {
-      throw std::logic_error{"Try get invalide iterator object"};
-    };
+    void next() noexcept override {};
+    void prev() noexcept override {};
+    bool valid() const noexcept override { return false; };
+    T *get() noexcept override { return nullptr; };
   };
 
   template <typename T> operator std::unique_ptr<virtual_iterator<T>>() {
@@ -364,7 +350,7 @@ struct color_t {
   };
 
 public:
-  uint8_t r{0}, g{0}, b{0}, a = {255};
+  std::uint8_t r{0}, g{0}, b{0}, a = {255};
 };
 
 struct ui_none {};

@@ -1,16 +1,8 @@
 
 module;
 
-#include <concepts>
-#include <functional>
-#include <map>
-#include <print>
-#include <type_traits>
-#include <unordered_set>
-#include <variant>
-#include <vector>
-
 export module iuic.core:event;
+import std;
 import :base;
 import :kernel;
 import :storage.def;
@@ -48,8 +40,8 @@ public:
       auto *mem = kernel.memory();
       auto *mtype = kernel::memory_model::type::from<type>();
 
-      if (mem->meta(uid, mtype) ==
-          kernel::memory_model::meta::alive_this_type) {
+      if (mem->state(uid, mtype) ==
+          kernel::memory_model::object_state::alive_this_type) {
         call(*static_cast<type *>(mem->locate(uid, mtype)));
       }
     };

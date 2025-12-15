@@ -2,9 +2,8 @@
 
 module;
 
-#include <functional>
-
 export module iuic.core:storage.def;
+import std;
 import :hash;
 
 export namespace iuic {

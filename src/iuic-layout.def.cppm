@@ -2,9 +2,8 @@
 
 module;
 
-#include <expected>
-#include <variant>
 export module iuic.core:layout.def;
+import std;
 import :base;
 import :text.font;
 

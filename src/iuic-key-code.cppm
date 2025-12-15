@@ -2,14 +2,8 @@
 
 module;
 
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <type_traits>
-#include <utility>
-#include <vector>
-
 export module iuic.core:key_code;
+import std;
 
 export namespace iuic {
 
@@ -35,7 +29,7 @@ struct key_code {
   template <std::size_t size>
     requires(size > 0 && size <= max_key)
   constexpr key_code(key_t_array<size> keys) noexcept {
-    for (size_t i{0}; i < size; ++i) {
+    for (std::size_t i{0}; i < size; ++i) {
       scancode |= static_cast<std::uint64_t>(keys[i]) << (i * 8);
     };
   };
@@ -45,7 +39,7 @@ struct key_code {
     if (keys.size() > max_key)
       return;
 
-    for (size_t i{0}; i < keys.size(); ++i) {
+    for (std::size_t i{0}; i < keys.size(); ++i) {
       scancode |= static_cast<std::uint64_t>(keys[i]) << (i * 8);
     }
   };
@@ -53,7 +47,7 @@ struct key_code {
   template <std::size_t size>
     requires(size > 0 && size <= max_key)
   constexpr key_code(std::array<key_t, size> keys) noexcept {
-    for (size_t i{0}; i < size; ++i) {
+    for (std::size_t i{0}; i < size; ++i) {
       scancode |= static_cast<std::uint64_t>(keys[i]) << (i * 8);
     };
   };

@@ -2,13 +2,8 @@
 
 module;
 
-#include <array>
-#include <cstddef>
-#include <memory>
-#include <span>
-#include <utility>
-
 export module iuic.core:style;
+import std;
 import :base;
 import :text.font;
 

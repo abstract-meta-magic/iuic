@@ -2,11 +2,8 @@
 
 module;
 
-#include <span>
-#include <string_view>
-#include <vector>
-
 export module iuic.core:text.token;
+import std;
 
 export namespace iuic::text {
 

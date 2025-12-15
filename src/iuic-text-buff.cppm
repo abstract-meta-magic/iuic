@@ -2,14 +2,8 @@
 
 module;
 
-#include <cstring>
-#include <memory>
-#include <memory_resource>
-#include <string>
-#include <utility>
-#include <vector>
-
 export module iuic.core:text.buff;
+import std;
 import :text.token;
 
 export namespace iuic::text {
@@ -93,7 +87,7 @@ public: // modify api
     return true;
   };
 
-  bool insert_at(size_t index, const std::string &str) {
+  bool insert_at(std::size_t index, const std::string &str) {
     if (not is_size_avilable(str.size())) {
       return false;
     }
@@ -112,7 +106,7 @@ public: // modify api
     return true;
   };
 
-  bool is_size_avilable(size_t size) {
+  bool is_size_avilable(std::size_t size) {
     return data && size < (capacity_ - size_);
   };
 
@@ -125,9 +119,9 @@ public: // other api
 
   const std::vector<token> &get_formated_text();
 
-  size_t capacity() const noexcept { return capacity_ - 1; };
+  std::size_t capacity() const noexcept { return capacity_ - 1; };
 
-  size_t size() const noexcept { return size_ - 1; };
+  std::size_t size() const noexcept { return size_ - 1; };
 
   // bool is_dirty() const noexcept;
 private:
@@ -137,8 +131,8 @@ private:
   // basic buff , mb use SSO ?
   char *data{nullptr};
   //  char *swap{nullptr}; // !!
-  size_t size_{0};
-  size_t capacity_{0};
+  std::size_t size_{0};
+  std::size_t capacity_{0};
 
   std::pmr::memory_resource *resource;
 

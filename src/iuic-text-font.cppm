@@ -2,15 +2,8 @@
 
 module;
 
-#include <cstdint>
-#include <expected>
-#include <functional>
-#include <memory>
-#include <stdexcept>
-#include <string_view>
-#include <unordered_map>
-
 export module iuic.core:text.font;
+import std;
 import :base;
 import :text.token;
 

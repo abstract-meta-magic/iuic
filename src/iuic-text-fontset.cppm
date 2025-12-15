@@ -2,12 +2,8 @@
 
 module;
 
-#include <expected>
-#include <memory>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 export module iuic.core:text.fontset;
+import std;
 import :base;
 import :text.font;
 import :style;

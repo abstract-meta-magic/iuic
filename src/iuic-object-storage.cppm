@@ -1,18 +1,8 @@
 
 module;
 
-#include <cstddef>
-#include <functional>
-#include <map>
-#include <memory_resource>
-#include <print>
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <utility>
-
 export module iuic.core:storage.object;
+import std;
 import :base;
 import :hash;
 import :storage.def;
@@ -21,8 +11,8 @@ namespace iuic {
 
 struct storage_type {
   using dector_t = void (*)(void *);
-  size_t size;
-  size_t align;
+  std::size_t size;
+  std::size_t align;
   dector_t dector;
 };
 
@@ -200,7 +190,7 @@ protected: // data
 
   struct raw_memory {
     std::byte *begin;
-    size_t size;
+    std::size_t size;
   };
 
   // tmp managment

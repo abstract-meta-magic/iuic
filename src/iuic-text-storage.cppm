@@ -2,17 +2,6 @@
 
 module;
 
-#include <concepts>
-#include <cstdint>
-#include <memory>
-#include <memory_resource>
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-
 export module iuic.core:storage.text;
 import :hash;
 import :storage.def;
@@ -55,7 +44,7 @@ struct text_storage {
   // text_registry_key | storage_registry_key
 protected: // trk
   static trk_t make_trk__(uid_t uid, const std::string &str) noexcept {
-    static int64_t seed{224457};
+    static std::int64_t seed{224457};
 
     auto res = str + std::to_string(uid);
 

@@ -1,20 +1,8 @@
 
 module;
-#include <cassert>
-#include <cstddef>
-#include <cstdlib>
-#include <deque>
-#include <iostream>
-#include <iterator>
-#include <print>
-#include <stack>
-#include <string>
-#include <tuple>
-#include <type_traits>
-#include <variant>
-#include <vector>
 
 module iuic.core;
+import std;
 import :hash;
 
 namespace iuic {

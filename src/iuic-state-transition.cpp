@@ -1,6 +1,5 @@
 
 module;
-#include <vector>
 
 module iuic.core;
 import :state.transition;

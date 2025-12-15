@@ -2,9 +2,8 @@
 
 module;
 
-#include <cstdint>
-
 export module iuic.core:hash;
+import std;
 import :base;
 
 namespace iuic::hash {

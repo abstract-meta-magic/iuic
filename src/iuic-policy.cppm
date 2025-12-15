@@ -1,8 +1,7 @@
 module;
 
-#include <cstdint>
-
 export module iuic.core:policy;
+import std;
 
 export namespace iuic::policy {
 
@@ -21,4 +20,5 @@ enum class hovered : std::uint8_t {
 };
 
 enum class event : std::uint8_t { propagate, block };
+
 }; // namespace iuic::policy

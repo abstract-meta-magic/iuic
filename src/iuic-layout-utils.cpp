@@ -1,13 +1,8 @@
 
 module;
 
-#include <memory>
-#include <print>
-#include <string_view>
-#include <variant>
-#include <vector>
-
 module iuic.core;
+import std;
 import :layout;
 import :kernel;
 

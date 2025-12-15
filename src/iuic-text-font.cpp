@@ -1,8 +1,7 @@
 module;
 
-#include <memory>
-
 module iuic.core;
+import std;
 import :text.font;
 
 namespace iuic::text {

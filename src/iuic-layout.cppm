@@ -2,16 +2,9 @@
 
 module;
 
-#include <expected>
-#include <memory>
-#include <memory_resource>
-#include <print>
-#include <string_view>
-#include <type_traits>
-#include <variant>
-#include <vector>
 // TODO : может переименовать в layout.utils ?
 export module iuic.core:layout;
+import std;
 import :base;
 import :layout.def;
 import :text.token;

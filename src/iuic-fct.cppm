@@ -1,22 +1,8 @@
 
 module;
 
-#include <cstddef>
-#include <cstdint>
-#include <deque>
-#include <expected>
-#include <iostream>
-#include <limits>
-#include <list>
-#include <print>
-#include <stack>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <variant>
-#include <vector>
-
 export module iuic.core:computing.tree;
+import std;
 import :base;
 import :layout;
 import :kernel;
@@ -83,15 +69,15 @@ public: // Public Interface
 
   kernel::element current() const noexcept;
 
-  kernel::element at(size_t) const;
+  kernel::element at(std::size_t) const;
 
   kernel::element root() const noexcept;
 
-  size_t size() const noexcept;
+  std::size_t size() const noexcept;
 
-  size_t index_at_last() const noexcept;
+  std::size_t index_at_last() const noexcept;
 
-  size_t current_index() const noexcept;
+  std::size_t current_index() const noexcept;
 
   const info *current_info() const noexcept;
 
@@ -124,7 +110,7 @@ private: // Data
   std::vector<kernel::element> elements;
   // parent\last_brather
 
-  std::stack<size_t> current_{};
-  std::stack<std::pair<size_t, size_t>> parent{};
+  std::stack<std::size_t> current_{};
+  std::stack<std::pair<std::size_t, std::size_t>> parent{};
 };
 }; // namespace iuic::computing

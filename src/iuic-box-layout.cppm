@@ -1,15 +1,8 @@
 
 module;
-#include <concepts>
-#include <expected>
-#include <iostream>
-#include <print>
-#include <span>
-#include <type_traits>
-#include <variant>
-#include <vector>
 
 export module iuic.core:layout.frame.box;
+import std;
 import :layout.def;
 export import :layout;
 

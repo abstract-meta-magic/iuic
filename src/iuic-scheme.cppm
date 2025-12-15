@@ -1,17 +1,7 @@
 module;
 
-#include <concepts>
-#include <cstddef>
-#include <optional>
-#include <print>
-#include <span>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <variant>
-#include <vector>
-
 export module iuic.core:scheme;
+import std;
 import :base;
 import :style;
 import :text.present;

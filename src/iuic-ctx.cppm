@@ -1,22 +1,8 @@
 
 module;
 
-#include <chrono>
-#include <concepts>
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <memory_resource>
-#include <print>
-#include <sstream>
-#include <stack>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <utility>
-#include <vector>
-
 export module iuic.core;
+import std;
 export import :base;
 export import :base.color;
 export import :layout.def;
@@ -34,8 +20,6 @@ export import :style;
 export import :state;
 export import :state.transition;
 export import :event;
-
-// import :default
 
 export namespace iuic {
 

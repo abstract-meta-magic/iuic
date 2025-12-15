@@ -2,7 +2,6 @@
 
 module;
 
-#include <print>
 export module iuic.core:layout.text.box;
 import :layout;
 
