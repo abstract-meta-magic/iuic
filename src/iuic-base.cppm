@@ -56,11 +56,11 @@ template <typename T> defer(T &&) -> defer<T>;
 template <typename T> struct virtual_iterator {
   virtual ~virtual_iterator() = default;
 
-  virtual constexpr void prev() noexcept = 0;
+  virtual void prev() noexcept = 0;
 
-  virtual constexpr void next() noexcept = 0;
+  virtual void next() noexcept = 0;
 
-  virtual constexpr bool valid() const noexcept = 0;
+  virtual bool valid() const noexcept = 0;
 
   virtual T *get() noexcept = 0;
 
@@ -76,7 +76,7 @@ template <typename T> struct virtual_iterator {
 
   sentinel_t sentinel() const noexcept { return {}; };
 
-  constexpr operator bool() const noexcept { return valid(); };
+  operator bool() const noexcept { return valid(); };
 
   constexpr bool operator==(const sentinel_t &) const noexcept {
     return not valid();
@@ -106,11 +106,11 @@ template <typename T> struct virtual_iterator {
     constexpr operator bool() const { return ptr->valid(); };
 
     constexpr bool operator==(const sentinel_t &) const {
-      return ptr->valid();
+      return not ptr->valid();
     };
 
     constexpr bool operator!=(const sentinel_t &) const {
-      return not ptr->valid();
+      return ptr->valid();
     };
 
   private:

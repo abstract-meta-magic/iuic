@@ -1,15 +1,5 @@
-
-module;
-
-#include <atomic>
-#include <concepts>
-#include <cstdint>
-#include <print>
-#include <string_view>
-#include <type_traits>
-#include <variant>
-
 export module iuic.kitty_kit;
+import std;
 export import iuic.core;
 export import iuic.key_map.base;
 

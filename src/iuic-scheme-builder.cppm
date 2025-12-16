@@ -164,7 +164,7 @@ struct builder_uid_interface : protected virtual builder_base {
 
     auto ch = kernel.get_childs(el, true);
 
-    if (ch->valid()) {
+    if (not ch->valid()) {
       ss << kernel.get_uid(el).value();
     } else {
       ss << ch->get()->self;
@@ -236,7 +236,9 @@ struct builder_memory_interface : protected virtual builder_base {
 
     if (mem->state(uid, type) ==
         kernel::memory_model::object_state::alive_this_type) {
-      call(static_cast<T &>(mem->locate(uid, type)));
+      if (auto *locate = mem->locate(uid, type)) {
+        call(*static_cast<T *>(locate));
+      }
     }
   };
 
@@ -251,12 +253,11 @@ struct builder_memory_interface : protected virtual builder_base {
       mem->update_livetime(uid);
     } else if (state == kernel::memory_model::object_state::reserve_this_type ||
                state == kernel::memory_model::object_state::reserve_none_type) {
+      mem->launch(uid, type);
 
       auto *located = static_cast<T *>(kernel.memory()->locate(uid, type));
 
       new (located) T{call()}; // call typed persist
-
-      mem->launch(uid, type);
     }
   };
 
@@ -448,7 +449,9 @@ void builder_element_interface::frame(builder_block_cpt auto &&call,
 
 void builder_element_interface::frame(style::ref style,
                                       const frame_layout &layout) noexcept {
-  kernel.launch(kernel.instance(unit.top().uid, &layout, style));
+  std::println("BUILDER RQ INSTANCE");
+  auto el = kernel.instance(unit.top().uid, &layout, style);
+  kernel.launch(el);
 };
 
 void builder_element_interface::frame(const frame_layout &layout) noexcept {
@@ -458,6 +461,7 @@ void builder_element_interface::frame(const frame_layout &layout) noexcept {
 void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
                                       style::ref style,
                                       const frame_layout &layout) noexcept {
+  std::println("BUILDER RQ INSTANCE");
   auto el = kernel.instance(uid, &layout, style);
   unit.push(unit_t{.uid = uid});
   call(builder);
@@ -471,7 +475,9 @@ void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
 
 void builder_element_interface::frame(uid_t uid, style::ref style,
                                       const frame_layout &layout) noexcept {
-  kernel.launch(kernel.instance(uid, &layout, style));
+  std::println("BUILDER RQ INSTANCE");
+  auto el = kernel.instance(uid, &layout, style);
+  kernel.launch(el);
 };
 
 void builder_element_interface::frame(uid_t uid,
@@ -486,6 +492,7 @@ void builder_element_interface::text(iuic::text::token &&, style::ref style,
                                      const text_layout &layout) {
   // reg TPA
   // BROKEN
+  std::println("BUILDER RQ INSTANCE");
   kernel.launch(kernel.instance(unit.top().uid, &layout, style));
 };
 
@@ -494,6 +501,7 @@ void builder_element_interface::text(const iuic::text::token &,
                                      const text_layout &layout) {
   // reg TPA
   // BROKEN
+  std::println("BUILDER RQ INSTANCE");
   kernel.launch(kernel.instance(unit.top().uid, &layout, style));
 };
 }; // namespace iuic::scheme

@@ -142,5 +142,5 @@ iuic_env_add("iuic::intro" "Hello World" STR)
 iuic_env_targets()
 iuic_env_vars()
 
-#add_subdirectory(test)
-#add_subdirectory(kit)
+add_subdirectory(test)
+add_subdirectory(kit)

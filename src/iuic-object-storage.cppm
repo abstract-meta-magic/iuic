@@ -163,7 +163,7 @@ protected:
 
     auto str = ss.str();
 
-    return hash::make(srk_hash_seed, str.c_str(), str.length());
+    return 0;
   };
 
   // magic number for persist + uid + name
@@ -181,7 +181,7 @@ protected:
 
     auto str = ss.str();
 
-    return hash::make(srk_hash_seed, str.c_str(), str.length());
+    return 0;
     return 2;
   };
 

@@ -48,7 +48,7 @@ protected: // trk
 
     auto res = str + std::to_string(uid);
 
-    return hash::make(res.c_str(), res.size());
+    return 0;
   };
 
 protected:

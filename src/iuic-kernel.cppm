@@ -30,11 +30,13 @@ struct element {
     alive = 1 << 1,
     root = 1 << 2,
     root_child = 1 << 3,
-    text = 1 << 4,
-    discarded = 1 << 5,
-    request = 1 << 6,
-    arrange = 1 << 7,
-  } meta;
+    first_child = 1 << 4,
+    last_child = 1 << 5,
+    text = 1 << 6,
+    discarded = 1 << 7,
+    request = 1 << 8,
+    arrange = 1 << 9,
+  } meta{null};
 };
 
 constexpr element::meta_state operator|(element::meta_state lhs,
@@ -285,3 +287,25 @@ using kernel_ctor_cpt = std::unique_ptr<hardware> (*)() noexcept;
 
 std::unique_ptr<hardware> default_kernel() noexcept;
 } // namespace iuic::kernel
+
+export std::ostream &operator<<(std::ostream &out,
+                                const iuic::kernel::element &e) {
+  out << "iuic::kernel::element {" << std::endl;
+  out << "  self    : " << e.self << ";" << std::endl;
+  out << "  brother : " << e.brother << ";" << std::endl;
+  out << "  parent  : " << e.parent << ";" << std::endl;
+  out << "  meta    : [";
+  out << "r:" << (e.meta && iuic::kernel::element::root ? "*" : "o") << "|";
+  out << "rc:" << (e.meta && iuic::kernel::element::root_child ? "*" : "o")
+      << "|";
+  out << "t:" << (e.meta && iuic::kernel::element::text ? "*" : "o") << "|";
+  out << "al:" << (e.meta && iuic::kernel::element::alive ? "*" : "o") << "|";
+  out << "rq:" << (e.meta && iuic::kernel::element::request ? "*" : "o") << "|";
+  out << "arr:" << (e.meta && iuic::kernel::element::arrange ? "*" : "o")
+      << "|";
+  out << "D:" << (e.meta && iuic::kernel::element::discarded ? "*" : "o") << "]"
+      << std::endl;
+  out << "}" << std::endl;
+
+  return out;
+};

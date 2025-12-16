@@ -1,12 +1,8 @@
 
 module;
-#include <expected>
-#include <print>
-#include <type_traits>
-#include <variant>
-#include <vector>
 
 module iuic.kitty_kit;
+import std;
 
 namespace kitty_kit::layout {
 measure_result text_button::measure(frame_measure_utils utils) const noexcept {
@@ -27,13 +23,17 @@ measure_result text_button::measure(frame_measure_utils utils) const noexcept {
 
 bool text_button::arrange(frame_arrange_utils utils) const noexcept {
   auto rqs = utils.get_requests();
+  auto rect = utils.self_area();
+
   for (auto &&rq : rqs->range()) {
+    auto rect = utils.self_area();
 
     auto height = utils.height_upixel_of(rq.size.height);
     auto width = utils.width_upixel_of(rq.size.width);
 
     utils.apply(rq, ui_rect{0, 0, width, height});
   }
+
   return true;
 }
 
@@ -47,6 +47,9 @@ measure_result simple_box::measure(frame_measure_utils utils) const noexcept {
 };
 bool simple_box::arrange(frame_arrange_utils utils) const noexcept {
   auto rqs = utils.get_requests();
+  std::println("VERI SIMPLE");
+  auto rect = utils.self_area();
+  std::println("VERI SIMPLE");
   for (auto &&rq : rqs->range()) {
     utils.discard(rq);
   }
@@ -54,6 +57,7 @@ bool simple_box::arrange(frame_arrange_utils utils) const noexcept {
 };
 
 measure_result short_text::measure(text_measure_utils utils) const noexcept {
+
   if (utils.get_tokens().empty()) {
     return {std::unexpected{measure_err{}}};
   }

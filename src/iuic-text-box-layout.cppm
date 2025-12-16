@@ -10,6 +10,7 @@ namespace iuic {
 struct text_def_layout : text_layout {
 
   measure_result measure(text_measure_utils utils) const noexcept override {
+    std::println("???");
     return {{0, 0}};
   };
 

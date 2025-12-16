@@ -1,4 +1,3 @@
-
 module;
 
 module iuic.core;
@@ -27,18 +26,25 @@ template <> void advance(managed_text_storage &storage) {
 };
 
 // TODO : replace all to advance
-void context::reset() { iuic::advance(b); };
+void context::reset() { kernel->advance(); };
 
 void context::proccess_measure() {
 
-  for (auto &&el : kernel->get_elements(true)->range()) {
-    if (el.meta & kernel::element::discarded) {
+  for (auto &el : kernel->get_elements(true)->range()) {
+    auto te = el.self;
+
+    if (el.meta && kernel::element::discarded) {
       continue;
     }
 
     std::visit(
         [&](auto layout) {
           if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+            if (not layout) {
+              kernel->discard(el);
+              return;
+            }
+
             auto res = layout->measure({*kernel, el});
 
             // TODO : fix me
@@ -50,21 +56,21 @@ void context::proccess_measure() {
           } else if constexpr (std::same_as<decltype(layout),
                                             const text_layout *>) {
 
-            auto res =
-                layout->measure({*kernel, el, tpa.get_tokens(el.self), font});
+            auto tqs = tpa.get_tokens(el.self);
+
+            auto res = layout->measure({*kernel, el, tqs, font});
             if (res) {
               kernel->attach(el, res.value().rq);
             } else {
               kernel->discard(el);
             }
-            // TODO compute
           }
         },
         kernel->get_layout(el));
   }
 
   // mda root calc
-  kernel::element root{kernel::element::root};
+  kernel::element root{.meta = kernel::element::root};
   std::visit(
       [&](auto layout) {
         if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
@@ -83,7 +89,7 @@ void context::proccess_measure() {
 void context::proccess_arrange() {
   // TODO : PARALLEL
 
-  kernel::element root{kernel::element::root};
+  kernel::element root{.meta = kernel::element::root};
 
   auto &max_size = kernel->get_style(root).value()->get_shape().max_size;
 
@@ -99,13 +105,16 @@ void context::proccess_arrange() {
       kernel->get_layout(root));
 
   for (auto &el : kernel->get_elements()->range()) {
-    if (el.meta & kernel::element::discarded) {
+    if (el.meta && kernel::element::discarded) {
       continue;
     }
 
     std::visit(
         [&](auto layout) {
           if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+            // std::println("el = self {}, brother {} , parent {} , root {}",
+            //             el.self, el.brother, el.parent,
+            //             el.meta && kernel::element::root_child);
             if (not layout->arrange({*kernel, el})) {
               kernel->discard(el);
             }
