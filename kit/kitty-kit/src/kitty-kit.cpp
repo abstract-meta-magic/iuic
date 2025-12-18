@@ -11,14 +11,16 @@ measure_result text_button::measure(frame_measure_utils utils) const noexcept {
   auto style = utils.self_style();
 
   if (rqs->valid()) {
-    return {};
+    // auto &rq = *rqs->get();
   }
 
-  auto &rq = *rqs->get();
-
   // do ...
+  auto m = style.get_shape().max_size;
 
-  return {{style.get_shape().min_size.w, style.get_shape().min_size.h}};
+  return {measure_request{.rq{
+      .width{style.get_shape().min_size.w},
+      .height{style.get_shape().min_size.h},
+  }}};
 }
 
 bool text_button::arrange(frame_arrange_utils utils) const noexcept {
@@ -47,9 +49,9 @@ measure_result simple_box::measure(frame_measure_utils utils) const noexcept {
 };
 bool simple_box::arrange(frame_arrange_utils utils) const noexcept {
   auto rqs = utils.get_requests();
-  std::println("VERI SIMPLE");
+
   auto rect = utils.self_area();
-  std::println("VERI SIMPLE");
+
   for (auto &&rq : rqs->range()) {
     utils.discard(rq);
   }

@@ -28,7 +28,7 @@ struct layout_utils_base {
   // получение ссылки на собственный стиль
   style::cref self_style() const;
 
-  style::cref style_of(kernel::element el) const;
+  style::cref style_of(const kernel::request &el) const;
 
   // получение ссылки на родительский стиль
   style::cref parent_style() const;

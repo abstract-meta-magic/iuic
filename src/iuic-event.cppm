@@ -31,7 +31,7 @@ public:
   template <typename T, typename A>
   static consteval auto type(std::function<T(A &)>) -> A;
 
-  struct : component {
+  struct vis : component {
     void try_visit(iuic::uid_t uid, auto &&call) {
       using type = decltype(type(std::function{call}));
       static_assert(not std::same_as<type, not_function>,
@@ -231,7 +231,7 @@ public:
     for (auto &&ev : event_pack.global) {
       std::visit(
           [&](auto &&call) {
-            using type = decltype(call);
+            using type = std::remove_cvref_t<decltype(call)>;
             if constexpr (std::same_as<global_key_event_fpt, type>) {
               call(event::global::key{
                   event_extern_components{kernel}, ev.object, ev.uid, key, {}});
@@ -244,7 +244,7 @@ public:
       if (kernel.state()->has(ev.uid, state::base::hovered())) {
         std::visit(
             [&](auto &&call) {
-              using type = decltype(call);
+              using type = std::remove_cvref_t<decltype(call)>;
               if constexpr (std::same_as<local_key_event_fpt, type>) {
                 call(event::local::key{event_extern_components{kernel},
                                        ev.object,
@@ -267,14 +267,13 @@ public:
             position.y >= rect.position.y &&
             position.y <= rect.position.y + rect.size.h);
   }
-
   // just move the pointer
   void pointer_move(ui_position position) {
     // TODO
     for (auto &&ev : event_pack.global) {
       std::visit(
           [&](auto &&call) {
-            using type = decltype(call);
+            using type = std::remove_cvref_t<decltype(call)>;
             if constexpr (std::same_as<global_pointer_move_event_fpt, type>) {
               call(event::global::mouse{
                   event_extern_components{kernel},
@@ -292,7 +291,7 @@ public:
       if (kernel.state()->has(ev.uid, state::base::hovered())) {
         std::visit(
             [&](auto &&call) {
-              using type = decltype(call);
+              using type = std::remove_cvref_t<decltype(call)>;
               if constexpr (std::same_as<local_pointer_move_event_fpt, type>) {
                 call(event::local::mouse{event_extern_components{kernel},
                                          ev.object,
@@ -303,6 +302,14 @@ public:
               }
             },
             ev.call);
+      }
+    }
+
+    for (auto &h : event_pack.htest) {
+      if (in__(position, h.rect)) {
+        kernel.state()->attach(h.uid, state::base::hovered());
+      } else {
+        kernel.state()->detach(h.uid, state::base::hovered());
       }
     }
     pointer_position = position;
@@ -317,6 +324,7 @@ private:
 };
 
 void apply_event_pack__(event_reciver &er, event_pack &&pack) {
+  // hover scan
   std::swap(er.event_pack, pack);
 }
 }; // namespace iuic

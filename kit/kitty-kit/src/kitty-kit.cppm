@@ -626,6 +626,17 @@ void button(builder &b, std::invocable<> auto &&callback) {
           b.style.override(iuic::style::decoration{
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
+
+        b.event(
+            [](event::local::key e) static {
+              std::println("visit");
+              e.utils.memory.try_visit(e.object, [&](callback_type &call) {
+                if (e.code == iuic::key_map::mouse("left")) {
+                  call();
+                }
+              });
+            },
+            uid);
       },
 
       style::button, layout_);
@@ -657,13 +668,15 @@ void text_button(builder &b, std::string_view text,
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
 
-        b.event([](event::local::key e) static {
-          e.utils.memory.try_visit(e.object, [&](callback_type &call) {
-            if (e.code == iuic::key_map::mouse("left")) {
-              call();
-            }
-          });
-        });
+        b.event(
+            [](event::local::key e) static {
+              e.utils.memory.try_visit(e.object, [&](callback_type &call) {
+                if (e.code == iuic::key_map::mouse("left")) {
+                  call();
+                }
+              });
+            },
+            uid);
 
         b.element.text(text::token{text}, style::base, text_layout);
       },

@@ -8,6 +8,17 @@ namespace iuic {
 
 void context::set_view_size(ui_size size) {
   // TODO
+  // to static_cast
+  auto *mem = static_cast<style::shape *>(
+      kernel->memory()->tmp(kernel::memory_model::type::from<style::shape>()));
+
+  if (mem) {
+    new (mem) style::shape{};
+
+    mem->max_size.w = upixel_t{size.w};
+    mem->max_size.h = upixel_t{size.h};
+    kernel->override({.meta = kernel::element::root}, mem);
+  }
 };
 
 // Refactor and move to other file
@@ -30,6 +41,7 @@ void context::reset() { kernel->advance(); };
 
 void context::proccess_measure() {
 
+  int coutnt{0};
   for (auto &el : kernel->get_elements(true)->range()) {
     auto te = el.self;
 
@@ -112,9 +124,6 @@ void context::proccess_arrange() {
     std::visit(
         [&](auto layout) {
           if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
-            // std::println("el = self {}, brother {} , parent {} , root {}",
-            //             el.self, el.brother, el.parent,
-            //             el.meta && kernel::element::root_child);
             if (not layout->arrange({*kernel, el})) {
               kernel->discard(el);
             }

@@ -12,6 +12,10 @@ style::cref layout_utils_base::self_style() const {
   return *kernel.get_style(element).value();
 };
 
+style::cref layout_utils_base::style_of(const kernel::request &rq) const {
+  return *kernel.get_style(rq.element).value();
+};
+
 void layout_utils_base::discard(const kernel::request &rq) {
   kernel.discard(rq.element);
 };
@@ -25,7 +29,7 @@ style::cref layout_utils_base::parent_style() const {
 };
 
 style::cref layout_utils_base::root_style() const {
-  if (auto s = kernel.get_style({kernel::element::root})) {
+  if (auto s = kernel.get_style({.meta = kernel::element::root})) {
     return *s.value();
   }
 
@@ -42,11 +46,13 @@ upixel_t layout_utils_base::rem(rem_t rem) const noexcept {
 };
 
 upixel_t layout_utils_base::vh(vh_t vh) const noexcept {
-  return std::get<upixel_t>(root_style().get_shape().max_size.h) * vh;
+  auto h = std::get<upixel_t>(root_style().get_shape().max_size.h) * vh;
+  return h;
 }
 
 upixel_t layout_utils_base::vw(vw_t vw) const noexcept {
-  return std::get<upixel_t>(root_style().get_shape().max_size.w) * vw;
+  auto w = std::get<upixel_t>(root_style().get_shape().max_size.w) * vw;
+  return w;
 }
 
 // TODO : log info

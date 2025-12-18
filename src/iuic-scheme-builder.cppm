@@ -162,18 +162,23 @@ struct builder_uid_interface : protected virtual builder_base {
     ss << &default_anchor;
     ss << el.self;
 
-    auto ch = kernel.get_childs(el, true);
+    auto ch = kernel.get_childs(el);
 
     if (not ch->valid()) {
       ss << kernel.get_uid(el).value();
     } else {
+      kernel::element che;
+      for (auto &e : ch->range()) {
+        che = e;
+      }
       ss << ch->get()->self;
-      ss << kernel.get_uid(*ch->get()).value();
+      ss << kernel.get_uid(che).value();
     }
 
     auto hash_string = ss.str();
+    auto uid = kernel.hash(std::as_bytes(std::span(hash_string)));
 
-    return kernel.hash(std::as_bytes(std::span(hash_string)));
+    return uid;
   };
 
   uid_t make(policy::indexed, const std::string &str,
@@ -449,7 +454,6 @@ void builder_element_interface::frame(builder_block_cpt auto &&call,
 
 void builder_element_interface::frame(style::ref style,
                                       const frame_layout &layout) noexcept {
-  std::println("BUILDER RQ INSTANCE");
   auto el = kernel.instance(unit.top().uid, &layout, style);
   kernel.launch(el);
 };
@@ -461,7 +465,6 @@ void builder_element_interface::frame(const frame_layout &layout) noexcept {
 void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
                                       style::ref style,
                                       const frame_layout &layout) noexcept {
-  std::println("BUILDER RQ INSTANCE");
   auto el = kernel.instance(uid, &layout, style);
   unit.push(unit_t{.uid = uid});
   call(builder);
@@ -475,7 +478,6 @@ void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
 
 void builder_element_interface::frame(uid_t uid, style::ref style,
                                       const frame_layout &layout) noexcept {
-  std::println("BUILDER RQ INSTANCE");
   auto el = kernel.instance(uid, &layout, style);
   kernel.launch(el);
 };
@@ -492,7 +494,6 @@ void builder_element_interface::text(iuic::text::token &&, style::ref style,
                                      const text_layout &layout) {
   // reg TPA
   // BROKEN
-  std::println("BUILDER RQ INSTANCE");
   kernel.launch(kernel.instance(unit.top().uid, &layout, style));
 };
 
@@ -501,7 +502,6 @@ void builder_element_interface::text(const iuic::text::token &,
                                      const text_layout &layout) {
   // reg TPA
   // BROKEN
-  std::println("BUILDER RQ INSTANCE");
   kernel.launch(kernel.instance(unit.top().uid, &layout, style));
 };
 }; // namespace iuic::scheme

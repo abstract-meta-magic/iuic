@@ -15,18 +15,44 @@ struct root_layout : frame_layout {
     return {{style.get_shape().max_size.w, style.get_shape().max_size.h}};
   };
 
+  std::tuple<upixel_t, upixel_t, upixel_t, upixel_t>
+  border_of(const request &rq, frame_arrange_utils &utils) const {
+    auto rq_style = utils.style_of(rq);
+    auto btop = utils.width_upixel_of(rq_style.get_shape().border.top);
+    auto bbottom = utils.width_upixel_of(rq_style.get_shape().border.bottom);
+    auto bleft = utils.height_upixel_of(rq_style.get_shape().border.left);
+    auto bright = utils.height_upixel_of(rq_style.get_shape().border.right);
+    return {btop, bbottom, bleft, bright};
+  };
+
+  std::tuple<upixel_t, upixel_t, upixel_t, upixel_t>
+  margin_of(const request &rq, frame_arrange_utils &utils) const {
+    auto rq_style = utils.style_of(rq);
+    auto mtop = utils.width_upixel_of(rq_style.get_shape().margin.top);
+    auto mbottom = utils.width_upixel_of(rq_style.get_shape().margin.bottom);
+    auto mleft = utils.height_upixel_of(rq_style.get_shape().margin.left);
+    auto mright = utils.height_upixel_of(rq_style.get_shape().margin.right);
+    return {mtop, mbottom, mleft, mright};
+  };
+
   bool arrange(frame_arrange_utils utils) const noexcept override {
     auto self_area = utils.self_area();
+    auto self_style = utils.self_style();
 
+    // TOTO : normal arrange
     int y{0};
     for (auto &rq : utils.get_requests()->range()) {
       // bordered + borderless
 
-      std::println("TO APPLY {}", rq.element.self);
-      // calc
-      std::cout << rq.element << std::endl;
-      utils.apply(rq, ui_rect{0, y, 200, 100});
-      y += 120;
+      auto [btop, bbottom, bleft, bright] = border_of(rq, utils);
+      auto [mtop, mbottom, mleft, mright] = margin_of(rq, utils);
+
+      auto width = utils.width_upixel_of(rq.size.width);
+      auto height = utils.height_upixel_of(rq.size.height);
+
+      y += mtop;
+      utils.apply(rq, ui_rect{(pixel_t)mleft, y, width, height});
+      y += height;
     };
     return true;
   };
@@ -36,6 +62,8 @@ struct base_state_model_impl : state_model {
   void attach(iuic::uid_t uid, iuic::state state) noexcept {
     if (states.contains(uid)) {
       states.at(std::size_t{uid}).insert(state);
+    } else {
+      states.insert({uid, {state}});
     }
   };
 
@@ -70,15 +98,16 @@ struct base_memory_model_impl : memory_model {
     if (swap && not swap_2.contains(uid)) {
       swap_2.insert({uid, {.type = type}});
     } else if (not swap_1.contains(uid)) {
+      std::println("obj rq {}", uid);
       swap_1.insert({uid, {.type = type}});
     }
   };
 
   void *locate(iuic::uid_t uid, const type *type) noexcept override {
-    if (swap && swap_1.contains(uid)) {
-      return swap_1.at(uid).data;
-    } else if (swap_2.contains(uid)) {
+    if (swap && swap_2.contains(uid)) {
       return swap_2.at(uid).data;
+    } else if (swap_1.contains(uid)) {
+      return swap_1.at(uid).data;
     } else {
       return nullptr;
     }
@@ -86,6 +115,44 @@ struct base_memory_model_impl : memory_model {
 
   object_state state(iuic::uid_t uid,
                      const type *type = type::none()) const noexcept override {
+    // impl
+    if (swap) {
+      if (swap_2.contains(uid)) {
+        auto &obj = swap_2.at(uid);
+
+        if (obj.type == type::none()) {
+          return object_state::reserve_none_type;
+        }
+
+        if (obj.alive) {
+          return obj.type == type ? object_state::alive_this_type
+                                  : object_state::alive_other_type;
+        } else {
+          return obj.type == type ? object_state::reserve_this_type
+                                  : object_state::reserve_other_type;
+        }
+      } else {
+        return object_state::none_exist;
+      };
+    } else {
+      if (swap_1.contains(uid)) {
+        auto &obj = swap_1.at(uid);
+
+        if (obj.type == type::none()) {
+          return object_state::reserve_none_type;
+        }
+
+        if (obj.alive) {
+          return obj.type == type ? object_state::alive_this_type
+                                  : object_state::alive_other_type;
+        } else {
+          return obj.type == type ? object_state::reserve_this_type
+                                  : object_state::reserve_other_type;
+        }
+      } else {
+        return object_state::none_exist;
+      };
+    }
     return memory_model::object_state::alive_other_type;
   };
 
@@ -101,29 +168,39 @@ struct base_memory_model_impl : memory_model {
   };
 
   void launch(iuic::uid_t uid, const type *type) noexcept override {
+    if (type == type::none()) {
+      return;
+    }
+
     // allocate memory
     if (swap && swap_2.contains(uid) && not swap_2.at(uid).alive) {
       auto &obj = swap_2.at(uid);
       if (obj.type == type) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
           obj.data = mem;
+          obj.alive = true;
         }
       } else if (obj.type == type::none()) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
           obj.data = mem;
           obj.type = type;
+          obj.alive = true;
         }
       }
-    } else if (swap_1.contains(uid) && swap_1.at(uid).alive) {
+    } else if (swap_1.contains(uid) && not swap_1.at(uid).alive) {
+      std::println("try init");
       auto &obj = swap_1.at(uid);
       if (obj.type == type) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
           obj.data = mem;
+          obj.alive = true;
         }
       } else if (obj.type == type::none()) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
+          std::println("none init");
           obj.data = mem;
           obj.type = type;
+          obj.alive = true;
         }
       }
     }
@@ -208,8 +285,6 @@ struct simple_kernel : hardware {
           for (;;) {
             auto &snode = kernel.els[index];
             auto &bnode = kernel.els[snode.el.brother];
-            std::println("rq ? self:{},brother:{},parent:{}", snode.el.self,
-                         snode.el.brother, snode.el.parent);
 
             if (snode.el.brother == snode.el.parent) {
               index = invalide_index;
@@ -221,8 +296,6 @@ struct simple_kernel : hardware {
             index = bnode.el.self;
           };
         }
-
-        std::println("valide iterator {}", index != invalide_index);
       };
 
       constexpr void prev() noexcept override { index = invalide_index; };
@@ -252,14 +325,11 @@ struct simple_kernel : hardware {
           ++index;
           for (; index < kernel.els.size(); ++index) {
             if (kernel.els[index].el.meta && element::root_child) {
-              std::println("valide iterator {}", index);
               return;
             }
           };
           index = invalide_index;
         }
-
-        std::println("valide iterator {}", index != invalide_index);
       };
 
       constexpr void prev() noexcept override { index = invalide_index; };
@@ -379,31 +449,35 @@ struct simple_kernel : hardware {
           : kernel{kernel_}, bindex{index_}, cindex{get_last(index_)} {}
     };
 
+    if (els.empty()) {
+      return invalid_virtual_iterator{};
+    }
+
     if (el.meta && element::root) {
       if (reverse) {
         return not els.empty()
                    ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_iterator{*this,
-                                                                          0}}
+                         virtual_iterator<const element>>{new ch_riterator{
+                         *this, 0}}
                    : invalid_virtual_iterator{};
       } else {
         return not els.empty()
                    ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_riterator{
-                         *this, 0}}
+                         virtual_iterator<const element>>{new ch_iterator{*this,
+                                                                          0}}
                    : invalid_virtual_iterator{};
       }
     } else {
       if (reverse) {
         return els.size() > el.self + 1 && els[el.self + 1].el.parent == el.self
                    ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_iterator{
+                         virtual_iterator<const element>>{new ch_riterator{
                          *this, std::size_t{el.self} + 1}}
                    : invalid_virtual_iterator{};
       } else {
         return els.size() > el.self + 1 && els[el.self + 1].el.parent == el.self
                    ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_riterator{
+                         virtual_iterator<const element>>{new ch_iterator{
                          *this, std::size_t{el.self} + 1}}
                    : invalid_virtual_iterator{};
       }
@@ -538,9 +612,11 @@ struct simple_kernel : hardware {
 
   virtual const state_model *state() const override { return &st; };
 
-  virtual std::uint64_t hash(std::span<const std::byte>) const override {
+  virtual std::uint64_t hash(std::span<const std::byte> h) const override {
     // makeo
-    return 0;
+    static std::hash<std::string_view> hash{};
+
+    return hash(std::string_view{(const char *)&h[0], h.size()});
   };
 
   // create and select new element
@@ -563,7 +639,6 @@ struct simple_kernel : hardware {
     node.el = el;
     node.rq.element = el;
     sel.self = el.self;
-    std::cout << "instance frame :: " << el << std::endl;
     return el;
   };
 
@@ -586,7 +661,6 @@ struct simple_kernel : hardware {
       el.parent = el.brother = sel.self;
     }
 
-    std::cout << "instance text :: " << el << std::endl;
     node.el = el;
     node.rq.element = el;
     sel.self = el.self;
@@ -599,7 +673,7 @@ struct simple_kernel : hardware {
     auto &node = els[el.self];
     if (node.el.meta && element::root_child) {
       sel.meta |= element::root;
-      sel.self = 0;
+      sel.self = el.parent;
     } else {
       sel.self = el.parent;
     }
@@ -622,7 +696,11 @@ struct simple_kernel : hardware {
   };
 
   void override(element el, style::shape *sh) noexcept override {
-    els[el.self].st.override(sh);
+    if (el.meta && element::root) {
+      root_style.shape = *sh;
+    } else {
+      els[el.self].st.override(sh);
+    }
   };
 
   void override(element el, style::transform *tr) noexcept override {
@@ -666,8 +744,6 @@ struct simple_kernel : hardware {
       node.bordered_rect = node.borderless_rect = bordered;
       node.el.meta |= element::arrange;
       auto [x, y, w, h] = bordered.xywh();
-      std::println("apply rect x:{},y:{},w:{},h:{}", x, y, w, h);
-      std::cout << els[el.self].el << std::endl;
     }
   };
 
@@ -686,15 +762,17 @@ struct simple_kernel : hardware {
 
   void advance() noexcept override {
     els.clear();
-    sel.self = 0;
+    sel.self = std::numeric_limits<std::uint16_t>::max();
+    mem.tmpr.release();
+    //   mem.swap = !mem.swap;
   };
 
-  static constexpr style::decl root_style{};
+  style::decl root_style{};
 
   node root{
       .el = {.meta = element::root},
       .st = root_style,
-      .uid = 0,
+      .uid = hash(std::as_bytes(std::span("root-uid-seed-o[{}&[{}&[[222"))),
       .flayout = &root_layout,
   };
   std::vector<node> els;
