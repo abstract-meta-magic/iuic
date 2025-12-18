@@ -170,10 +170,8 @@ private:
 
 struct text_arrange_utils : layout_utils_base {
   text_arrange_utils(kernel::hardware &kernel_hardware_, kernel::element e_,
-                     text::token::sequence sq_, const text::fontslot &font_,
-                     std::pmr::memory_resource &tmp_)
-      : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_},
-        tmp_resource{tmp_} {}
+                     text::token::sequence sq_, const text::fontslot &font_)
+      : layout_utils_base{kernel_hardware_, e_}, sq{sq_}, font{font_} {}
 
   ui_rect self_rect() const noexcept;
 
@@ -188,7 +186,6 @@ struct text_arrange_utils : layout_utils_base {
 private:
   text::token::sequence sq;
   const text::fontslot &font;
-  std::pmr::memory_resource &tmp_resource;
   static constexpr std::string_view err_token{"err..."};
 };
 } // namespace iuic

@@ -117,16 +117,21 @@ void context::proccess_arrange() {
       kernel->get_layout(root));
 
   for (auto &el : kernel->get_elements()->range()) {
-    if (el.meta && kernel::element::discarded) {
+    if (el.meta && (kernel::element::discarded | kernel::element::alive)) {
       continue;
     }
 
     std::visit(
         [&](auto layout) {
-          if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
+          using type = decltype(layout);
+          if constexpr (std::same_as<type, const frame_layout *>) {
             if (not layout->arrange({*kernel, el})) {
               kernel->discard(el);
             }
+          } else if constexpr (std::same_as<type, const text_layout *>) {
+            auto res =
+                layout->arrange({*kernel, el, tpa.get_tokens(el.self), font});
+            tpa.apply_present(el.self, res);
           }
         },
         kernel->get_layout(el));

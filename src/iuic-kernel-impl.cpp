@@ -361,7 +361,10 @@ struct simple_kernel : hardware {
       } else if (reverse) {
         return invalid_virtual_iterator{};
       } else {
-        return std::make_unique<rq_iterator>(*this, el.self + 1);
+        return els[el.self + 1].el.parent == el.self
+                   ? std::unique_ptr<virtual_iterator<const request>>(
+                         new rq_iterator{*this, (std::size_t)el.self + 1})
+                   : invalid_virtual_iterator{};
       }
     } else {
       return invalid_virtual_iterator{};

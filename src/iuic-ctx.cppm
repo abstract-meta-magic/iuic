@@ -78,7 +78,7 @@ private:
 
   event_collector event_collector;
 
-  scheme::builder b{scheme::builder_base{*kernel, event_collector, b}};
+  scheme::builder b{scheme::builder_base{*kernel, event_collector, tpa, b}};
 
 public:
   text::fontslot font;

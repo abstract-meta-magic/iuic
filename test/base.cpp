@@ -1,27 +1,8 @@
-#include <array>
-#include <chrono>
-#include <cstdint>
-#include <expected>
-#include <functional>
-#include <initializer_list>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <print>
-#include <string>
-#include <string_view>
-#include <strings.h>
-#include <sys/types.h>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
-#include <variant>
-
 #include <raylib.h>
-#include <vector>
 
 import iuic.core;
 import iuic.kitty_kit;
+import std;
 
 using builder_ui = iuic::scheme::builder;
 
@@ -61,7 +42,7 @@ int main() {
   using namespace iuic;
 
   // SDL BASE
-  SetWindowState(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
+  SetWindowState(FLAG_WINDOW_RESIZABLE);
   InitWindow(600, 800, "iuic-test");
   SetWindowMinSize(400, 300);
   SetTargetFPS(140);
@@ -115,6 +96,7 @@ int main() {
     ctx.make([&](auto &b) { main_window(b, app); }); // iuic test
 
     auto new_mouse_position = GetMousePosition();
+
     if (mouse_position.x != new_mouse_position.x ||
         mouse_position.y != new_mouse_position.y) {
       std::exchange(mouse_position, new_mouse_position);

@@ -27,14 +27,15 @@ bool text_button::arrange(frame_arrange_utils utils) const noexcept {
   auto rqs = utils.get_requests();
   auto rect = utils.self_area();
 
-  for (auto &&rq : rqs->range()) {
-    auto rect = utils.self_area();
+  auto &rq = *rqs->get();
 
-    auto height = utils.height_upixel_of(rq.size.height);
-    auto width = utils.width_upixel_of(rq.size.width);
+  auto height = utils.height_upixel_of(rq.size.height);
+  auto width = utils.width_upixel_of(rq.size.width);
 
-    utils.apply(rq, ui_rect{0, 0, width, height});
-  }
+  ui_position pos{(int)(rect.position.x + rect.size.w / 2.0f - width / 2.0f),
+                  (int)(rect.position.y + rect.size.h / 2.0f - height / 2.0f)};
+
+  utils.apply(rq, ui_rect{pos.x, pos.y, width, height});
 
   return true;
 }

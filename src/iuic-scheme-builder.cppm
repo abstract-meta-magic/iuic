@@ -10,6 +10,7 @@ import :storage.object;
 import :storage.text;
 import :text.token;
 import :text.buff;
+import :text.present;
 import :layout.frame.box;
 import :layout.text.box;
 import :event;
@@ -38,8 +39,8 @@ struct builder_base {
   };
 
   builder_base(kernel::root &ctx_, event_collector &collector_,
-               builder &builder_)
-      : kernel{ctx_}, collector{collector_}, builder{builder_} {
+               iuic::text::present::aggregator &tpa_, builder &builder_)
+      : kernel{ctx_}, collector{collector_}, tpa{tpa_}, builder{builder_} {
     static std::string root_uid{"root-uid-hash-str-4467532667"};
     unit.push(unit_t{.uid = kernel.hash(std::as_bytes(std::span(root_uid)))});
   };
@@ -47,6 +48,7 @@ struct builder_base {
 protected: // builder unit stack
   kernel::root &kernel;
   event_collector &collector;
+  iuic::text::present::aggregator &tpa;
   builder &builder;
   // tmp memory
   std::stack<unit_t> unit;
@@ -490,18 +492,37 @@ void builder_element_interface::frame(uid_t uid,
 /*
   Является конечной точкой.Отрисовка текста
 */
-void builder_element_interface::text(iuic::text::token &&, style::ref style,
-                                     const text_layout &layout) {
-  // reg TPA
-  // BROKEN
-  kernel.launch(kernel.instance(unit.top().uid, &layout, style));
-};
-
-void builder_element_interface::text(const iuic::text::token &,
+void builder_element_interface::text(iuic::text::token &&token,
                                      style::ref style,
                                      const text_layout &layout) {
   // reg TPA
   // BROKEN
-  kernel.launch(kernel.instance(unit.top().uid, &layout, style));
+  auto el = kernel.instance(unit.top().uid, &layout, style);
+
+  auto mem = kernel.memory()->tmp(
+      kernel::memory_model::type::from<iuic::text::token>());
+
+  new (mem) iuic::text::token{std::move(token)};
+
+  tpa.reserve_present(el.self, iuic::text::token::sequence{
+                                   static_cast<iuic::text::token *>(mem), 1});
+  kernel.launch(el);
+};
+
+void builder_element_interface::text(const iuic::text::token &token,
+                                     style::ref style,
+                                     const text_layout &layout) {
+  // reg TPA
+  // BROKEN
+  auto el = kernel.instance(unit.top().uid, &layout, style);
+
+  auto mem = kernel.memory()->tmp(
+      kernel::memory_model::type::from<iuic::text::token>());
+
+  new (mem) iuic::text::token{token};
+
+  tpa.reserve_present(el.self, iuic::text::token::sequence{
+                                   static_cast<iuic::text::token *>(mem), 1});
+  kernel.launch(el);
 };
 }; // namespace iuic::scheme

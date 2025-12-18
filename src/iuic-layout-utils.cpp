@@ -112,9 +112,8 @@ text_arrange_utils::capture_glyphs(text::glyph::sequence sq) const {
   if (sq.empty()) {
     return {};
   } else {
-    auto mem = static_cast<text::glyph::placement *>(
-        tmp_resource.allocate(sizeof(text::glyph::placement) * sq.size(),
-                              alignof(text::glyph::placement)));
+    auto mem = static_cast<text::glyph::placement *>(kernel.memory()->tmp(
+        kernel::memory_model::type::from<text::glyph::placement>(), sq.size()));
 
     if (mem) {
       auto current = mem;

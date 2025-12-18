@@ -629,7 +629,6 @@ void button(builder &b, std::invocable<> auto &&callback) {
 
         b.event(
             [](event::local::key e) static {
-              std::println("visit");
               e.utils.memory.try_visit(e.object, [&](callback_type &call) {
                 if (e.code == iuic::key_map::mouse("left")) {
                   call();
