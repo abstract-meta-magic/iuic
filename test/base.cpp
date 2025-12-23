@@ -12,12 +12,22 @@ struct app {
   settings_t settings;
 
   bool quit{false};
+
+  std::list<int> data;
+  int counter{0};
 };
 
 void main_window(iuic::scheme::builder &b, app &app) {
-  kitty_kit::button(b, []() { std::println("my"); });
-  kitty_kit::button(b, []() { std::println("my"); });
-  kitty_kit::button(b, []() { std::println("my"); });
+  kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
+  for (auto &d : app.data) {
+    kitty_kit::button(
+        b, [&]() { std::println("val : {}", d); }, iuic::uid::anchor{d});
+  }
+  kitty_kit::button(b, [&]() {
+    if (not app.data.empty())
+      app.data.pop_front();
+  });
+
   kitty_kit::text_button(b, "ok", []() { std::println("ok"); });
   kitty_kit::text_button(b, "exit", [&]() { app.quit = true; });
 };
@@ -62,6 +72,7 @@ int main() {
         res.push_back(c);
       }
       return res;
+      auto heh = std::abs(0.2f);
     };
   };
 

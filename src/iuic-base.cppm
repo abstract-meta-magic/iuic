@@ -223,13 +223,25 @@ struct percent {};
 // using srk
 using uid_t = std::uint64_t;
 namespace uid {
+
 struct anchor {
-  consteval anchor() = default;
-  anchor(const anchor &) = delete;
-  anchor &operator=(const anchor &) = delete;
-  anchor(anchor &&) = delete;
-  anchor &operator=(anchor &&) = delete;
+  template <typename T>
+  anchor(T &obj) : value{(std::size_t)std::addressof(obj)} {};
+  template <typename T>
+  anchor(T *obj) : value{(std::size_t)std::addressof(obj)} {};
+  anchor() : value{(std::size_t)std::addressof(*this)} {};
+  anchor(std::size_t value_) : value{value_} {};
+
+  //
+  anchor(const anchor &) = default;
+  anchor &operator=(const anchor &) = default;
+  anchor(anchor &&) = default;
+  anchor &operator=(anchor &&) = default;
+
+  //
+  std::size_t value;
 };
+
 }; // namespace uid
 using pixel_t = std::int32_t;
 using upixel_t = std::uint32_t;

@@ -208,6 +208,8 @@ struct memory_model {
     reserve_this_type,
     alive_other_type,
     alive_this_type,
+    outdated_other_type,
+    outdated_this_type,
     garbage_other_type,
     garbage_this_type
   };

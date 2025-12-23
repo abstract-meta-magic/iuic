@@ -9,6 +9,78 @@ static constexpr inline std::size_t invalide_index{
     std::numeric_limits<std::size_t>::max()};
 }
 
+template <typename T>
+concept buffer_value_mover_cpt = requires(T &obj, typename T::value_type &v,
+                                          const typename T::key_type &key) {
+  obj.move_to(v, obj.move_from(v, key));
+} && std::is_default_constructible_v<T>;
+
+template <typename T> struct buffer_value_mover_trait;
+
+template <typename T, std::size_t N,
+          buffer_value_mover_cpt Mover =
+              typename buffer_value_mover_trait<T>::mover_type>
+  requires(N > 1)
+struct swap_buffers {
+  auto get_buffers() {
+    struct _ {
+      T &prev;
+      T &current;
+    };
+
+    return _{buffers_[prev], buffers_[current]};
+  };
+
+  auto get_buffers() const {
+    struct _ {
+      const T &prev;
+      const T &current;
+    };
+
+    return _{buffers_[prev], buffers_[current]};
+  };
+
+  void swap() {
+    prev = (prev + 1) % N;
+    current = (current + 1) % N;
+  };
+
+  void move_forward(typename Mover::key_type key) const {
+    Mover m;
+    m.move_to(buffers_[current], m.move_from(buffers_[prev], key));
+  };
+
+private:
+  std::int32_t prev{0};
+  std::int32_t current{1};
+  mutable std::array<T, N> buffers_;
+};
+
+template <typename Map> struct forward_for_map {
+  using key_type = typename Map::key_type;
+  using value_type = Map;
+  using swap_type = std::optional<typename Map::node_type>;
+
+  static swap_type move_from(Map &v, const key_type &key) {
+    if (v.contains(key)) {
+      return v.extract(key);
+    }
+
+    return std::nullopt;
+  };
+
+  static void move_to(Map &v, swap_type swap) {
+    if (swap) {
+      v.insert(std::move(swap.value()));
+    }
+  };
+};
+
+template <typename T, typename Key>
+struct buffer_value_mover_trait<std::unordered_map<T, Key>> {
+  using mover_type = forward_for_map<std::unordered_map<T, Key>>;
+};
+
 struct root_layout : frame_layout {
   measure_result measure(frame_measure_utils utils) const noexcept override {
     auto style = utils.self_style();
@@ -58,18 +130,24 @@ struct root_layout : frame_layout {
   };
 } root_layout;
 
-struct base_state_model_impl : state_model {
+struct base_state_model_impl : public state_model {
+  using swap_t = swap_buffers<
+      std::unordered_map<iuic::uid_t, std::unordered_set<iuic::state>>, 2>;
+
   void attach(iuic::uid_t uid, iuic::state state) noexcept {
-    if (states.contains(uid)) {
-      states.at(std::size_t{uid}).insert(state);
+    auto buff = swap.get_buffers();
+
+    if (buff.current.contains(uid)) {
+      buff.current.at(uid).insert(state);
     } else {
-      states.insert({uid, {state}});
+      buff.current.insert({uid, {state}});
     }
   };
 
   void detach(iuic::uid_t uid, iuic::state state) noexcept {
-    if (states.contains(uid)) {
-      states[uid].erase(state);
+    auto buff = swap.get_buffers();
+    if (buff.current.contains(uid)) {
+      buff.current.at(uid).erase(state);
     }
   };
 
@@ -79,91 +157,91 @@ struct base_state_model_impl : state_model {
     return invalid_virtual_iterator{};
   };
 
-  // TODE FRAME MODEL
-  bool is_exist(iuic::uid_t uid) const { return states.contains(uid); };
-
-  // TODE FRAME MODEL
-  bool update_livetime(iuic::uid_t) const { return true; };
-
-  bool has(iuic::uid_t uid, iuic::state state) const {
-    return states.contains(uid) ? states.at(uid).contains(state) : false;
+  bool is_exist(iuic::uid_t uid) const {
+    return swap.get_buffers().current.contains(uid);
   };
 
-  std::unordered_map<iuic::uid_t, std::unordered_set<iuic::state>> states;
-};
+  bool update_livetime(iuic::uid_t uid) const {
+    swap.move_forward(uid);
+    return true;
+  };
 
-struct base_memory_model_impl : memory_model {
+  bool has(iuic::uid_t uid, iuic::state state) const {
+    return swap.get_buffers().current.contains(uid)
+               ? swap.get_buffers().current.at(uid).contains(state)
+               : false;
+  };
+
+  void advance() {
+    swap.swap();
+    swap.get_buffers().current.clear();
+  };
+
+private:
+  swap_t swap;
+};
+namespace {
+struct object {
+  void *data;
+  const kernel::memory_model::type *type;
+  bool alive{false};
+};
+} // namespace
+
+struct base_memory_model_impl : public memory_model {
+  using swap_t = swap_buffers<std::unordered_map<iuic::uid_t, object>, 2>;
+
   void reserve(iuic::uid_t uid,
                const type *type = type::none()) noexcept override {
-    if (swap && not swap_2.contains(uid)) {
-      swap_2.insert({uid, {.type = type}});
-    } else if (not swap_1.contains(uid)) {
-      std::println("obj rq {}", uid);
-      swap_1.insert({uid, {.type = type}});
+    auto buff = swap.get_buffers();
+
+    if (not buff.current.contains(uid)) {
+      buff.current.insert({uid, {.type = type}});
     }
   };
 
   void *locate(iuic::uid_t uid, const type *type) noexcept override {
-    if (swap && swap_2.contains(uid)) {
-      return swap_2.at(uid).data;
-    } else if (swap_1.contains(uid)) {
-      return swap_1.at(uid).data;
-    } else {
-      return nullptr;
+    auto buff = swap.get_buffers();
+
+    if (buff.current.contains(uid)) {
+      return buff.current.at(uid).data;
     }
+
+    return nullptr;
   };
 
   object_state state(iuic::uid_t uid,
                      const type *type = type::none()) const noexcept override {
-    // impl
-    if (swap) {
-      if (swap_2.contains(uid)) {
-        auto &obj = swap_2.at(uid);
+    auto buff = swap.get_buffers();
 
-        if (obj.type == type::none()) {
-          return object_state::reserve_none_type;
-        }
+    if (buff.current.contains(uid)) {
+      auto &obj = buff.current.at(uid);
 
-        if (obj.alive) {
-          return obj.type == type ? object_state::alive_this_type
-                                  : object_state::alive_other_type;
-        } else {
-          return obj.type == type ? object_state::reserve_this_type
-                                  : object_state::reserve_other_type;
-        }
+      if (obj.type == type::none()) {
+        return object_state::reserve_none_type;
+      }
+
+      if (obj.alive) {
+        return obj.type == type ? object_state::alive_this_type
+                                : object_state::alive_other_type;
       } else {
-        return object_state::none_exist;
-      };
-    } else {
-      if (swap_1.contains(uid)) {
-        auto &obj = swap_1.at(uid);
+        return obj.type == type ? object_state::reserve_this_type
+                                : object_state::reserve_other_type;
+      }
+    } else if (buff.prev.contains(uid)) {
+      auto &obj = buff.prev.at(uid);
 
-        if (obj.type == type::none()) {
-          return object_state::reserve_none_type;
-        }
-
-        if (obj.alive) {
-          return obj.type == type ? object_state::alive_this_type
-                                  : object_state::alive_other_type;
-        } else {
-          return obj.type == type ? object_state::reserve_this_type
-                                  : object_state::reserve_other_type;
-        }
-      } else {
-        return object_state::none_exist;
-      };
+      if (obj.alive) {
+        return obj.type == type ? object_state::outdated_this_type
+                                : object_state::outdated_other_type;
+      }
     }
-    return memory_model::object_state::alive_other_type;
+
+    return object_state::none_exist;
   };
 
   bool update_livetime(iuic::uid_t uid) const noexcept override {
-    if (swap && swap_1.contains(uid) && swap_1.at(uid).alive) {
-      swap_2.insert(swap_1.extract(uid));
-    } else if (swap_2.contains(uid) && swap_2.at(uid).alive) {
-      swap_1.insert(swap_2.extract(uid));
-    } else {
-      return false;
-    }
+    swap.move_forward(uid);
     return true;
   };
 
@@ -172,9 +250,11 @@ struct base_memory_model_impl : memory_model {
       return;
     }
 
-    // allocate memory
-    if (swap && swap_2.contains(uid) && not swap_2.at(uid).alive) {
-      auto &obj = swap_2.at(uid);
+    auto buff = swap.get_buffers();
+
+    if (buff.current.contains(uid) && not buff.current.at(uid).alive) {
+      std::println("init");
+      auto &obj = buff.current.at(uid);
       if (obj.type == type) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
           obj.data = mem;
@@ -182,22 +262,6 @@ struct base_memory_model_impl : memory_model {
         }
       } else if (obj.type == type::none()) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
-          obj.data = mem;
-          obj.type = type;
-          obj.alive = true;
-        }
-      }
-    } else if (swap_1.contains(uid) && not swap_1.at(uid).alive) {
-      std::println("try init");
-      auto &obj = swap_1.at(uid);
-      if (obj.type == type) {
-        if (auto *mem = persist.allocate(type->size, type->align)) {
-          obj.data = mem;
-          obj.alive = true;
-        }
-      } else if (obj.type == type::none()) {
-        if (auto *mem = persist.allocate(type->size, type->align)) {
-          std::println("none init");
           obj.data = mem;
           obj.type = type;
           obj.alive = true;
@@ -207,32 +271,27 @@ struct base_memory_model_impl : memory_model {
   };
 
   bool as(iuic::uid_t uid, const type *type) const noexcept override {
-    if (swap && swap_2.contains(uid)) {
-      return swap_2.at(uid).type == type;
-    } else if (swap_1.contains(uid)) {
-      return swap_1.at(uid).type == type;
-    }
-    return false;
+    auto [_, current] = swap.get_buffers();
+    return current.contains(uid) ? current.at(uid).type == type : false;
   };
 
   void *tmp(const type *type, std::size_t count) noexcept override {
     return count > 0 ? tmpr.allocate(type->size * count, type->align) : nullptr;
   };
 
-  struct object {
-    void *data;
-    const type *type;
-    bool alive{false};
-  };
-
-  mutable std::unordered_map<iuic::uid_t, object> swap_1;
-  mutable std::unordered_map<iuic::uid_t, object> swap_2;
-  bool swap{false};
-
   // buffer for 1M ?
   std::array<std::byte, 1024 * 512> rtmpmemory;
   std::pmr::monotonic_buffer_resource tmpr{&rtmpmemory, rtmpmemory.size()};
   std::pmr::unsynchronized_pool_resource persist{};
+
+  void advance() {
+    swap.swap();
+    swap.get_buffers().current.clear();
+    tmpr.release();
+  };
+
+private:
+  swap_t swap;
 };
 
 struct simple_kernel : hardware {
@@ -766,8 +825,9 @@ struct simple_kernel : hardware {
   void advance() noexcept override {
     els.clear();
     sel.self = std::numeric_limits<std::uint16_t>::max();
-    mem.tmpr.release();
-    //   mem.swap = !mem.swap;
+
+    mem.advance();
+    st.advance();
   };
 
   style::decl root_style{};

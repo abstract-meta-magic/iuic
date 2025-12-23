@@ -161,7 +161,12 @@ public:
 
     for (auto &e : kernel.get_elements()->range()) {
       if (e.meta ^ kernel::element::discarded | kernel::element::arrange) {
-        if (auto rect = kernel.get_rect_bordered(e)) {
+        auto hp = kernel.get_hovered_policy(e);
+
+        if (auto rect = kernel.get_rect_bordered(e);
+            rect && hp.value() != policy::hovered::none) {
+
+          auto uid = kernel.get_uid(e).value();
 
           res.htest.push_back(
               hovered_test{.rect = rect.value(),
@@ -307,7 +312,11 @@ public:
 
     for (auto &h : event_pack.htest) {
       if (in__(position, h.rect)) {
-        kernel.state()->attach(h.uid, state::base::hovered());
+        if (kernel.state()->has(h.uid, state::base::hovered())) {
+          kernel.state()->update_livetime(h.uid);
+        } else {
+          kernel.state()->attach(h.uid, state::base::hovered());
+        }
       } else {
         kernel.state()->detach(h.uid, state::base::hovered());
       }
@@ -325,6 +334,14 @@ private:
 
 void apply_event_pack__(event_reciver &er, event_pack &&pack) {
   // hover scan
+  for (auto &h : pack.htest) {
+    if (er.kernel.state()->has(h.uid, state::base::hovered())) {
+      if (not event_reciver::in__(er.pointer_position, h.rect)) {
+        std::println("state detach");
+        er.kernel.state()->detach(h.uid, state::base::hovered());
+      }
+    }
+  }
   std::swap(er.event_pack, pack);
 }
 }; // namespace iuic

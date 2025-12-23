@@ -606,10 +606,11 @@ inline std::atomic<theme_e> theme{theme_e::latte};
 using namespace iuic;
 using builder = iuic::scheme::builder;
 
-void button(builder &b, std::invocable<> auto &&callback) {
+void button(builder &b, std::invocable<> auto &&callback,
+            iuic::uid::anchor anchor = {}) {
   static layout::simple_box layout_;
 
-  auto uid = b.uid.make(policy::unique{}, "kitty-kit-button");
+  auto uid = b.uid.make(policy::unique{}, "kitty-kit-button", anchor);
   b.frame(
       uid,
       [&](auto &b) {
@@ -642,11 +643,11 @@ void button(builder &b, std::invocable<> auto &&callback) {
 };
 
 void text_button(builder &b, std::string_view text,
-                 std::invocable<> auto &&callback) {
+                 std::invocable<> auto &&callback, uid::anchor anchor = {}) {
   static layout::short_text text_layout;
   static layout::text_button button_layout;
 
-  auto uid = b.uid.make(iuic::policy::unique{}, "text-button");
+  auto uid = b.uid.make(iuic::policy::unique{}, "text-button", anchor);
 
   static constexpr iuic::state::decl touch{};
 

@@ -120,7 +120,7 @@ struct builder_policy_interface : protected virtual builder_base {
 };
 
 struct builder_uid_interface : protected virtual builder_base {
-  static inline constexpr uid::anchor default_anchor{};
+  static inline iuic::uid::anchor default_anchor{};
 
   builder_uid_interface(builder_base &&bb) : builder_base{bb} {};
 
@@ -128,7 +128,7 @@ struct builder_uid_interface : protected virtual builder_base {
              const uid::anchor &anchor = default_anchor) const noexcept {
     std::stringstream ss;
     ss << str;
-    ss << &default_anchor;
+    ss << anchor.value;
 
     auto hash_string = ss.str();
 
@@ -147,7 +147,7 @@ struct builder_uid_interface : protected virtual builder_base {
 
     std::stringstream ss;
     ss << str;
-    ss << &default_anchor;
+    ss << anchor.value;
     ss << el.self;
 
     auto hash_string = ss.str();
@@ -161,7 +161,7 @@ struct builder_uid_interface : protected virtual builder_base {
 
     std::stringstream ss;
     ss << str;
-    ss << &default_anchor;
+    ss << anchor.value;
     ss << el.self;
 
     auto ch = kernel.get_childs(el);
@@ -187,7 +187,7 @@ struct builder_uid_interface : protected virtual builder_base {
              const uid::anchor &anchor = default_anchor) {
     std::stringstream ss;
     ss << str;
-    ss << &default_anchor;
+    ss << anchor.value;
 
     ss << kernel.get_selected().parent;
     ss << ++unit.top().index; // save | always contains root
@@ -256,7 +256,7 @@ struct builder_memory_interface : protected virtual builder_base {
     auto *mem = kernel.memory();
 
     if (auto state = mem->state(uid, type);
-        state == kernel::memory_model::object_state::alive_this_type) {
+        state == kernel::memory_model::object_state::outdated_this_type) {
       mem->update_livetime(uid);
     } else if (state == kernel::memory_model::object_state::reserve_this_type ||
                state == kernel::memory_model::object_state::reserve_none_type) {
@@ -266,6 +266,16 @@ struct builder_memory_interface : protected virtual builder_base {
 
       new (located) T{call()}; // call typed persist
     }
+  };
+
+  template <typename T> void typed_dirty(iuic::uid_t uid) {
+    auto *mem = kernel.memory();
+    mem->reserve(uid, kernel::memory_model::type::from<T>());
+  };
+
+  void dirty(iuic::uid_t uid) {
+    auto *mem = kernel.memory();
+    mem->reserve(uid);
   };
 
   template <typename T>
@@ -442,7 +452,6 @@ public: // public forward decl
 void builder_element_interface::frame(builder_block_cpt auto &&call,
                                       style::ref style,
                                       const frame_layout &layout) noexcept {
-
   auto el = kernel.instance(unit.top().uid, &layout, style);
   unit.push(unit_t{.uid = unit.top().uid});
   call(builder);
@@ -467,6 +476,7 @@ void builder_element_interface::frame(const frame_layout &layout) noexcept {
 void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
                                       style::ref style,
                                       const frame_layout &layout) noexcept {
+  kernel.state()->update_livetime(uid);
   auto el = kernel.instance(uid, &layout, style);
   unit.push(unit_t{.uid = uid});
   call(builder);
@@ -475,17 +485,20 @@ void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
 
 void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
                                       const frame_layout &layout) noexcept {
+  kernel.state()->update_livetime(uid);
   frame(uid, std::forward<decltype(call)>(call), def_style, layout);
 }
 
 void builder_element_interface::frame(uid_t uid, style::ref style,
                                       const frame_layout &layout) noexcept {
+  kernel.state()->update_livetime(uid);
   auto el = kernel.instance(uid, &layout, style);
   kernel.launch(el);
 };
 
 void builder_element_interface::frame(uid_t uid,
                                       const frame_layout &layout) noexcept {
+  kernel.state()->update_livetime(uid);
   frame(uid, def_style, layout);
 };
 
