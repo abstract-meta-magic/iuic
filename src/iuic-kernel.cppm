@@ -154,53 +154,6 @@ struct userspace {
 };
 
 struct memory_model {
-  struct type {
-    template <is_pure T> static const type *from() {
-
-      if constexpr (requires() {
-                      { T::livetime } -> std::convertible_to<std::size_t>;
-                    }) {
-        static constexpr type res{&res,
-                                  std::is_trivially_destructible_v<T>,
-                                  sizeof(T),
-                                  alignof(T),
-                                  T::livetime,
-                                  [](const void *const obj) static {
-                                    delete static_cast<const T *const>(obj);
-                                  }};
-        return &res;
-      } else {
-        static constexpr type res{&res,
-                                  std::is_trivially_destructible_v<T>,
-                                  sizeof(T),
-                                  alignof(T),
-                                  0,
-                                  [](const void *const obj) static {
-                                    delete static_cast<const T *const>(obj);
-                                  }};
-        return &res;
-      }
-    };
-
-    static const type *none() {
-      struct _ {};
-      return from<_>();
-    };
-
-    const void *const id;
-    const bool trivial_dctor;
-    const std::size_t size;
-    const std::size_t align;
-    const std::size_t livetime; //  in frames
-    void (*const dctor)(const void *const);
-
-  private:
-    constexpr type(const void *const i, bool td, std::size_t s, std::size_t a,
-                   std::size_t lt, void (*const d)(const void *const)) noexcept
-        : id{i}, trivial_dctor{td}, size{s}, align{a}, livetime{lt},
-          dctor{d} {};
-  };
-
   enum class object_state : std::uint8_t {
     none_exist,
     reserve_none_type,
@@ -218,23 +171,26 @@ struct memory_model {
 
   // Заререзвировать объект.
   // Возможны преаллокации.
-  virtual void reserve(iuic::uid_t, const type * = type::none()) noexcept = 0;
+  virtual void
+  reserve(iuic::uid_t,
+          const erasure::type * = erasure::type::none()) noexcept = 0;
 
   // Если объект reserve_none | reserve_this аллацировать память.
   // Если объект alive_this, то вернуть его локацию.
   // В иных случаях вернуть nullptr.
-  virtual void *locate(iuic::uid_t, const type *) noexcept = 0;
+  virtual void *locate(iuic::uid_t, const erasure::type *) noexcept = 0;
 
-  virtual object_state state(iuic::uid_t,
-                             const type * = type::none()) const noexcept = 0;
+  virtual object_state
+  state(iuic::uid_t,
+        const erasure::type * = erasure::type::none()) const noexcept = 0;
 
   virtual bool update_livetime(iuic::uid_t) const noexcept = 0;
 
-  virtual void launch(iuic::uid_t, const type *) noexcept = 0;
+  virtual void launch(iuic::uid_t, const erasure::type *) noexcept = 0;
 
-  virtual bool as(iuic::uid_t, const type *) const noexcept = 0;
+  virtual bool as(iuic::uid_t, const erasure::type *) const noexcept = 0;
 
-  virtual void *tmp(const type *, std::size_t count = 1) noexcept = 0;
+  virtual void *tmp(const erasure::type *, std::size_t count = 1) noexcept = 0;
 };
 
 struct root : userspace {

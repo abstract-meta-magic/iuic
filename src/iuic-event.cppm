@@ -38,7 +38,7 @@ public:
                     "Visit type is void(T&).");
 
       auto *mem = kernel.memory();
-      auto *mtype = kernel::memory_model::type::from<type>();
+      auto *mtype = erasure::type::from<type>();
 
       if (mem->state(uid, mtype) ==
           kernel::memory_model::object_state::alive_this_type) {
@@ -165,9 +165,6 @@ public:
 
         if (auto rect = kernel.get_rect_bordered(e);
             rect && hp.value() != policy::hovered::none) {
-
-          auto uid = kernel.get_uid(e).value();
-
           res.htest.push_back(
               hovered_test{.rect = rect.value(),
                            .order = kernel.get_zorder(e).value(),

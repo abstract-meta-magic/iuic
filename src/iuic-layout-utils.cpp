@@ -113,7 +113,7 @@ text_arrange_utils::capture_glyphs(text::glyph::sequence sq) const {
     return {};
   } else {
     auto mem = static_cast<text::glyph::placement *>(kernel.memory()->tmp(
-        kernel::memory_model::type::from<text::glyph::placement>(), sq.size()));
+        erasure::type::from<text::glyph::placement>(), sq.size()));
 
     if (mem) {
       auto current = mem;

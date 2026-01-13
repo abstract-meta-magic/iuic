@@ -1,7 +1,3 @@
-
-
-module;
-
 export module iuic.core:scheme.builder;
 import std;
 import :base;
@@ -223,9 +219,7 @@ using function_return_type_t =
 template <typename T> struct ctor_info {
   using type = function_return_type_t<T>;
 
-  static constexpr auto mtype() {
-    return kernel::memory_model::type::from<type>();
-  }
+  static constexpr auto mtype() { return erasure::type::from<type>(); }
   // other create meta info
 };
 
@@ -239,7 +233,7 @@ struct builder_memory_interface : protected virtual builder_base {
   void try_visit(iuic::uid_t uid, std::invocable<T &> auto &&call) {
     //
     auto *mem = kernel.memory();
-    auto *type = kernel::memory_model::type::from<T>();
+    auto *type = erasure::type::from<T>();
 
     if (mem->state(uid, type) ==
         kernel::memory_model::object_state::alive_this_type) {
@@ -270,7 +264,7 @@ struct builder_memory_interface : protected virtual builder_base {
 
   template <typename T> void typed_dirty(iuic::uid_t uid) {
     auto *mem = kernel.memory();
-    mem->reserve(uid, kernel::memory_model::type::from<T>());
+    mem->reserve(uid, erasure::type::from<T>());
   };
 
   void dirty(iuic::uid_t uid) {
@@ -282,7 +276,7 @@ struct builder_memory_interface : protected virtual builder_base {
   void persist(iuic::uid_t uid, std::type_identity<T> = {}) {
 
     auto *mem = kernel.memory();
-    auto *type = kernel::memory_model::type::from<T>();
+    auto *type = erasure::type::from<T>();
 
     if (mem->state(uid) == kernel::memory_model::object_state::none_exist) {
       mem->reserve(uid, type);
@@ -390,8 +384,7 @@ struct builder_style_interface : protected virtual builder_base {
 
 private:
   template <typename T> T *frame_memory() {
-    return static_cast<T *>(
-        kernel.memory()->tmp(kernel::memory_model::type::from<T>(), 1));
+    return static_cast<T *>(kernel.memory()->tmp(erasure::type::from<T>(), 1));
   };
 };
 
@@ -405,12 +398,94 @@ struct builder_state_interface : protected virtual builder_base {
   bool has(iuic::uid_t uid, state s) { return kernel.state()->has(uid, s); }
 
   void attach(iuic::uid_t uid, state s) {
-    return kernel.state()->attach(uid, s);
+    if (kernel.state()->is_exist(uid)) {
+      kernel.state()->update_livetime(uid);
+    } else {
+      kernel.state()->attach(uid, s);
+    }
   };
 
   void detach(iuic::uid_t uid, state s) {
     return kernel.state()->detach(uid, s);
   };
+
+  void transfer(iuic::state from, iuic::state to, auto *coro) {
+    //
+  };
+
+  struct machine_accessor {
+    machine_accessor(builder_state_interface &i_) : i{i_} {};
+
+    void use(auto proto);
+
+    void use(iuic::uid_t, auto proto);
+
+    void transition(iuic::state);
+
+    void transition(iuic::state, auto err);
+
+    void transition(iuic::uid_t, iuic::state);
+
+    void transition(iuic::uid_t, iuic::state, auto err);
+
+    void try_visit_shared(
+        erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call) {
+      // do job
+    };
+
+    iuic::state current_state();
+
+    iuic::state current_state(iuic::uid_t);
+
+  private:
+    builder_state_interface &i;
+  } machine{*this};
+};
+
+void oeu(builder_state_interface::machine_accessor &machine) {
+  static state::decl a;
+  static state::decl b;
+
+  struct My {
+    float x, y;
+  };
+
+  state::machine::transition_graph<state::machine::transition<a, b, true>{}> tr;
+
+  state::machine::spec<tr, My> s;
+  using spec = state::machine::spec<tr, My>;
+
+  spec::prototype p{};
+
+  spec::machine_block m{p};
+
+  auto m_proto = s.make_prototype(
+      state::machine::transition_process<a, b,
+                                         [](My &m,
+                                            state::machine::control_block &cb) {
+                                           //
+                                         }>{},
+      state::machine::transition_process<b, a,
+                                         [](My &,
+                                            state::machine::control_block &) {
+                                           //
+                                         }>{},
+      state::machine::state_process<a,
+                                    [](My &, state::machine::control_block &) {
+                                      //
+                                    }>{});
+
+  machine.use(m_proto);
+
+  machine.try_visit_shared([](My &m) {
+    // do job
+  });
+
+  machine.transition(a);
+
+  if (machine.current_state() == a) {
+    // u
+  }
 };
 
 struct builder final : public virtual builder_base,
@@ -512,8 +587,7 @@ void builder_element_interface::text(iuic::text::token &&token,
   // BROKEN
   auto el = kernel.instance(unit.top().uid, &layout, style);
 
-  auto mem = kernel.memory()->tmp(
-      kernel::memory_model::type::from<iuic::text::token>());
+  auto mem = kernel.memory()->tmp(erasure::type::from<iuic::text::token>());
 
   new (mem) iuic::text::token{std::move(token)};
 
@@ -529,8 +603,7 @@ void builder_element_interface::text(const iuic::text::token &token,
   // BROKEN
   auto el = kernel.instance(unit.top().uid, &layout, style);
 
-  auto mem = kernel.memory()->tmp(
-      kernel::memory_model::type::from<iuic::text::token>());
+  auto mem = kernel.memory()->tmp(erasure::type::from<iuic::text::token>());
 
   new (mem) iuic::text::token{token};
 

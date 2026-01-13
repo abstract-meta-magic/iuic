@@ -9,16 +9,24 @@ static constexpr inline std::size_t invalide_index{
     std::numeric_limits<std::size_t>::max()};
 }
 
-template <typename T>
-concept buffer_value_mover_cpt = requires(T &obj, typename T::value_type &v,
-                                          const typename T::key_type &key) {
-  obj.move_to(v, obj.move_from(v, key));
-} && std::is_default_constructible_v<T>;
+template <typename T, typename Container>
+concept buffer_value_mover_cpt =
+    requires {
+      typename T::container_type;
+      typename T::key_type;
+    } &&
+    requires(T &obj, typename T::container_type &c,
+             const typename T::key_type &key, typename T::move_type value) {
+      obj.move_to(c, obj.move_from(c, key));
+    } &&
+    iuic::as_pure_type<Container> &&
+    std::same_as<Container, typename T::container_type> &&
+    std::is_default_constructible_v<T>;
 
 template <typename T> struct buffer_value_mover_trait;
 
 template <typename T, std::size_t N,
-          buffer_value_mover_cpt Mover =
+          buffer_value_mover_cpt<T> Mover =
               typename buffer_value_mover_trait<T>::mover_type>
   requires(N > 1)
 struct swap_buffers {
@@ -58,10 +66,10 @@ private:
 
 template <typename Map> struct forward_for_map {
   using key_type = typename Map::key_type;
-  using value_type = Map;
-  using swap_type = std::optional<typename Map::node_type>;
+  using container_type = Map;
+  using move_type = std::optional<typename Map::node_type>;
 
-  static swap_type move_from(Map &v, const key_type &key) {
+  static move_type move_from(Map &v, const key_type &key) {
     if (v.contains(key)) {
       return v.extract(key);
     }
@@ -69,7 +77,7 @@ template <typename Map> struct forward_for_map {
     return std::nullopt;
   };
 
-  static void move_to(Map &v, swap_type swap) {
+  static void move_to(Map &v, move_type swap) {
     if (swap) {
       v.insert(std::move(swap.value()));
     }
@@ -158,7 +166,9 @@ struct base_state_model_impl : public state_model {
   };
 
   bool is_exist(iuic::uid_t uid) const {
-    return swap.get_buffers().current.contains(uid);
+    return swap.get_buffers().current.contains(uid)
+               ? true
+               : swap.get_buffers().prev.contains(uid);
   };
 
   bool update_livetime(iuic::uid_t uid) const {
@@ -183,7 +193,7 @@ private:
 namespace {
 struct object {
   void *data;
-  const kernel::memory_model::type *type;
+  const erasure::type *type;
   bool alive{false};
 };
 } // namespace
@@ -191,8 +201,9 @@ struct object {
 struct base_memory_model_impl : public memory_model {
   using swap_t = swap_buffers<std::unordered_map<iuic::uid_t, object>, 2>;
 
-  void reserve(iuic::uid_t uid,
-               const type *type = type::none()) noexcept override {
+  void
+  reserve(iuic::uid_t uid,
+          const erasure::type *type = erasure::type::none()) noexcept override {
     auto buff = swap.get_buffers();
 
     if (not buff.current.contains(uid)) {
@@ -200,7 +211,7 @@ struct base_memory_model_impl : public memory_model {
     }
   };
 
-  void *locate(iuic::uid_t uid, const type *type) noexcept override {
+  void *locate(iuic::uid_t uid, const erasure::type *type) noexcept override {
     auto buff = swap.get_buffers();
 
     if (buff.current.contains(uid)) {
@@ -211,13 +222,14 @@ struct base_memory_model_impl : public memory_model {
   };
 
   object_state state(iuic::uid_t uid,
-                     const type *type = type::none()) const noexcept override {
+                     const erasure::type *type =
+                         erasure::type::none()) const noexcept override {
     auto buff = swap.get_buffers();
 
     if (buff.current.contains(uid)) {
       auto &obj = buff.current.at(uid);
 
-      if (obj.type == type::none()) {
+      if (obj.type == erasure::type::none()) {
         return object_state::reserve_none_type;
       }
 
@@ -245,22 +257,21 @@ struct base_memory_model_impl : public memory_model {
     return true;
   };
 
-  void launch(iuic::uid_t uid, const type *type) noexcept override {
-    if (type == type::none()) {
+  void launch(iuic::uid_t uid, const erasure::type *type) noexcept override {
+    if (type == erasure::type::none()) {
       return;
     }
 
     auto buff = swap.get_buffers();
 
     if (buff.current.contains(uid) && not buff.current.at(uid).alive) {
-      std::println("init");
       auto &obj = buff.current.at(uid);
       if (obj.type == type) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
           obj.data = mem;
           obj.alive = true;
         }
-      } else if (obj.type == type::none()) {
+      } else if (obj.type == erasure::type::none()) {
         if (auto *mem = persist.allocate(type->size, type->align)) {
           obj.data = mem;
           obj.type = type;
@@ -270,19 +281,16 @@ struct base_memory_model_impl : public memory_model {
     }
   };
 
-  bool as(iuic::uid_t uid, const type *type) const noexcept override {
+  bool as(iuic::uid_t uid, const erasure::type *type) const noexcept override {
     auto [_, current] = swap.get_buffers();
     return current.contains(uid) ? current.at(uid).type == type : false;
   };
 
-  void *tmp(const type *type, std::size_t count) noexcept override {
+  void *tmp(const erasure::type *type, std::size_t count) noexcept override {
     return count > 0 ? tmpr.allocate(type->size * count, type->align) : nullptr;
   };
 
   // buffer for 1M ?
-  std::array<std::byte, 1024 * 512> rtmpmemory;
-  std::pmr::monotonic_buffer_resource tmpr{&rtmpmemory, rtmpmemory.size()};
-  std::pmr::unsynchronized_pool_resource persist{};
 
   void advance() {
     swap.swap();
@@ -292,6 +300,9 @@ struct base_memory_model_impl : public memory_model {
 
 private:
   swap_t swap;
+  std::array<std::byte, 1024 * 512> rtmpmemory;
+  std::pmr::monotonic_buffer_resource tmpr{&rtmpmemory, rtmpmemory.size()};
+  std::pmr::unsynchronized_pool_resource persist{};
 };
 
 struct simple_kernel : hardware {

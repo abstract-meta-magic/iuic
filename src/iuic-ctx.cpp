@@ -10,7 +10,7 @@ void context::set_view_size(ui_size size) {
   // TODO
   // to static_cast
   auto *mem = static_cast<style::shape *>(
-      kernel->memory()->tmp(kernel::memory_model::type::from<style::shape>()));
+      kernel->memory()->tmp(erasure::type::from<style::shape>()));
 
   if (mem) {
     new (mem) style::shape{};
@@ -43,8 +43,6 @@ void context::proccess_measure() {
 
   int coutnt{0};
   for (auto &el : kernel->get_elements(true)->range()) {
-    auto te = el.self;
-
     if (el.meta && kernel::element::discarded) {
       continue;
     }
