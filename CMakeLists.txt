@@ -82,7 +82,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	#"src/iuic-fct.cpp" [depricated]
 	"src/iuic-text-present.cpp"
 	"src/iuic-layout-utils.cpp"
-	"src/iuic-computing-ctx.cpp"
+	#"src/iuic-computing-ctx.cpp" [depricated] 
 	"src/iuic-state.cpp"
 	"src/iuic-state-transition.cpp"
 	"src/iuic-text-font.cpp"

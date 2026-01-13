@@ -93,7 +93,6 @@ int main() {
         res.push_back(c);
       }
       return res;
-      auto heh = std::abs(0.2f);
     };
   };
 
