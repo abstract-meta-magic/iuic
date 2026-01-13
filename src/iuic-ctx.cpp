@@ -1,12 +1,9 @@
-module;
-
 module iuic.core;
 import std;
-import :hash;
 
 namespace iuic {
 
-void context::set_view_size(ui_size size) {
+void context::set_view_size(units::ui::size size) {
   // TODO
   // to static_cast
   auto *mem = static_cast<style::shape *>(
@@ -15,25 +12,10 @@ void context::set_view_size(ui_size size) {
   if (mem) {
     new (mem) style::shape{};
 
-    mem->max_size.w = upixel_t{size.w};
-    mem->max_size.h = upixel_t{size.h};
+    mem->max_size.w = units::upixel{size.w};
+    mem->max_size.h = units::upixel{size.h};
     kernel->override({.meta = kernel::element::root}, mem);
   }
-};
-
-// Refactor and move to other file
-template <> void advance(scheme::builder &builder) {
-  builder.unit.top().index = 0;
-};
-
-// Refactor and move to other file
-template <> void advance(managed_object_storage &storage) {
-  storage.advance_generation();
-};
-
-// Refactor and move to other file
-template <> void advance(managed_text_storage &storage) {
-  storage.advance_generation();
 };
 
 // TODO : replace all to advance
@@ -103,8 +85,8 @@ void context::proccess_arrange() {
 
   auto &max_size = kernel->get_style(root).value()->get_shape().max_size;
 
-  kernel->apply(root, ui_rect{0, 0, std::get<upixel_t>(max_size.w),
-                              std::get<upixel_t>(max_size.h)});
+  kernel->apply(root, units::ui::rect{0, 0, std::get<units::upixel>(max_size.w),
+                                      std::get<units::upixel>(max_size.h)});
 
   std::visit(
       [&](auto layout) {

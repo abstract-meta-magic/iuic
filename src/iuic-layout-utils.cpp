@@ -1,6 +1,3 @@
-
-module;
-
 module iuic.core;
 import std;
 import :layout;
@@ -36,22 +33,22 @@ style::cref layout_utils_base::root_style() const {
   return {nullptr};
 };
 
-ui_size layout_utils_base::root_size() const {
-  return {std::get<upixel_t>(root_style().get_shape().max_size.w),
-          std::get<upixel_t>(root_style().get_shape().max_size.h)};
+units::ui::size layout_utils_base::root_size() const {
+  return {std::get<units::upixel>(root_style().get_shape().max_size.w),
+          std::get<units::upixel>(root_style().get_shape().max_size.h)};
 };
 
-upixel_t layout_utils_base::rem(rem_t rem) const noexcept {
+units::upixel layout_utils_base::rem(units::rem rem) const noexcept {
   return root_style().get_advance().ephemeral_value * rem;
 };
 
-upixel_t layout_utils_base::vh(vh_t vh) const noexcept {
-  auto h = std::get<upixel_t>(root_style().get_shape().max_size.h) * vh;
+units::upixel layout_utils_base::vh(units::vh vh) const noexcept {
+  auto h = std::get<units::upixel>(root_style().get_shape().max_size.h) * vh;
   return h;
 }
 
-upixel_t layout_utils_base::vw(vw_t vw) const noexcept {
-  auto w = std::get<upixel_t>(root_style().get_shape().max_size.w) * vw;
+units::upixel layout_utils_base::vw(units::vw vw) const noexcept {
+  auto w = std::get<units::upixel>(root_style().get_shape().max_size.w) * vw;
   return w;
 }
 
@@ -64,28 +61,29 @@ void layout_utils_base::warning(std::string_view message) const noexcept {}
 frame_measure_utils::frame_measure_utils(kernel::hardware &kernel_,
                                          kernel::element element_) noexcept
     : layout_utils_base{kernel_, element_} {}
-std::unique_ptr<virtual_iterator<const kernel::request>>
+std::unique_ptr<utils::virtual_iterator<const kernel::request>>
 frame_measure_utils::get_requests() {
   return kernel.get_requests(element);
 }
 
 // ARRANGE
 
-std::unique_ptr<virtual_iterator<const kernel::request>>
+std::unique_ptr<utils::virtual_iterator<const kernel::request>>
 frame_arrange_utils::get_requests() {
   return kernel.get_requests(element);
 }
 
-void frame_arrange_utils::apply(const kernel::request &rq, ui_rect rect) {
+void frame_arrange_utils::apply(const kernel::request &rq,
+                                units::ui::rect rect) {
   kernel.apply(rq.element, rect);
 }
 
-void frame_arrange_utils::apply(const kernel::request &rq, ui_rect brect,
-                                ui_rect rect) {
+void frame_arrange_utils::apply(const kernel::request &rq,
+                                units::ui::rect brect, units::ui::rect rect) {
   kernel.apply(rq.element, brect, rect);
 }
 
-ui_rect frame_arrange_utils::self_area() const {
+units::ui::rect frame_arrange_utils::self_area() const {
   auto area = kernel.get_rect_bordered(element);
   if (area) {
     return area.value();
@@ -129,7 +127,7 @@ text_arrange_utils::capture_glyphs(text::glyph::sequence sq) const {
   return {};
 };
 
-ui_rect text_arrange_utils::self_rect() const noexcept {
+units::ui::rect text_arrange_utils::self_rect() const noexcept {
   auto area = kernel.get_rect_bordered(element);
   if (area) {
     return area.value();

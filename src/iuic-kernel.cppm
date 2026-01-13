@@ -1,10 +1,6 @@
-
-
-module;
-
 export module iuic.core:kernel;
 import std;
-import :base;
+import iuic.underlying;
 import :style;
 import :state;
 import :policy;
@@ -87,31 +83,31 @@ struct request {
 };
 
 struct state_model {
-  virtual void attach(iuic::uid_t, iuic::state) = 0;
+  virtual void attach(units::uid, iuic::state) = 0;
 
-  virtual void detach(iuic::uid_t, iuic::state) = 0;
+  virtual void detach(units::uid, iuic::state) = 0;
 
   // replace to std::ranges::view
-  virtual std::unique_ptr<virtual_iterator<const iuic::state>>
-      get(iuic::uid_t, iuic::state) const = 0;
+  virtual std::unique_ptr<utils::virtual_iterator<const iuic::state>>
+      get(units::uid, iuic::state) const = 0;
 
-  virtual bool is_exist(iuic::uid_t) const = 0;
+  virtual bool is_exist(units::uid) const = 0;
 
-  virtual bool update_livetime(iuic::uid_t) const = 0;
+  virtual bool update_livetime(units::uid) const = 0;
 
-  virtual bool has(iuic::uid_t, iuic::state) const = 0;
+  virtual bool has(units::uid, iuic::state) const = 0;
 };
 
 struct userspace {
   virtual ~userspace() = default;
 
-  virtual std::expected<ui_rect, int>
+  virtual std::expected<units::ui::rect, int>
       get_rect_bordered(element) const noexcept = 0;
 
-  virtual std::expected<ui_rect, int>
+  virtual std::expected<units::ui::rect, int>
       get_rect_borderless(element) const noexcept = 0;
 
-  virtual std::unique_ptr<virtual_iterator<const request>>
+  virtual std::unique_ptr<utils::virtual_iterator<const request>>
   get_requests(element, bool reverse = false) const noexcept = 0;
 
   virtual std::variant<const frame_layout *, const text_layout *>
@@ -119,15 +115,16 @@ struct userspace {
 
   virtual element get_parent(element) = 0;
 
-  virtual std::unique_ptr<virtual_iterator<const element>>
+  virtual std::unique_ptr<utils::virtual_iterator<const element>>
   get_childs(element, bool reverse = false) const noexcept = 0;
 
   virtual std::expected<const style::cref *, int>
       get_style(element) const noexcept = 0;
 
-  virtual std::expected<z_order_t, int> get_zorder(element) const noexcept = 0;
+  virtual std::expected<units::z_order_t, int>
+      get_zorder(element) const noexcept = 0;
 
-  virtual std::expected<iuic::uid_t, int> get_uid(element) const noexcept = 0;
+  virtual std::expected<units::uid, int> get_uid(element) const noexcept = 0;
 
   virtual std::expected<policy::hovered, int>
       get_hovered_policy(element) const noexcept = 0;
@@ -140,7 +137,7 @@ struct userspace {
   // Нет Discarded элементов
   // Нет элементов без alive
   // может добавить ordered = false, для прохода согласно zorderd
-  virtual std::unique_ptr<virtual_iterator<const element>>
+  virtual std::unique_ptr<utils::virtual_iterator<const element>>
   get_elements(bool reverse = false) const = 0;
 
   // if nothin selected return null element
@@ -172,23 +169,23 @@ struct memory_model {
   // Заререзвировать объект.
   // Возможны преаллокации.
   virtual void
-  reserve(iuic::uid_t,
+  reserve(units::uid,
           const erasure::type * = erasure::type::none()) noexcept = 0;
 
   // Если объект reserve_none | reserve_this аллацировать память.
   // Если объект alive_this, то вернуть его локацию.
   // В иных случаях вернуть nullptr.
-  virtual void *locate(iuic::uid_t, const erasure::type *) noexcept = 0;
+  virtual void *locate(units::uid, const erasure::type *) noexcept = 0;
 
   virtual object_state
-  state(iuic::uid_t,
+  state(units::uid,
         const erasure::type * = erasure::type::none()) const noexcept = 0;
 
-  virtual bool update_livetime(iuic::uid_t) const noexcept = 0;
+  virtual bool update_livetime(units::uid) const noexcept = 0;
 
-  virtual void launch(iuic::uid_t, const erasure::type *) noexcept = 0;
+  virtual void launch(units::uid, const erasure::type *) noexcept = 0;
 
-  virtual bool as(iuic::uid_t, const erasure::type *) const noexcept = 0;
+  virtual bool as(units::uid, const erasure::type *) const noexcept = 0;
 
   virtual void *tmp(const erasure::type *, std::size_t count = 1) noexcept = 0;
 };
@@ -197,11 +194,11 @@ struct root : userspace {
   virtual ~root() = default;
 
   // create and select new element
-  virtual element instance(iuic::uid_t, const frame_layout *,
+  virtual element instance(units::uid, const frame_layout *,
                            style::ref) noexcept = 0;
 
   // create and select new element
-  virtual element instance(iuic::uid_t, const text_layout *,
+  virtual element instance(units::uid, const text_layout *,
                            style::ref) noexcept = 0;
 
   // make element alive and select parent
@@ -217,7 +214,7 @@ struct root : userspace {
 
   virtual void override(element, style::transform *) noexcept = 0;
 
-  virtual void override(element, z_order_t) noexcept = 0;
+  virtual void override(element, units::z_order_t) noexcept = 0;
 
   virtual void override(element, policy::hovered) noexcept = 0;
 
@@ -233,10 +230,10 @@ struct hardware : root {
 
   virtual void attach(element, request_size) noexcept = 0;
 
-  virtual void apply(element, ui_rect bordered) noexcept = 0;
+  virtual void apply(element, units::ui::rect bordered) noexcept = 0;
 
-  virtual void apply(element, ui_rect bordered,
-                     ui_rect borderless) noexcept = 0;
+  virtual void apply(element, units::ui::rect bordered,
+                     units::ui::rect borderless) noexcept = 0;
 
   virtual void advance() noexcept = 0;
 };

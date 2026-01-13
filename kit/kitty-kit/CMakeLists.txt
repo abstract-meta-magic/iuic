@@ -8,6 +8,10 @@ add_library(kitty_kit STATIC)
 
 add_library(iuic::kit::kitty ALIAS kitty_kit)
 
+if(IUIC_TMP_CXX_STD)
+	target_link_libraries(kitty_kit PRIVATE tmp_cxx_std)
+endif()
+
 target_sources(kitty_kit PUBLIC
     FILE_SET kitty_kit_modules
     TYPE CXX_MODULES

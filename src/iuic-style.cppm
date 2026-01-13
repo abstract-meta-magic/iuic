@@ -4,7 +4,7 @@ module;
 
 export module iuic.core:style;
 import std;
-import :base;
+import iuic.underlying;
 import :text.font;
 
 export namespace iuic::style {
@@ -80,13 +80,13 @@ private:
 
 // limit 128
 struct shape {
-  ui_adaptive_size min_size, max_size;
+  units::ui::adaptive_size min_size, max_size;
 
-  indent border;
+  units::ui::indent border;
 
-  indent padding;
+  units::ui::indent padding;
 
-  indent margin;
+  units::ui::indent margin;
 };
 
 // limit 64
@@ -94,19 +94,19 @@ struct decoration {
   // в радианах ?
   struct {
     struct {
-      border_radius left;
-      border_radius right;
+      units::ui::border_radius left;
+      units::ui::border_radius right;
     } top;
     struct {
-      border_radius left;
-      border_radius right;
+      units::ui::border_radius left;
+      units::ui::border_radius right;
     } bottom;
-    color_t color;
+    units::color_t color;
   } border_radius; // decorations
 
-  style_background background{ui_none{}};
-  color_t foreground{color_t{0, 0, 0, 0}};
-  color_t border{color_t{0, 0, 0, 0}};
+  units::ui::background background{units::ui::none{}};
+  units::color_t foreground{units::color_t{0, 0, 0, 0}};
+  units::color_t border{units::color_t{0, 0, 0, 0}};
 };
 
 enum class position { STATIC, RELATIVE, FIXED, ABSOLUTE, STICKY };
@@ -123,13 +123,13 @@ struct transform {
 
   position position{position::STATIC};
 
-  ui_position offset{0, 0};
+  units::ui::position offset{0, 0};
 
   float scale;
 };
 
 struct text {
-  upixel_t height;
+  units::pixel height;
 
   font::cref font;
 
@@ -142,7 +142,7 @@ struct advance {
 
   float shrink{0}; // static
 
-  upixel_t ephemeral_value{14};
+  units::upixel ephemeral_value{14};
 
   text text;
 };

@@ -1,5 +1,3 @@
-
-
 module;
 
 // Independ User Interface Core
@@ -475,6 +473,7 @@ void hehh(visited::as_mutable m) {
 // using hash_t
 // using srk
 using uid_t = std::uint64_t;
+
 namespace uid {
 
 struct anchor {

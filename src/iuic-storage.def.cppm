@@ -1,37 +1,33 @@
-
-
-module;
-
 export module iuic.core:storage.def;
 import std;
-import :hash;
+import iuic.underlying;
 
 export namespace iuic {
 
 struct object_registry_key {
   constexpr object_registry_key() noexcept = default;
-  constexpr object_registry_key(hash::hash_t val) noexcept : value{val} {};
+  constexpr object_registry_key(units::hash val) noexcept : value{val} {};
 
-  constexpr operator hash::hash_t &() noexcept { return value; };
-  constexpr operator const hash::hash_t &() const noexcept { return value; };
-  constexpr operator hash::hash_t() const noexcept { return value; };
+  constexpr operator units::hash &() noexcept { return value; };
+  constexpr operator const units::hash &() const noexcept { return value; };
+  constexpr operator units::hash() const noexcept { return value; };
   constexpr auto
   operator<=>(const object_registry_key &) const noexcept = default;
 
-  hash::hash_t value;
+  units::hash value;
 };
 
 struct text_registry_key {
   constexpr text_registry_key() noexcept = default;
-  constexpr text_registry_key(hash::hash_t val) noexcept : value{val} {};
+  constexpr text_registry_key(units::hash val) noexcept : value{val} {};
 
-  constexpr operator hash::hash_t &() noexcept { return value; };
-  constexpr operator const hash::hash_t &() const noexcept { return value; };
-  constexpr operator hash::hash_t() const noexcept { return value; };
+  constexpr operator units::hash &() noexcept { return value; };
+  constexpr operator const units::hash &() const noexcept { return value; };
+  constexpr operator units::hash() const noexcept { return value; };
   constexpr auto
   operator<=>(const text_registry_key &) const noexcept = default;
 
-  hash::hash_t value;
+  units::hash value;
 };
 
 using ork_t = object_registry_key;

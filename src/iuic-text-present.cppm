@@ -1,18 +1,13 @@
-
-
-module;
-
 export module iuic.core:text.present;
 import std;
-import :base;
-import :storage.def;
+import iuic.underlying;
 import :text.token;
 import :text.font;
 
 export namespace iuic::text {
 
 struct present_node : token {
-  ui_rect rect;
+  units::ui::rect rect;
   //..
 };
 
@@ -32,8 +27,6 @@ struct aggregation_bondle {
 
 // frame-type
 class present::aggregator {
-  friend void iuic::advance(aggregator &);
-
 public:
   // подготовка места для present, под token::sequence
   void reserve_present(std::size_t id, token::sequence sq);

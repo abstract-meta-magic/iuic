@@ -1,9 +1,7 @@
 export module iuic.core:scheme.builder;
 import std;
-import :base;
+import iuic.underlying;
 import :kernel;
-import :storage.object;
-import :storage.text;
 import :text.token;
 import :text.buff;
 import :text.present;
@@ -30,7 +28,7 @@ struct memory {
 
 struct builder_base {
   struct unit_t {
-    uid_t uid{0};
+    units::uid uid{0};
     std::size_t index{0};
   };
 
@@ -67,16 +65,17 @@ struct builder_element_interface : protected virtual builder_base {
 
   void frame(const frame_layout &) noexcept;
 
-  void frame(uid_t uid, builder_block_cpt auto &&call, style::ref = def_style,
+  void frame(units::uid uid, builder_block_cpt auto &&call,
+             style::ref = def_style,
              const frame_layout & = box_layout) noexcept;
 
-  void frame(uid_t uid, builder_block_cpt auto &&call,
+  void frame(units::uid uid, builder_block_cpt auto &&call,
              const frame_layout &) noexcept;
 
-  void frame(uid_t uid, style::ref = def_style,
+  void frame(units::uid uid, style::ref = def_style,
              const frame_layout & = box_layout) noexcept;
 
-  void frame(uid_t uid, const frame_layout &) noexcept;
+  void frame(units::uid uid, const frame_layout &) noexcept;
 
   /*
     Является конечной точкой.Отрисовка текста
@@ -116,12 +115,12 @@ struct builder_policy_interface : protected virtual builder_base {
 };
 
 struct builder_uid_interface : protected virtual builder_base {
-  static inline iuic::uid::anchor default_anchor{};
+  static inline utils::anchor default_anchor{};
 
   builder_uid_interface(builder_base &&bb) : builder_base{bb} {};
 
-  uid_t make(const std::string &str,
-             const uid::anchor &anchor = default_anchor) const noexcept {
+  units::uid make(const std::string &str,
+                  const utils::anchor &anchor = default_anchor) const noexcept {
     std::stringstream ss;
     ss << str;
     ss << anchor.value;
@@ -131,8 +130,8 @@ struct builder_uid_interface : protected virtual builder_base {
     return kernel.hash(std::as_bytes(std::span(hash_string)));
   };
 
-  uid_t make(policy::shared sh, const std::string &str,
-             const uid::anchor &anchor = default_anchor) {
+  units::uid make(policy::shared sh, const std::string &str,
+                  const utils::anchor &anchor = default_anchor) {
     // ok
 
     auto el = kernel.get_selected();
@@ -151,8 +150,8 @@ struct builder_uid_interface : protected virtual builder_base {
     return kernel.hash(std::as_bytes(std::span(hash_string)));
   };
 
-  uid_t make(policy::unique, const std::string &str,
-             const uid::anchor &anchor = default_anchor) {
+  units::uid make(policy::unique, const std::string &str,
+                  const utils::anchor &anchor = default_anchor) {
     auto el = kernel.get_selected();
 
     std::stringstream ss;
@@ -179,8 +178,8 @@ struct builder_uid_interface : protected virtual builder_base {
     return uid;
   };
 
-  uid_t make(policy::indexed, const std::string &str,
-             const uid::anchor &anchor = default_anchor) {
+  units::uid make(policy::indexed, const std::string &str,
+                  const utils::anchor &anchor = default_anchor) {
     std::stringstream ss;
     ss << str;
     ss << anchor.value;
@@ -193,7 +192,7 @@ struct builder_uid_interface : protected virtual builder_base {
     return kernel.hash(std::as_bytes(std::span(hash_string)));
   };
 
-  uid_t self() const noexcept {
+  units::uid self() const noexcept {
     return kernel.get_uid(kernel.get_selected()).value_or(0);
   };
 };
@@ -230,10 +229,10 @@ struct builder_memory_interface : protected virtual builder_base {
   builder_memory_interface(builder_base &&bb) : builder_base{bb} {};
 
   template <typename T>
-  void try_visit(iuic::uid_t uid, std::invocable<T &> auto &&call) {
+  void try_visit(units::uid uid, std::invocable<T &> auto &&call) {
     //
     auto *mem = kernel.memory();
-    auto *type = erasure::type::from<T>();
+    auto *type = erasure::type::from<erasure::pure_t<T>>();
 
     if (mem->state(uid, type) ==
         kernel::memory_model::object_state::alive_this_type) {
@@ -243,7 +242,7 @@ struct builder_memory_interface : protected virtual builder_base {
     }
   };
 
-  void init_if_not(iuic::uid_t uid, ctor_cpt auto &&call) {
+  void init_if_not(units::uid uid, ctor_cpt auto &&call) {
     using ctor_info = ctor_info<decltype(call)>;
     using T = ctor_info::type;
     auto *type = ctor_info::mtype();
@@ -262,18 +261,18 @@ struct builder_memory_interface : protected virtual builder_base {
     }
   };
 
-  template <typename T> void typed_dirty(iuic::uid_t uid) {
+  template <typename T> void typed_dirty(units::uid uid) {
     auto *mem = kernel.memory();
     mem->reserve(uid, erasure::type::from<T>());
   };
 
-  void dirty(iuic::uid_t uid) {
+  void dirty(units::uid uid) {
     auto *mem = kernel.memory();
     mem->reserve(uid);
   };
 
   template <typename T>
-  void persist(iuic::uid_t uid, std::type_identity<T> = {}) {
+  void persist(units::uid uid, std::type_identity<T> = {}) {
 
     auto *mem = kernel.memory();
     auto *type = erasure::type::from<T>();
@@ -283,7 +282,7 @@ struct builder_memory_interface : protected virtual builder_base {
     };
   };
 
-  void persist(iuic::uid_t uid) {
+  void persist(units::uid uid) {
 
     auto *mem = kernel.memory();
 
@@ -296,22 +295,22 @@ struct builder_memory_interface : protected virtual builder_base {
 struct builder_event_interface : protected virtual builder_base {
   builder_event_interface(builder_base &&bb) : builder_base{bb} {};
 
-  void operator()(event_callback_cpt auto &&call, uid_t object = 0) {
+  void operator()(event_callback_cpt auto &&call, units::uid object = 0) {
     attach(std::forward<decltype(call)>(call), object);
   };
 
   void operator()(custom_event_callback_cpt auto &&call,
-                  iuic::uid_t object = 0) {
+                  units::uid object = 0) {
     attach(std::forward<decltype(call)>(call), object);
   };
 
   template <event_callback_cpt Call>
-  void attach(Call &&call, iuic::uid_t object = 0) {
+  void attach(Call &&call, units::uid object = 0) {
     collector.push(
         revent{std::forward<Call>(call), object, kernel.get_selected()});
   };
 
-  void attach(custom_event_callback_cpt auto &&call, iuic::uid_t uid) {};
+  void attach(custom_event_callback_cpt auto &&call, units::uid uid) {};
 };
 
 struct builder_style_interface : protected virtual builder_base {
@@ -391,13 +390,13 @@ private:
 struct builder_state_interface : protected virtual builder_base {
   builder_state_interface(builder_base &&bb) : builder_base{bb} {};
 
-  bool hovered(iuic::uid_t uid) {
+  bool hovered(units::uid uid) {
     return kernel.state()->has(uid, state::base::hovered());
   };
 
-  bool has(iuic::uid_t uid, state s) { return kernel.state()->has(uid, s); }
+  bool has(units::uid uid, state s) { return kernel.state()->has(uid, s); }
 
-  void attach(iuic::uid_t uid, state s) {
+  void attach(units::uid uid, state s) {
     if (kernel.state()->is_exist(uid)) {
       kernel.state()->update_livetime(uid);
     } else {
@@ -405,7 +404,7 @@ struct builder_state_interface : protected virtual builder_base {
     }
   };
 
-  void detach(iuic::uid_t uid, state s) {
+  void detach(units::uid uid, state s) {
     return kernel.state()->detach(uid, s);
   };
 
@@ -418,15 +417,15 @@ struct builder_state_interface : protected virtual builder_base {
 
     void use(auto proto);
 
-    void use(iuic::uid_t, auto proto);
+    void use(units::uid, auto proto);
 
     void transition(iuic::state);
 
     void transition(iuic::state, auto err);
 
-    void transition(iuic::uid_t, iuic::state);
+    void transition(units::uid, iuic::state);
 
-    void transition(iuic::uid_t, iuic::state, auto err);
+    void transition(units::uid, iuic::state, auto err);
 
     void try_visit_shared(
         erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call) {
@@ -435,7 +434,7 @@ struct builder_state_interface : protected virtual builder_base {
 
     iuic::state current_state();
 
-    iuic::state current_state(iuic::uid_t);
+    iuic::state current_state(units::uid);
 
   private:
     builder_state_interface &i;
@@ -496,7 +495,6 @@ struct builder final : public virtual builder_base,
                        private builder_memory_interface,
                        private builder_event_interface,
                        private builder_style_interface {
-  friend void iuic::advance(auto &);
   // TOTO пересмотреть концепцию конструктора
   // перестроить его через kernel(module private)
   builder(builder_base &&bb) noexcept
@@ -548,7 +546,8 @@ void builder_element_interface::frame(const frame_layout &layout) noexcept {
   frame(def_style, layout);
 };
 
-void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
+void builder_element_interface::frame(units::uid uid,
+                                      builder_block_cpt auto &&call,
                                       style::ref style,
                                       const frame_layout &layout) noexcept {
   kernel.state()->update_livetime(uid);
@@ -558,20 +557,21 @@ void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
   kernel.launch(el);
 };
 
-void builder_element_interface::frame(uid_t uid, builder_block_cpt auto &&call,
+void builder_element_interface::frame(units::uid uid,
+                                      builder_block_cpt auto &&call,
                                       const frame_layout &layout) noexcept {
   kernel.state()->update_livetime(uid);
   frame(uid, std::forward<decltype(call)>(call), def_style, layout);
 }
 
-void builder_element_interface::frame(uid_t uid, style::ref style,
+void builder_element_interface::frame(units::uid uid, style::ref style,
                                       const frame_layout &layout) noexcept {
   kernel.state()->update_livetime(uid);
   auto el = kernel.instance(uid, &layout, style);
   kernel.launch(el);
 };
 
-void builder_element_interface::frame(uid_t uid,
+void builder_element_interface::frame(units::uid uid,
                                       const frame_layout &layout) noexcept {
   kernel.state()->update_livetime(uid);
   frame(uid, def_style, layout);

@@ -1,8 +1,6 @@
-module;
-
 export module iuic.core:scheme;
 import std;
-import :base;
+import iuic.underlying;
 import :style;
 import :text.present;
 
@@ -11,9 +9,9 @@ namespace iuic {
 namespace scheme {
 
 struct element {
-  ui_rect rect; // x,y w,h
+  units::ui::rect rect; // x,y w,h
   std::optional<text::glyph::sequence> text{std::nullopt};
-  z_order_t order;
+  units::z_order_t order;
   style::cref style;
   enum class mask {
     Pop = 1 << 0,
@@ -22,11 +20,12 @@ struct element {
 
 struct incomplete {
 
-  void push_text(ui_rect rect, text::glyph::sequence text_, style::cref style) {
+  void push_text(units::ui::rect rect, text::glyph::sequence text_,
+                 style::cref style) {
     elements.push_back(element{.rect = rect, .text = text_, .style = style});
   };
 
-  void push_frame(ui_rect rect, style::cref style) {
+  void push_frame(units::ui::rect rect, style::cref style) {
     elements.push_back(element{.rect = rect, .style = style});
   };
 
@@ -39,12 +38,12 @@ private:
 };
 
 export struct frame {
-  ui_rect rect;
+  units::ui::rect rect;
   style::cref style;
 };
 
 export struct text {
-  ui_rect rect;
+  units::ui::rect rect;
   iuic::text::glyph::sequence text;
   style::cref style;
 };
@@ -54,30 +53,32 @@ export struct dump_t {
 };
 
 template <typename T>
-concept frame_visit_cpt =
-    requires(T obj, const ui_rect &rect, const style::cref &style) {
-      obj.frame(rect, style);
-    } || requires(T obj, const ui_rect &rect, const style::cref &style) {
-      obj.operator()(rect, style);
-    } || requires(T obj, const ui_rect &rect, const style::cref &style) {
-      obj.operator()({rect, style});
-    } || requires(T obj, const ui_rect &rect, const style::cref &style) {
-      obj.frame({rect, style});
-    };
+concept frame_visit_cpt = requires(T obj, const units::ui::rect &rect,
+                                   const style::cref &style) {
+  obj.frame(rect, style);
+} || requires(T obj, const units::ui::rect &rect, const style::cref &style) {
+  obj.operator()(rect, style);
+} || requires(T obj, const units::ui::rect &rect, const style::cref &style) {
+  obj.operator()({rect, style});
+} || requires(T obj, const units::ui::rect &rect, const style::cref &style) {
+  obj.frame({rect, style});
+};
 
 template <typename T>
 concept text_visit_cpt =
-    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
+    requires(T obj, const units::ui::rect &rect,
+             iuic::text::glyph::sequence present,
              const style::cref &style) { obj.text(rect, present, style); } ||
-    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
-             const style::cref &style) {
+    requires(T obj, const units::ui::rect &rect,
+             iuic::text::glyph::sequence present, const style::cref &style) {
       obj.operator()(rect, present, style);
     } ||
-    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
-             const style::cref &style) {
+    requires(T obj, const units::ui::rect &rect,
+             iuic::text::glyph::sequence present, const style::cref &style) {
       obj.operator()({rect, present, style});
     } ||
-    requires(T obj, const ui_rect &rect, iuic::text::glyph::sequence present,
+    requires(T obj, const units::ui::rect &rect,
+             iuic::text::glyph::sequence present,
              const style::cref &style) { obj.text({rect, present, style}); };
 
 // TODO : mb rename to any_*
@@ -126,9 +127,9 @@ struct explorer {
   void explore(has_visit_cpt auto &&...visitors) const
     requires(sizeof...(visitors) > 0);
 
-  void explore(ui_rect rect, tuple_visit_cpt auto &&) const;
+  void explore(units::ui::rect rect, tuple_visit_cpt auto &&) const;
 
-  void explore(ui_rect rect, has_visit_cpt auto &&...visitors) const
+  void explore(units::ui::rect rect, has_visit_cpt auto &&...visitors) const
     requires(sizeof...(visitors) > 0);
 
   void explore(const dump_t &d, tuple_visit_cpt auto &&) const;
@@ -160,7 +161,7 @@ private:
 
 private:
   std::vector<element> elements;
-  iuic::hash::hash_t hash;
+  units::hash hash;
 };
 
 // --- VISIT ---
@@ -266,7 +267,8 @@ void explorer::explore(const dump_t &dump,
   }
 }
 
-void explorer::explore(ui_rect rect, has_visit_cpt auto &&...visitors) const
+void explorer::explore(units::ui::rect rect,
+                       has_visit_cpt auto &&...visitors) const
   requires(sizeof...(visitors) > 0)
 {
   // code
@@ -293,7 +295,8 @@ void explorer::explore(const dump_t &dump,
       std::forward<decltype(visitor)>(visitor));
 };
 
-void explorer::explore(ui_rect rect, tuple_visit_cpt auto &&visitor) const {
+void explorer::explore(units::ui::rect rect,
+                       tuple_visit_cpt auto &&visitor) const {
   std::apply(
       [this, rect = std::move(rect)](auto &&...visitors) {
         explore(std::move(rect), std::forward<decltype(visitors)>(visitors)...);

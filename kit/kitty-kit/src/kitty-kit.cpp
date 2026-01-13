@@ -1,6 +1,3 @@
-
-module;
-
 module iuic.kitty_kit;
 import std;
 
@@ -32,10 +29,11 @@ bool text_button::arrange(frame_arrange_utils utils) const noexcept {
   auto height = utils.height_upixel_of(rq.size.height);
   auto width = utils.width_upixel_of(rq.size.width);
 
-  ui_position pos{(int)(rect.position.x + rect.size.w / 2.0f - width / 2.0f),
-                  (int)(rect.position.y + rect.size.h / 2.0f - height / 2.0f)};
+  units::ui::position pos{
+      (int)(rect.position.x + rect.size.w / 2.0f - width / 2.0f),
+      (int)(rect.position.y + rect.size.h / 2.0f - height / 2.0f)};
 
-  utils.apply(rq, ui_rect{pos.x, pos.y, width, height});
+  utils.apply(rq, units::ui::rect{pos.x, pos.y, width, height});
 
   return true;
 }
@@ -64,9 +62,9 @@ measure_result short_text::measure(text_measure_utils utils) const noexcept {
   if (utils.get_tokens().empty()) {
     return {std::unexpected{measure_err{}}};
   }
-  upixel_t width = utils.get_tokens()[0].text.size() * 6;
+  units::upixel width = utils.get_tokens()[0].text.size() * 6;
 
-  return {{width, upixel_t{12}}};
+  return {{width, units::upixel{12}}};
 };
 
 iuic::text::glyph::sequence

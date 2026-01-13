@@ -3,8 +3,6 @@ module;
 
 export module iuic.core:storage.object;
 import std;
-import :base;
-import :hash;
 import :storage.def;
 
 namespace iuic {

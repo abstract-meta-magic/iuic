@@ -21,7 +21,7 @@ void main_window(iuic::scheme::builder &b, app &app) {
   kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
   for (auto &d : app.data) {
     kitty_kit::button(
-        b, [&]() { std::println("val : {}", d); }, iuic::uid::anchor{d});
+        b, [&]() { std::println("val : {}", d); }, iuic::utils::anchor{d});
   }
   kitty_kit::button(b, [&]() {
     if (not app.data.empty())
@@ -44,9 +44,9 @@ constexpr iuic::style::font::decl bold_second{bold};
 
 constexpr iuic::style::font::decl bold_third{bold_second};
 
-constexpr iuic::extern_type opengl{};
+constexpr iuic::external::type opengl{};
 
-constexpr iuic::extern_type opengl_text{opengl};
+constexpr iuic::external::type opengl_text{opengl};
 
 // from \ time \ to
 template <typename T, float time> struct delta_field;
@@ -97,9 +97,9 @@ int main() {
     };
   };
 
-  struct b : iuic::extern_binding {
+  struct b : iuic::external::binding {
     // test
-    constexpr const extern_type &type() const noexcept override {
+    constexpr const external::type &type() const noexcept override {
       return opengl_text;
     };
 
@@ -110,7 +110,7 @@ int main() {
   std::shared_ptr<text::fontset> base_font = text::fontset{}.bind(
       kitty_kit::style::font_base,
       text::glyph::atlas{std::unique_ptr<text::glyph::decoder>{new d{}},
-                         std::unique_ptr<extern_binding>{new b{}}});
+                         std::unique_ptr<external::binding>{new b{}}});
 
   ctx.font.link(base_font);
 
@@ -123,7 +123,7 @@ int main() {
   while (not WindowShouldClose() && not app.quit) {
 
     ctx.set_view_size(
-        {(upixel_t)GetScreenWidth(), (upixel_t)GetScreenHeight()});
+        {(units::upixel)GetScreenWidth(), (units::upixel)GetScreenHeight()});
 
     ctx.make([&](auto &b) { main_window(b, app); }); // iuic test
 
@@ -148,17 +148,12 @@ int main() {
 
     // code
 
-    struct rect {
-      ui_rect bordered;
-      ui_rect borderless;
-    };
-
     ctx.scheme.explore(
         [](iuic::scheme::frame frame) {
           std::visit(
               [&](auto &obj) {
                 using type = std::remove_cvref_t<decltype(obj)>;
-                if constexpr (std::same_as<type, iuic::color_t>) {
+                if constexpr (std::same_as<type, iuic::units::color_t>) {
                   auto [x, y, w, h] = frame.rect.xywh();
                   Rectangle rect{(float)x, (float)y, (float)w, (float)h};
                   Color color{obj.r, obj.g, obj.b, obj.a};

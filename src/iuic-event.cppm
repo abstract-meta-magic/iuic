@@ -1,11 +1,7 @@
-
-module;
-
 export module iuic.core:event;
 import std;
-import :base;
+import iuic.underlying;
 import :kernel;
-import :storage.def;
 import :state;
 export import :key_code;
 
@@ -32,17 +28,20 @@ public:
   static consteval auto type(std::function<T(A &)>) -> A;
 
   struct vis : component {
-    void try_visit(iuic::uid_t uid, auto &&call) {
-      using type = decltype(type(std::function{call}));
-      static_assert(not std::same_as<type, not_function>,
-                    "Visit type is void(T&).");
+    void try_visit(
+        units::uid uid,
+        erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call) {
+      using traits = typename decltype(erasure::func_type{call})::traits;
+
+      using arg_ref = traits::func_args::template arg_t<0>;
+      using arg_ptr = std::remove_reference_t<arg_ref> *;
 
       auto *mem = kernel.memory();
-      auto *mtype = erasure::type::from<type>();
+      auto *mtype = erasure::type::from<erasure::pure_t<arg_ref>>();
 
       if (mem->state(uid, mtype) ==
           kernel::memory_model::object_state::alive_this_type) {
-        call(*static_cast<type *>(mem->locate(uid, mtype)));
+        call(*static_cast<arg_ptr>(mem->locate(uid, mtype)));
       }
     };
   } memory{kernel};
@@ -57,18 +56,18 @@ public:
 namespace event {
 struct event_base {
   event_extern_components utils;
-  uid_t object; // can be null
-  uid_t uid;
+  units::uid object; // can be null
+  units::uid uid;
 };
 namespace global {
 struct key : event_base {
   key_code code;
-  ui_position current_mouse_position{};
+  units::ui::position current_mouse_position{};
 };
 
 struct mouse : event_base {
-  ui_position current_mouse_position{};
-  ui_position old_mouse_position{};
+  units::ui::position current_mouse_position{};
+  units::ui::position old_mouse_position{};
 };
 
 struct utils {};
@@ -77,14 +76,14 @@ struct utils {};
 namespace local {
 struct key : event_base {
   key_code code;
-  ui_position current_mouse_position{};
-  ui_rect rect;
+  units::ui::position current_mouse_position{};
+  units::ui::rect rect;
 };
 
 struct mouse : event_base {
-  ui_position current_mouse_position{};
-  ui_position old_mouse_position{};
-  ui_rect rect;
+  units::ui::position current_mouse_position{};
+  units::ui::position old_mouse_position{};
+  units::ui::rect rect;
 };
 
 struct utils {};
@@ -121,22 +120,22 @@ concept custom_event_callback_cpt = requires(T &&call) { make_custom(+call); };
 // хешировать
 struct revent {
   variadic_callback call;
-  uid_t object;
+  units::uid object;
   kernel::element e;
 };
 
 struct hovered_test {
-  ui_rect rect;
-  z_order_t order;
+  units::ui::rect rect;
+  units::z_order_t order;
   policy::hovered policy;
-  uid_t uid;
+  units::uid uid;
 };
 
 struct pevent {
   variadic_callback call;
   policy::event policy;
-  uid_t object;
-  uid_t uid;
+  units::uid object;
+  units::uid uid;
 };
 
 struct event_pack {
@@ -261,16 +260,18 @@ public:
   };
 
   // set position without events
-  void pointer_set(ui_position position) { pointer_position = position; };
+  void pointer_set(units::ui::position position) {
+    pointer_position = position;
+  };
 
-  static bool in__(ui_position position, ui_rect rect) {
+  static bool in__(units::ui::position position, units::ui::rect rect) {
     return (position.x >= rect.position.x &&
             position.x <= rect.position.x + rect.size.w &&
             position.y >= rect.position.y &&
             position.y <= rect.position.y + rect.size.h);
   }
   // just move the pointer
-  void pointer_move(ui_position position) {
+  void pointer_move(units::ui::position position) {
     // TODO
     for (auto &&ev : event_pack.global) {
       std::visit(
@@ -325,7 +326,7 @@ public:
 
 private:
   kernel::root &kernel;
-  ui_position pointer_position;
+  units::ui::position pointer_position;
   event_pack event_pack{};
 };
 

@@ -3,7 +3,7 @@ module;
 
 export module iuic.core;
 import std;
-export import :base;
+export import iuic.underlying;
 export import :base.color;
 export import :layout.def;
 import :layout.frame.box;
@@ -27,12 +27,13 @@ export namespace iuic {
 constexpr style::decl def_style = []() {
   style::decl res{};
 
-  res.shape.min_size = {percent_t{16}, percent_t{24}};
+  res.shape.min_size = {units::percent{16}, units::percent{24}};
 
-  res.shape.margin.top = percent_t{4};
-  res.shape.margin.left = upixel_t{30};
+  res.shape.margin.top = units::percent{4};
+  res.shape.margin.left = units::upixel{30};
 
-  res.shape.border.top = upixel_t{20}, res.shape.border.left = upixel_t{40};
+  res.shape.border.top = units::upixel{20},
+  res.shape.border.left = units::upixel{40};
 
   res.decoration.background = color::css::white{};
 
@@ -43,7 +44,7 @@ constexpr style::decl def_style = []() {
 
 class context {
 public: // api
-  void set_view_size(ui_size sz);
+  void set_view_size(units::ui::size sz);
 
   void make(scheme::builder_block_cpt auto &&call);
 

@@ -4,7 +4,7 @@ module;
 
 export module iuic.core:text.fontset;
 import std;
-import :base;
+import iuic.underlying;
 import :text.font;
 import :style;
 
@@ -18,7 +18,7 @@ const glyph::atlas &get_default_atlas() {
     };
   };
 
-  struct native_text_binding : extern_binding {
+  struct native_text_binding : external::binding {
     constexpr std::string_view info() const noexcept override {
       return "Native ASCII - text binding";
     };
@@ -26,7 +26,7 @@ const glyph::atlas &get_default_atlas() {
 
   static const glyph::atlas ascii_atlas{
       std::unique_ptr<glyph::decoder>{new ascii_decoder{}},
-      std::unique_ptr<extern_binding>{new native_text_binding{}}};
+      std::unique_ptr<external::binding>{new native_text_binding{}}};
 
   return ascii_atlas;
 };

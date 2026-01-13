@@ -14,6 +14,10 @@ set_target_properties(xxLib PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/tmp
 
 target_link_libraries(te iuic::core kitty_kit raylib)
 
+if(IUIC_TMP_CXX_STD)
+	target_link_libraries(te tmp_cxx_std)
+endif()
+
 target_link_libraries(te xxLib)
 ## xxHash - END
 

@@ -3,7 +3,7 @@ module;
 
 export module iuic.core:state;
 import std;
-import :base;
+import iuic.underlying;
 
 export namespace iuic {
 
@@ -127,7 +127,8 @@ struct state::machine {
   struct transition_process {};
   template <iuic::state, auto process> struct state_process {};
 
-  template <transition_graph gpaph, iuic::as_pure_type SharedData> struct spec {
+  template <transition_graph gpaph, iuic::erasure::as_pure_type SharedData>
+  struct spec {
     using handler_type = int;
     using shared_type = SharedData;
 

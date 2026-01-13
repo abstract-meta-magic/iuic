@@ -1,17 +1,13 @@
-
-
-module;
-
 export module iuic.core:layout.def;
 import std;
-import :base;
+import iuic.underlying;
 import :text.font;
 
 export namespace iuic {
 
 struct request_size {
-  ui_adaptive_unit width;
-  ui_adaptive_unit height;
+  units::ui::adaptive_unit width;
+  units::ui::adaptive_unit height;
 };
 
 struct measure_request {

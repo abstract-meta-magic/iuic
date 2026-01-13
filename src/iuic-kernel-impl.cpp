@@ -1,6 +1,5 @@
 module iuic.core;
 import std;
-import :base;
 import :kernel;
 
 namespace iuic::kernel {
@@ -19,7 +18,7 @@ concept buffer_value_mover_cpt =
              const typename T::key_type &key, typename T::move_type value) {
       obj.move_to(c, obj.move_from(c, key));
     } &&
-    iuic::as_pure_type<Container> &&
+    erasure::as_pure_type<Container> &&
     std::same_as<Container, typename T::container_type> &&
     std::is_default_constructible_v<T>;
 
@@ -95,7 +94,7 @@ struct root_layout : frame_layout {
     return {{style.get_shape().max_size.w, style.get_shape().max_size.h}};
   };
 
-  std::tuple<upixel_t, upixel_t, upixel_t, upixel_t>
+  std::tuple<units::upixel, units::upixel, units::upixel, units::upixel>
   border_of(const request &rq, frame_arrange_utils &utils) const {
     auto rq_style = utils.style_of(rq);
     auto btop = utils.width_upixel_of(rq_style.get_shape().border.top);
@@ -105,7 +104,7 @@ struct root_layout : frame_layout {
     return {btop, bbottom, bleft, bright};
   };
 
-  std::tuple<upixel_t, upixel_t, upixel_t, upixel_t>
+  std::tuple<units::upixel, units::upixel, units::upixel, units::upixel>
   margin_of(const request &rq, frame_arrange_utils &utils) const {
     auto rq_style = utils.style_of(rq);
     auto mtop = utils.width_upixel_of(rq_style.get_shape().margin.top);
@@ -131,7 +130,7 @@ struct root_layout : frame_layout {
       auto height = utils.height_upixel_of(rq.size.height);
 
       y += mtop;
-      utils.apply(rq, ui_rect{(pixel_t)mleft, y, width, height});
+      utils.apply(rq, units::ui::rect{(units::pixel)mleft, y, width, height});
       y += height;
     };
     return true;
@@ -140,9 +139,9 @@ struct root_layout : frame_layout {
 
 struct base_state_model_impl : public state_model {
   using swap_t = swap_buffers<
-      std::unordered_map<iuic::uid_t, std::unordered_set<iuic::state>>, 2>;
+      std::unordered_map<units::uid, std::unordered_set<iuic::state>>, 2>;
 
-  void attach(iuic::uid_t uid, iuic::state state) noexcept {
+  void attach(units::uid uid, iuic::state state) noexcept {
     auto buff = swap.get_buffers();
 
     if (buff.current.contains(uid)) {
@@ -152,7 +151,7 @@ struct base_state_model_impl : public state_model {
     }
   };
 
-  void detach(iuic::uid_t uid, iuic::state state) noexcept {
+  void detach(units::uid uid, iuic::state state) noexcept {
     auto buff = swap.get_buffers();
     if (buff.current.contains(uid)) {
       buff.current.at(uid).erase(state);
@@ -160,23 +159,23 @@ struct base_state_model_impl : public state_model {
   };
 
   // replace to std::ranges::view
-  std::unique_ptr<virtual_iterator<const iuic::state>> get(iuic::uid_t,
-                                                           iuic::state) const {
-    return invalid_virtual_iterator{};
+  std::unique_ptr<utils::virtual_iterator<const iuic::state>>
+  get(units::uid, iuic::state) const {
+    return utils::invalid_virtual_iterator{};
   };
 
-  bool is_exist(iuic::uid_t uid) const {
+  bool is_exist(units::uid uid) const {
     return swap.get_buffers().current.contains(uid)
                ? true
                : swap.get_buffers().prev.contains(uid);
   };
 
-  bool update_livetime(iuic::uid_t uid) const {
+  bool update_livetime(units::uid uid) const {
     swap.move_forward(uid);
     return true;
   };
 
-  bool has(iuic::uid_t uid, iuic::state state) const {
+  bool has(units::uid uid, iuic::state state) const {
     return swap.get_buffers().current.contains(uid)
                ? swap.get_buffers().current.at(uid).contains(state)
                : false;
@@ -199,10 +198,10 @@ struct object {
 } // namespace
 
 struct base_memory_model_impl : public memory_model {
-  using swap_t = swap_buffers<std::unordered_map<iuic::uid_t, object>, 2>;
+  using swap_t = swap_buffers<std::unordered_map<units::uid, object>, 2>;
 
   void
-  reserve(iuic::uid_t uid,
+  reserve(units::uid uid,
           const erasure::type *type = erasure::type::none()) noexcept override {
     auto buff = swap.get_buffers();
 
@@ -211,7 +210,7 @@ struct base_memory_model_impl : public memory_model {
     }
   };
 
-  void *locate(iuic::uid_t uid, const erasure::type *type) noexcept override {
+  void *locate(units::uid uid, const erasure::type *type) noexcept override {
     auto buff = swap.get_buffers();
 
     if (buff.current.contains(uid)) {
@@ -221,7 +220,7 @@ struct base_memory_model_impl : public memory_model {
     return nullptr;
   };
 
-  object_state state(iuic::uid_t uid,
+  object_state state(units::uid uid,
                      const erasure::type *type =
                          erasure::type::none()) const noexcept override {
     auto buff = swap.get_buffers();
@@ -252,12 +251,12 @@ struct base_memory_model_impl : public memory_model {
     return object_state::none_exist;
   };
 
-  bool update_livetime(iuic::uid_t uid) const noexcept override {
+  bool update_livetime(units::uid uid) const noexcept override {
     swap.move_forward(uid);
     return true;
   };
 
-  void launch(iuic::uid_t uid, const erasure::type *type) noexcept override {
+  void launch(units::uid uid, const erasure::type *type) noexcept override {
     if (type == erasure::type::none()) {
       return;
     }
@@ -281,7 +280,7 @@ struct base_memory_model_impl : public memory_model {
     }
   };
 
-  bool as(iuic::uid_t uid, const erasure::type *type) const noexcept override {
+  bool as(units::uid uid, const erasure::type *type) const noexcept override {
     auto [_, current] = swap.get_buffers();
     return current.contains(uid) ? current.at(uid).type == type : false;
   };
@@ -309,21 +308,21 @@ struct simple_kernel : hardware {
   struct node {
     element el;
     style::ref st;
-    iuic::uid_t uid;
+    units::uid uid;
     union {
       const text_layout *tlayout;
       const frame_layout *flayout;
     };
     //
     request rq;
-    ui_rect bordered_rect;
-    ui_rect borderless_rect;
+    units::ui::rect bordered_rect;
+    units::ui::rect borderless_rect;
     policy::hovered hp;
     policy::event ep;
-    z_order_t order;
+    units::z_order_t order;
   };
 
-  std::expected<ui_rect, int>
+  std::expected<units::ui::rect, int>
   get_rect_bordered(element el) const noexcept override {
     if (el.meta && element::root) {
       return root.bordered_rect;
@@ -335,7 +334,7 @@ struct simple_kernel : hardware {
     };
   };
 
-  virtual std::expected<ui_rect, int>
+  virtual std::expected<units::ui::rect, int>
   get_rect_borderless(element el) const noexcept override {
     if (el.meta && element::root) {
       return root.bordered_rect;
@@ -347,9 +346,9 @@ struct simple_kernel : hardware {
     };
   };
 
-  std::unique_ptr<virtual_iterator<const request>>
+  std::unique_ptr<utils::virtual_iterator<const request>>
   get_requests(element el, bool reverse = false) const noexcept override {
-    struct rq_iterator : virtual_iterator<const request> {
+    struct rq_iterator : utils::virtual_iterator<const request> {
       constexpr void next() noexcept override {
         if (valid()) {
           for (;;) {
@@ -389,7 +388,7 @@ struct simple_kernel : hardware {
           : kernel{kernel_}, index{index_} {};
     };
     //
-    struct rq_root_iterator : virtual_iterator<const request> {
+    struct rq_root_iterator : utils::virtual_iterator<const request> {
       constexpr void next() noexcept override {
         if (valid()) {
           ++index;
@@ -429,15 +428,15 @@ struct simple_kernel : hardware {
       if (el.meta && element::root) {
         return std::make_unique<rq_root_iterator>(*this);
       } else if (reverse) {
-        return invalid_virtual_iterator{};
+        return utils::invalid_virtual_iterator{};
       } else {
         return els[el.self + 1].el.parent == el.self
-                   ? std::unique_ptr<virtual_iterator<const request>>(
+                   ? std::unique_ptr<utils::virtual_iterator<const request>>(
                          new rq_iterator{*this, (std::size_t)el.self + 1})
-                   : invalid_virtual_iterator{};
+                   : utils::invalid_virtual_iterator{};
       }
     } else {
-      return invalid_virtual_iterator{};
+      return utils::invalid_virtual_iterator{};
     }
   };
 
@@ -460,9 +459,9 @@ struct simple_kernel : hardware {
     }
   };
 
-  std::unique_ptr<virtual_iterator<const element>>
+  std::unique_ptr<utils::virtual_iterator<const element>>
   get_childs(element el, bool reverse = false) const noexcept override {
-    struct ch_iterator : virtual_iterator<const element> {
+    struct ch_iterator : utils::virtual_iterator<const element> {
       void next() noexcept override {
         if (valid() &&
             kernel.els[index].el.brother != kernel.els[index].el.parent) {
@@ -496,7 +495,7 @@ struct simple_kernel : hardware {
           : kernel{kernel_}, index{index_} {}
     };
 
-    struct ch_riterator : virtual_iterator<const element> {
+    struct ch_riterator : utils::virtual_iterator<const element> {
       void next() noexcept override { cindex = invalide_index; };
 
       void prev() noexcept override { cindex = invalide_index; };
@@ -523,40 +522,36 @@ struct simple_kernel : hardware {
     };
 
     if (els.empty()) {
-      return invalid_virtual_iterator{};
+      return utils::invalid_virtual_iterator{};
     }
 
     if (el.meta && element::root) {
       if (reverse) {
-        return not els.empty()
-                   ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_riterator{
-                         *this, 0}}
-                   : invalid_virtual_iterator{};
+        return not els.empty() ? std::unique_ptr<utils::virtual_iterator<
+                                     const element>>{new ch_riterator{*this, 0}}
+                               : utils::invalid_virtual_iterator{};
       } else {
-        return not els.empty()
-                   ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_iterator{*this,
-                                                                          0}}
-                   : invalid_virtual_iterator{};
+        return not els.empty() ? std::unique_ptr<utils::virtual_iterator<
+                                     const element>>{new ch_iterator{*this, 0}}
+                               : utils::invalid_virtual_iterator{};
       }
     } else {
       if (reverse) {
         return els.size() > el.self + 1 && els[el.self + 1].el.parent == el.self
-                   ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_riterator{
+                   ? std::unique_ptr<utils::virtual_iterator<
+                         const element>>{new ch_riterator{
                          *this, std::size_t{el.self} + 1}}
-                   : invalid_virtual_iterator{};
+                   : utils::invalid_virtual_iterator{};
       } else {
         return els.size() > el.self + 1 && els[el.self + 1].el.parent == el.self
-                   ? std::unique_ptr<
-                         virtual_iterator<const element>>{new ch_iterator{
+                   ? std::unique_ptr<utils::virtual_iterator<
+                         const element>>{new ch_iterator{
                          *this, std::size_t{el.self} + 1}}
-                   : invalid_virtual_iterator{};
+                   : utils::invalid_virtual_iterator{};
       }
     }
 
-    return invalid_virtual_iterator{};
+    return utils::invalid_virtual_iterator{};
   };
 
   std::expected<const style::cref *, int>
@@ -576,11 +571,12 @@ struct simple_kernel : hardware {
     }
   };
 
-  std::expected<z_order_t, int> get_zorder(element el) const noexcept override {
+  std::expected<units::z_order_t, int>
+  get_zorder(element el) const noexcept override {
     return {};
   };
 
-  std::expected<iuic::uid_t, int> get_uid(element el) const noexcept override {
+  std::expected<units::uid, int> get_uid(element el) const noexcept override {
     if (el.meta && element::root) {
       return root.uid;
     } else {
@@ -622,9 +618,9 @@ struct simple_kernel : hardware {
     }
   };
 
-  std::unique_ptr<virtual_iterator<const element>>
+  std::unique_ptr<utils::virtual_iterator<const element>>
   get_elements(bool reverse = false) const override {
-    struct el_iterator : virtual_iterator<const element> {
+    struct el_iterator : utils::virtual_iterator<const element> {
       constexpr void next() noexcept override { ++index; };
 
       constexpr void prev() noexcept override { index = invalide_index; };
@@ -643,7 +639,7 @@ struct simple_kernel : hardware {
       std::size_t index;
     };
 
-    struct el_riterator : virtual_iterator<const element> {
+    struct el_riterator : utils::virtual_iterator<const element> {
       constexpr void next() noexcept override {
         if (index == 0) {
           index = invalide_index;
@@ -674,7 +670,7 @@ struct simple_kernel : hardware {
       return std::make_unique<el_iterator>(*this, 0);
     }
 
-    return invalid_virtual_iterator{};
+    return utils::invalid_virtual_iterator{};
   };
 
   // if nothin selected return null element
@@ -693,7 +689,7 @@ struct simple_kernel : hardware {
   };
 
   // create and select new element
-  element instance(iuic::uid_t uid, const frame_layout *layout,
+  element instance(units::uid uid, const frame_layout *layout,
                    style::ref ref) noexcept override {
 
     els.push_back({.st = ref, .uid = uid, .flayout = layout});
@@ -716,7 +712,7 @@ struct simple_kernel : hardware {
   };
 
   // create and select new element
-  element instance(iuic::uid_t uid, const text_layout *layout,
+  element instance(units::uid uid, const text_layout *layout,
                    style::ref ref) noexcept override {
     els.push_back({.st = ref, .uid = uid, .tlayout = layout});
     auto &node = els.back();
@@ -780,7 +776,7 @@ struct simple_kernel : hardware {
     els[el.self].st.override(tr);
   };
 
-  void override(element el, z_order_t o) noexcept override {
+  void override(element el, units::z_order_t o) noexcept override {
     els[el.self].order = o;
   };
 
@@ -806,7 +802,7 @@ struct simple_kernel : hardware {
     }
   };
 
-  void apply(element el, ui_rect bordered) noexcept override {
+  void apply(element el, units::ui::rect bordered) noexcept override {
     if (el.self > els.size())
       return;
     auto &node = els[el.self];
@@ -820,8 +816,8 @@ struct simple_kernel : hardware {
     }
   };
 
-  void apply(element el, ui_rect bordered,
-             ui_rect borderless) noexcept override {
+  void apply(element el, units::ui::rect bordered,
+             units::ui::rect borderless) noexcept override {
     auto node = els[el.self];
     if (el.meta && element::root) {
       root.bordered_rect = root.borderless_rect = bordered;
