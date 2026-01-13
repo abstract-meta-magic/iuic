@@ -1,0 +1,194 @@
+// Copyright (c) 2026 abstract-meta-magic and contributors
+// SPDX-License-Identifier: Apache-2.0
+export module iuic.underlying:utils;
+import std;
+
+export namespace iuic::utils {
+
+template <typename T>
+concept defer_call_cpt =
+    std::is_nothrow_destructible_v<T> && std::is_nothrow_invocable_v<T> &&
+    (std::is_nothrow_copy_constructible_v<T> ||
+     std::is_nothrow_move_constructible_v<T>);
+
+template <defer_call_cpt T> struct defer {
+  using type = std::remove_cvref_t<T>;
+
+  defer(const defer &) = delete;
+  defer(defer &&) = delete;
+  defer &operator=(const defer &) = delete;
+  defer &operator=(defer &&) = delete;
+  ~defer() noexcept {
+    if (not canceled) {
+      d();
+    }
+  }
+
+  constexpr void cancel() noexcept { canceled = true; };
+
+  template <defer_call_cpt S>
+  constexpr defer(S &&d_) noexcept : d{std::forward<S>(d_)} {}
+
+private:
+  type d;
+  bool canceled{false};
+};
+
+template <typename T> defer(T &&) -> defer<T>;
+
+template <typename T> struct virtual_iterator {
+  virtual ~virtual_iterator() = default;
+
+  virtual void prev() noexcept = 0;
+
+  virtual void next() noexcept = 0;
+
+  virtual bool valid() const noexcept = 0;
+
+  virtual T *get() noexcept = 0;
+
+  virtual_iterator &operator++() noexcept { next(); };
+
+  virtual_iterator &operator--() noexcept { prev(); };
+
+  T &operator*() noexcept { return *get(); };
+
+  T *operator->() noexcept { return get(); };
+
+  struct sentinel_t {};
+
+  sentinel_t sentinel() const noexcept { return {}; };
+
+  operator bool() const noexcept { return valid(); };
+
+  constexpr bool operator==(const sentinel_t &) const noexcept {
+    return not valid();
+  };
+
+  constexpr bool operator!=(const sentinel_t &) const noexcept {
+    return valid();
+  };
+
+  struct iterator_wrapper {
+    iterator_wrapper(virtual_iterator *ptr_) : ptr{ptr_} {};
+
+    iterator_wrapper &operator++() {
+      ptr->next();
+      return *this;
+    };
+
+    iterator_wrapper &operator--() {
+      ptr->prev();
+      return *this;
+    };
+
+    T &operator*() { return *ptr->get(); };
+
+    T *operator->() { return ptr->get(); };
+
+    constexpr operator bool() const { return ptr->valid(); };
+
+    constexpr bool operator==(const sentinel_t &) const {
+      return not ptr->valid();
+    };
+
+    constexpr bool operator!=(const sentinel_t &) const {
+      return ptr->valid();
+    };
+
+  private:
+    virtual_iterator *ptr;
+  };
+
+  struct range_adapter {
+    range_adapter(virtual_iterator *ptr_) : ptr{ptr_} {}
+
+    iterator_wrapper begin() { return {ptr}; };
+
+    sentinel_t end() { return {}; };
+
+  private:
+    virtual_iterator *ptr;
+  };
+  range_adapter range() { return {this}; };
+};
+
+struct invalid_virtual_iterator {
+  template <typename T> struct iterator : virtual_iterator<T> {
+    void next() noexcept override {};
+    void prev() noexcept override {};
+    bool valid() const noexcept override { return false; };
+    T *get() noexcept override { return nullptr; };
+  };
+
+  template <typename T> operator std::unique_ptr<virtual_iterator<T>>() {
+    return std::unique_ptr<virtual_iterator<T>>{new iterator<T>{}};
+  };
+};
+
+struct ctype_base {
+  const ctype_base *const self{this};
+};
+
+template <auto seed = {}> struct ctype : ctype_base {
+  consteval ctype() = default;
+
+  consteval explicit ctype(const ctype &base) noexcept
+      : ctype_base{}, base{&base} {}
+
+  constexpr bool operator==(const ctype &other) const noexcept {
+    return self == other.self;
+  };
+
+  operator std::size_t() const noexcept {
+    return reinterpret_cast<std::size_t>(self);
+  };
+
+  std::size_t type_id() const noexcept { return *this; };
+
+  constexpr bool base_of(const ctype &other) const noexcept {
+
+    const ctype *current = static_cast<const ctype *>(self);
+
+    for (;;) {
+      auto &_ = *current;
+      if (_ == other) {
+        return true;
+      } else if (_.self == _.base) {
+        break;
+      }
+
+      current = current->base;
+    }
+
+    return false;
+  };
+
+  const ctype *const base{this};
+};
+
+template <auto decl__ = []() {}> consteval decltype(auto) anonim_tag() {
+  struct {
+  } decl;
+  return decl;
+};
+
+struct anchor {
+  template <typename T>
+  anchor(T &obj) : value{(std::size_t)std::addressof(obj)} {};
+  template <typename T>
+  anchor(T *obj) : value{(std::size_t)std::addressof(obj)} {};
+  anchor() : value{(std::size_t)std::addressof(*this)} {};
+  anchor(std::size_t value_) : value{value_} {};
+
+  //
+  anchor(const anchor &) = default;
+  anchor &operator=(const anchor &) = default;
+  anchor(anchor &&) = default;
+  anchor &operator=(anchor &&) = default;
+
+  //
+  std::size_t value;
+};
+
+}; // namespace iuic::utils
