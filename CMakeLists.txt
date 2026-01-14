@@ -48,18 +48,12 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	FILE_SET iuic_core_modules 
 	TYPE CXX_MODULES
 	FILES
-#	"src/iuic-base.cppm" [depricated]
-	"src/iuic-text-font.cppm"
 	"src/iuic-style.cppm"
-	"src/iuic-text-fontset.cppm"
-#       "src/iuic-hash.cppm" [depricated]
-#	"src/iuic-fct.cppm" [depricated]
-	#"src/iuic-storage.def.cppm" # [depricated]
-	#"src/iuic-object-storage.cppm" # [depricated]
 	"src/iuic-token.cppm"
-	"src/iuic-text-buff.cppm"
+	"src/iuic-text-font.cppm"
+	"src/iuic-text-fontset.cppm"
 	"src/iuic-text-present.cppm"
-	#"src/iuic-text-storage.cppm" # [depricated]
+	"src/iuic-text-buff.cppm"
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
 	"src/iuic-box-layout.cppm"
@@ -69,7 +63,6 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-kernel.cppm"
 	"src/iuic-ctx.cppm"
 	"src/iuic-state.cppm"
-	"src/iuic-state-transition.cppm" # [depricated]
 	"src/iuic-base-color.cppm"
 	"src/iuic-policy.cppm"
 	"src/iuic-scheme.cppm"
@@ -77,14 +70,10 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC
-	#"src/iuic-base.cpp" [depricated]
 	"src/iuic-ctx.cpp"
-	#"src/iuic-fct.cpp" [depricated]
 	"src/iuic-text-present.cpp"
 	"src/iuic-layout-utils.cpp"
-	#"src/iuic-computing-ctx.cpp" [depricated] 
 	"src/iuic-state.cpp"
-	"src/iuic-state-transition.cpp"
 	"src/iuic-text-font.cpp"
 	"src/iuic-kernel-impl.cpp"
 )

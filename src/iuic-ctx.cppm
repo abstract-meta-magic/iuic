@@ -18,7 +18,6 @@ export import :text.present;
 export import :text.fontset;
 export import :style;
 export import :state;
-export import :state.transition;
 export import :event;
 
 export namespace iuic {
