@@ -15,7 +15,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(iuic LANGUAGES CXX)
 
-
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tmp_solutions)
 	add_subdirectory(tmp_solutions/std)
 endif()
@@ -23,9 +22,7 @@ endif()
 add_subdirectory(utils/cmake)
 add_subdirectory(src/underlying)
 
-## set(CMAKE_CXX_MODULE_STD 1)
 
-option(IUIC_PRETTY "Включить pretty" OFF)
 option(IUIC_INFO "Вывод информации" ON)
 
 add_library(${PROJECT_NAME}_core STATIC)
@@ -77,57 +74,13 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-text-font.cpp"
 	"src/iuic-kernel-impl.cpp"
 )
-## set hash
-
-if(IUIC_HASH_TYPE STREQUAL "xxHash3")
-if(DEFINED IUIC_HASH_INCLUDE_DIR)
-message("iuic::core : xxHash3 added")
-message("Hash dir "${IUIC_HASH_INCLUDE_DIR})
-target_include_directories(${PROJECT_NAME}_core
-	PRIVATE ${IUIC_HASH_INCLUDE_DIR})
-target_sources(${PROJECT_NAME}_core 
-	PRIVATE "src/iuic-hash.xxhash.cpp")
-else()
-message(SEND_ERROR "iuic::core : not set IUIC_HASH_INCLUDE_DIR")
-endif()
-
-elseif(IUIC_HASH_TYPE STREQUAL "CityHash")
-if(IUIC_HASH_INCLUDE_DIR)
-target_include_directories(${PROJECT_NAME}_core ${IUIC_HASH_INCLUDE_DIR})
-target_sources(${PROJECT_NAME}_core 
-	PRIVATE "src/iuic-hash.cityhash.cpp")
-else()
-message(SEND_ERROR "iuic::core : not set IUIC_HASH_INCLUDE_DIR")
-endif()
-endif()
 
 ## Main alias
 add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
 
-## Ppetty module
-if(IUIC_PRETTY)
-## Простое сообщение
-if(IUIC_INFO)
-message("iuic::pretty : static")
-endif()
-
-## Позже будет доделана
-add_library(${PROJECT_NAME}_pretty STATIC)
-
-target_link_libraries(${PROJECT_NAME}_pretty PUBLIC ${PROJECT_NAME}_core)
-
-target_sources(${PROJECT_NAME}_pretty PUBLIC
-	FILE_SET iuic_pretty_modules 
-	TYPE CXX_MODULES
-	FILES
-	"src/iuic-pretty.cppm" # other module
-)
-
-## pretty alias
-add_library(${PROJECT_NAME}::pretty ALIAS ${PROJECT_NAME}_pretty)
-endif()
 
 
+## PROTO START
 iuic_env_add_target(iuic_core)
 
 
@@ -138,6 +91,7 @@ iuic_env_add("iuic::intro" "Hello World" STR)
 
 iuic_env_targets()
 iuic_env_vars()
+## PROTO END
 
 add_subdirectory(test)
 add_subdirectory(kit)

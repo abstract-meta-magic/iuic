@@ -207,7 +207,8 @@ struct visited {
 
   bool as(const type *) const noexcept;
 
-  visited(void *data_, const type *type_) : data{data_}, type{type_} {};
+  visited(const void *data_, const type *type_)
+      : data{const_cast<void *>(data_)}, type{type_} {};
 
 private:
   void *data;
@@ -215,8 +216,9 @@ private:
 };
 
 struct visited::as_const : private visited {
-  as_const(visited);
-  template <typename T> as_const(T *data_) : visited{data_, type::from<T>()} {};
+  as_const(visited v) : visited{v} {};
+  template <typename T>
+  as_const(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
 
   as_const(std::nullptr_t) : visited{nullptr, type::none()} {};
 
@@ -242,9 +244,9 @@ struct visited::as_const : private visited {
 };
 
 struct visited::as_mutable : private visited {
-  as_mutable(visited);
+  as_mutable(visited v) : visited{v} {};
   template <typename T>
-  as_mutable(T *data_) : visited{data_, type::from<T>()} {};
+  as_mutable(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
 
   as_mutable(std::nullptr_t) : visited{nullptr, type::none()} {};
 

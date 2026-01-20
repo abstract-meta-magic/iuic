@@ -48,27 +48,6 @@ constexpr iuic::external::type opengl{};
 
 constexpr iuic::external::type opengl_text{opengl};
 
-// from \ time \ to
-template <typename T, float time> struct delta_field;
-
-template <typename T, typename F, float time> struct delta_field<F T::*, time> {
-  void set(float dt) {};
-};
-
-// состояние
-// переход
-
-// state-list
-// transition-list
-
-// два индекса
-// from\now
-// from\to
-
-// b.state.use_machine(obj);
-
-// corutine co_handle func(SharedData&,const ControlBlock&,/* iuic-hook */ &)
-
 int main() {
   using namespace iuic;
 

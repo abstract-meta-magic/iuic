@@ -17,7 +17,7 @@ void context::set_view_size(units::ui::size size) {
 
     mem->max_size.w = units::upixel{size.w};
     mem->max_size.h = units::upixel{size.h};
-    kernel->override({.meta = kernel::element::root}, mem);
+    kernel->override(kernel::element{kernel::element::meta_tag::root}, mem);
   }
 };
 
@@ -28,7 +28,7 @@ void context::proccess_measure() {
 
   int coutnt{0};
   for (auto &el : kernel->get_elements(true)->range()) {
-    if (el.meta && kernel::element::discarded) {
+    if (el.meta_info.has(kernel::element::meta_tag::discarded)) {
       continue;
     }
 
@@ -65,7 +65,7 @@ void context::proccess_measure() {
   }
 
   // mda root calc
-  kernel::element root{.meta = kernel::element::root};
+  kernel::element root{kernel::element::meta_tag::root};
   std::visit(
       [&](auto layout) {
         if constexpr (std::same_as<decltype(layout), const frame_layout *>) {
@@ -84,7 +84,7 @@ void context::proccess_measure() {
 void context::proccess_arrange() {
   // TODO : PARALLEL
 
-  kernel::element root{.meta = kernel::element::root};
+  kernel::element root{kernel::element::meta_tag::root};
 
   auto &max_size = kernel->get_style(root).value()->get_shape().max_size;
 
@@ -100,7 +100,7 @@ void context::proccess_arrange() {
       kernel->get_layout(root));
 
   for (auto &el : kernel->get_elements()->range()) {
-    if (el.meta && (kernel::element::discarded | kernel::element::alive)) {
+    if (el.meta_info.has(kernel::element::meta_tag::discarded)) {
       continue;
     }
 
@@ -130,7 +130,7 @@ void context::build_render_list() {
   scheme::incomplete inc;
 
   for (auto &el : kernel->get_elements()->range()) {
-    if (el.meta & kernel::element::arrange) {
+    if (el.meta_info.has(kernel::element::meta_tag::arrange)) {
       if (std::holds_alternative<const frame_layout *>(
               kernel->get_layout(el))) {
         inc.push_frame(kernel->get_rect_bordered(el).value(),

@@ -394,7 +394,7 @@ struct builder_state_interface : protected virtual builder_base {
   builder_state_interface(builder_base &&bb) : builder_base{bb} {};
 
   bool hovered(units::uid uid) {
-    return kernel.state()->has(uid, state::base::hovered());
+    return kernel.state()->has(uid, state::base::hovered);
   };
 
   bool has(units::uid uid, state s) { return kernel.state()->has(uid, s); }
@@ -435,59 +435,15 @@ struct builder_state_interface : protected virtual builder_base {
       // do job
     };
 
-    iuic::state current_state();
+    // TODO : maybe unneeded
+    // iuic::state current_state();
 
-    iuic::state current_state(units::uid);
+    // TODO : maybe unneeded
+    // iuic::state current_state(units::uid);
 
   private:
     builder_state_interface &i;
   } machine{*this};
-};
-
-void oeu(builder_state_interface::machine_accessor &machine) {
-  static state::decl a;
-  static state::decl b;
-
-  struct My {
-    float x, y;
-  };
-
-  state::machine::transition_graph<state::machine::transition<a, b, true>{}> tr;
-
-  state::machine::spec<tr, My> s;
-  using spec = state::machine::spec<tr, My>;
-
-  spec::prototype p{};
-
-  spec::machine_block m{p};
-
-  auto m_proto = s.make_prototype(
-      state::machine::transition_process<a, b,
-                                         [](My &m,
-                                            state::machine::control_block &cb) {
-                                           //
-                                         }>{},
-      state::machine::transition_process<b, a,
-                                         [](My &,
-                                            state::machine::control_block &) {
-                                           //
-                                         }>{},
-      state::machine::state_process<a,
-                                    [](My &, state::machine::control_block &) {
-                                      //
-                                    }>{});
-
-  machine.use(m_proto);
-
-  machine.try_visit_shared([](My &m) {
-    // do job
-  });
-
-  machine.transition(a);
-
-  if (machine.current_state() == a) {
-    // u
-  }
 };
 
 struct builder final : public virtual builder_base,

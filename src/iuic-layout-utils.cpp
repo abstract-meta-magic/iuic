@@ -28,7 +28,8 @@ style::cref layout_utils_base::parent_style() const {
 };
 
 style::cref layout_utils_base::root_style() const {
-  if (auto s = kernel.get_style({.meta = kernel::element::root})) {
+  if (auto s =
+          kernel.get_style(kernel::element{kernel::element::meta_tag::root})) {
     return *s.value();
   }
 

@@ -649,8 +649,6 @@ void text_button(builder &b, std::string_view text,
 
   auto uid = b.uid.make(iuic::policy::unique{}, "text-button", anchor);
 
-  static constexpr iuic::state::decl touch{};
-
   b.element.frame(
       uid,
       [&](builder &b) {

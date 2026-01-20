@@ -161,7 +161,7 @@ public:
     event_pack res;
 
     for (auto &e : kernel.get_elements()->range()) {
-      if (e.meta ^ kernel::element::discarded | kernel::element::arrange) {
+      if (e.meta_info.has(kernel::element::meta_tag::arrange)) {
         auto hp = kernel.get_hovered_policy(e);
 
         if (auto rect = kernel.get_rect_bordered(e);
@@ -244,7 +244,7 @@ public:
     }
 
     for (auto &&ev : event_pack.local) {
-      if (kernel.state()->has(ev.uid, state::base::hovered())) {
+      if (kernel.state()->has(ev.uid, state::base::hovered)) {
         std::visit(
             [&](auto &&call) {
               using type = std::remove_cvref_t<decltype(call)>;
@@ -293,7 +293,7 @@ public:
     }
 
     for (auto &&ev : event_pack.local) {
-      if (kernel.state()->has(ev.uid, state::base::hovered())) {
+      if (kernel.state()->has(ev.uid, state::base::hovered)) {
         std::visit(
             [&](auto &&call) {
               using type = std::remove_cvref_t<decltype(call)>;
@@ -312,13 +312,13 @@ public:
 
     for (auto &h : event_pack.htest) {
       if (in__(position, h.rect)) {
-        if (kernel.state()->has(h.uid, state::base::hovered())) {
+        if (kernel.state()->has(h.uid, state::base::hovered)) {
           kernel.state()->update_livetime(h.uid);
         } else {
-          kernel.state()->attach(h.uid, state::base::hovered());
+          kernel.state()->attach(h.uid, state::base::hovered);
         }
       } else {
-        kernel.state()->detach(h.uid, state::base::hovered());
+        kernel.state()->detach(h.uid, state::base::hovered);
       }
     }
     pointer_position = position;
@@ -335,10 +335,10 @@ private:
 void apply_event_pack__(event_reciver &er, event_pack &&pack) {
   // hover scan
   for (auto &h : pack.htest) {
-    if (er.kernel.state()->has(h.uid, state::base::hovered())) {
+    if (er.kernel.state()->has(h.uid, state::base::hovered)) {
       if (not event_reciver::in__(er.pointer_position, h.rect)) {
         std::println("state detach");
-        er.kernel.state()->detach(h.uid, state::base::hovered());
+        er.kernel.state()->detach(h.uid, state::base::hovered);
       }
     }
   }

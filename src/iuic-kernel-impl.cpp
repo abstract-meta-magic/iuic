@@ -326,10 +326,11 @@ struct simple_kernel : hardware {
 
   std::expected<units::ui::rect, int>
   get_rect_bordered(element el) const noexcept override {
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       return root.bordered_rect;
-    } else if (auto &eqel = els[el.self].el.meta;
-               eqel && (element::arrange | element::alive)) {
+    } else if (els[el.self].el.meta_info.weak_equal(
+                   element::meta_tag::meta_tag::arrange,
+                   element::meta_tag::meta_tag::alive)) {
       return els[el.self].bordered_rect;
     } else {
       return std::unexpected{2};
@@ -338,10 +339,12 @@ struct simple_kernel : hardware {
 
   virtual std::expected<units::ui::rect, int>
   get_rect_borderless(element el) const noexcept override {
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       return root.bordered_rect;
     } else if (els.size() > el.self &&
-               (els[el.self].el.meta && (element::arrange | element::alive))) {
+               (els[el.self].el.meta_info.weak_equal(
+                   element::meta_tag::meta_tag::arrange,
+                   element::meta_tag::meta_tag::alive))) {
       return els[el.self].bordered_rect;
     } else {
       return std::unexpected{2};
@@ -360,7 +363,8 @@ struct simple_kernel : hardware {
             if (snode.el.brother == snode.el.parent) {
               index = invalide_index;
               break;
-            } else if (bnode.el.meta && element::request) {
+            } else if (bnode.el.meta_info.has(
+                           element::meta_tag::meta_tag::request)) {
               index = bnode.el.self;
               break;
             }
@@ -395,7 +399,8 @@ struct simple_kernel : hardware {
         if (valid()) {
           ++index;
           for (; index < kernel.els.size(); ++index) {
-            if (kernel.els[index].el.meta && element::root_child) {
+            if (kernel.els[index].el.meta_info.has(
+                    element::meta_tag::meta_tag::root_child)) {
               return;
             }
           };
@@ -426,8 +431,9 @@ struct simple_kernel : hardware {
 
     //
 
-    if (els.size() > el.self + 1 && els[el.self].el.meta && element::request) {
-      if (el.meta && element::root) {
+    if (els.size() > el.self + 1 &&
+        els[el.self].el.meta_info.has(element::meta_tag::meta_tag::request)) {
+      if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
         return std::make_unique<rq_root_iterator>(*this);
       } else if (reverse) {
         return utils::invalid_virtual_iterator{};
@@ -444,9 +450,9 @@ struct simple_kernel : hardware {
 
   std::variant<const frame_layout *, const text_layout *>
   get_layout(element el) const noexcept override {
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       return root.flayout;
-    } else if (el.meta & element::text) {
+    } else if (el.meta_info.has(element::meta_tag::meta_tag::text)) {
       return els.size() > el.self ? els[el.self].tlayout : nullptr;
     } else {
       return els.size() > el.self ? els[el.self].flayout : nullptr;
@@ -454,8 +460,9 @@ struct simple_kernel : hardware {
   };
 
   element get_parent(element el) override {
-    if (el.meta && element::root || el.meta && element::root_child) {
-      return element{.meta = element::root};
+    if (el.meta_info.any_of(element::meta_tag::meta_tag::root,
+                            element::meta_tag::meta_tag::root_child)) {
+      return element{element::meta_tag::meta_tag::root};
     } else {
       return els.size() > el.parent ? els[el.parent].el : element{};
     }
@@ -467,9 +474,11 @@ struct simple_kernel : hardware {
       void next() noexcept override {
         if (valid() &&
             kernel.els[index].el.brother != kernel.els[index].el.parent) {
-          if (kernel.els[index].el.meta && element::root_child) {
+          if (kernel.els[index].el.meta_info.has(
+                  element::meta_tag::meta_tag::root_child)) {
             for (auto i{index + 1}; index < kernel.els.size(); ++i) {
-              if (kernel.els[i].el.meta && element::root_child) {
+              if (kernel.els[i].el.meta_info.has(
+                      element::meta_tag::meta_tag::root_child)) {
                 index = i;
                 return;
               }
@@ -527,7 +536,7 @@ struct simple_kernel : hardware {
       return utils::invalid_virtual_iterator{};
     }
 
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       if (reverse) {
         return not els.empty() ? std::unique_ptr<utils::virtual_iterator<
                                      const element>>{new ch_riterator{*this, 0}}
@@ -559,7 +568,7 @@ struct simple_kernel : hardware {
   std::expected<const style::cref *, int>
   get_style(element el) const noexcept override {
     if (el.self < els.size()) {
-      if (el.meta && element::root) {
+      if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
         return &root.st;
       } else {
         if (els.size() > el.self) {
@@ -579,16 +588,12 @@ struct simple_kernel : hardware {
   };
 
   std::expected<units::uid, int> get_uid(element el) const noexcept override {
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       return root.uid;
     } else {
       if (els.size() > el.self) {
         return els[el.self].uid;
       } else {
-
-        std::println("Element : self:{} , parent:{} , brother:{} , type:{}",
-                     el.self, el.parent, el.brother,
-                     el.meta && element::root ? "root" : "none");
         return std::unexpected{0};
       };
     }
@@ -596,7 +601,7 @@ struct simple_kernel : hardware {
 
   std::expected<policy::hovered, int>
   get_hovered_policy(element el) const noexcept override {
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       return root.hp;
     } else {
       if (els.size() > el.self) {
@@ -609,7 +614,7 @@ struct simple_kernel : hardware {
 
   std::expected<policy::event, int>
   get_event_policy(element el) const noexcept override {
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       return root.ep;
     } else {
       if (els.size() > el.self) {
@@ -693,15 +698,14 @@ struct simple_kernel : hardware {
   // create and select new element
   element instance(units::uid uid, const frame_layout *layout,
                    style::ref ref) noexcept override {
-
     els.push_back({.st = ref, .uid = uid, .flayout = layout});
     auto &node = els.back();
 
     element el;
-    if (sel.meta && element::root) {
+    if (sel.meta_info.has(element::meta_tag::meta_tag::root)) {
       el.self = el.brother = el.parent = els.size() - 1;
-      el.meta |= element::root_child;
-      sel.meta = sel.meta ^ element::root;
+      el.meta_info.attach(element::meta_tag::meta_tag::root_child);
+      sel.meta_info.detach(element::meta_tag::meta_tag::root);
     } else {
       el.self = els.size() - 1;
       el.parent = el.brother = sel.self;
@@ -721,14 +725,14 @@ struct simple_kernel : hardware {
 
     element el;
 
-    if ((sel.meta & element::root) == element::root) {
+    if (sel.meta_info.has(element::meta_tag::meta_tag::root)) {
       el.self = el.brother = el.parent = els.size() - 1;
-      el.meta |= element::root_child;
-      el.meta |= element::text;
-      sel.meta = sel.meta ^ element::root;
+      el.meta_info.attach(element::meta_tag::meta_tag::root_child,
+                          element::meta_tag::meta_tag::text);
+      sel.meta_info.detach(element::meta_tag::meta_tag::root);
     } else {
       el.self = els.size() - 1;
-      el.meta |= element::text;
+      el.meta_info.attach(element::meta_tag::meta_tag::text);
       el.parent = el.brother = sel.self;
     }
 
@@ -742,19 +746,19 @@ struct simple_kernel : hardware {
   // make element alive and select parent
   element launch(element el) noexcept override {
     auto &node = els[el.self];
-    if (node.el.meta && element::root_child) {
-      sel.meta |= element::root;
+    if (node.el.meta_info.has(element::meta_tag::meta_tag::root_child)) {
+      sel.meta_info.attach(element::meta_tag::meta_tag::root);
       sel.self = el.parent;
     } else {
       sel.self = el.parent;
     }
-    node.el.meta |= element::alive;
+    node.el.meta_info.attach(element::meta_tag::meta_tag::alive);
     return node.el;
   };
 
   element discard(element el) noexcept override {
     if (el.self < els.size()) {
-      els[el.self].el.meta |= element::discarded;
+      els[el.self].el.meta_info.attach(element::meta_tag::meta_tag::discarded);
       return els[el.self].el;
     }
     return {};
@@ -767,7 +771,7 @@ struct simple_kernel : hardware {
   };
 
   void override(element el, style::shape *sh) noexcept override {
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::meta_tag::root)) {
       root_style.shape = *sh;
     } else {
       els[el.self].st.override(sh);
@@ -797,9 +801,9 @@ struct simple_kernel : hardware {
   void attach(element el, request_size rq) noexcept override {
     static std::size_t t{0};
     if (el.self < els.size()) {
-      if (not(els[el.self].el.meta && element::request)) {
+      if (not(els[el.self].el.meta_info.has(element::meta_tag::request))) {
         els[el.self].rq.size = rq;
-        els[el.self].el.meta |= element::request;
+        els[el.self].el.meta_info.attach(element::meta_tag::request);
       }
     }
   };
@@ -808,12 +812,12 @@ struct simple_kernel : hardware {
     if (el.self > els.size())
       return;
     auto &node = els[el.self];
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::root)) {
       root.bordered_rect = root.borderless_rect = bordered;
-    } else if ((node.el.meta && element::request) &&
-               not(node.el.meta && element::arrange)) {
+    } else if ((node.el.meta_info.has(element::meta_tag::request)) &&
+               not(node.el.meta_info.has(element::meta_tag::arrange))) {
       node.bordered_rect = node.borderless_rect = bordered;
-      node.el.meta |= element::arrange;
+      node.el.meta_info.attach(element::meta_tag::arrange);
       auto [x, y, w, h] = bordered.xywh();
     }
   };
@@ -821,13 +825,13 @@ struct simple_kernel : hardware {
   void apply(element el, units::ui::rect bordered,
              units::ui::rect borderless) noexcept override {
     auto node = els[el.self];
-    if (el.meta && element::root) {
+    if (el.meta_info.has(element::meta_tag::root)) {
       root.bordered_rect = root.borderless_rect = bordered;
-    } else if ((node.el.meta && element::request) &&
-               not(node.el.meta && element::arrange)) {
+    } else if ((node.el.meta_info.has(element::meta_tag::request)) &&
+               not(node.el.meta_info.has(element::meta_tag::arrange))) {
       node.bordered_rect = bordered;
       node.borderless_rect = borderless;
-      node.el.meta |= element::arrange;
+      node.el.meta_info.attach(element::meta_tag::arrange);
     }
   };
 
@@ -842,13 +846,13 @@ struct simple_kernel : hardware {
   style::decl root_style{};
 
   node root{
-      .el = {.meta = element::root},
+      .el = element{element::meta_tag::root},
       .st = root_style,
       .uid = hash(std::as_bytes(std::span("root-uid-seed-o[{}&[{}&[[222"))),
       .flayout = &root_layout,
   };
   std::vector<node> els;
-  element sel{.meta = element::root};
+  element sel{element::meta_tag::root};
 
   base_memory_model_impl mem{};
   base_state_model_impl st{};
