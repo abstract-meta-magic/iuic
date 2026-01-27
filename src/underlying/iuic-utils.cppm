@@ -191,4 +191,59 @@ struct anchor {
   std::size_t value;
 };
 
+namespace ct {
+
+template <typename T, std::size_t N> struct index_tree {
+  static constexpr std::size_t invalide_index{
+      std::numeric_limits<std::size_t>::max()};
+
+  constexpr index_tree(std::array<T, N> &&data_) : data{std::move(data_)} {}
+
+  constexpr std::size_t get_index(const T &value) const {
+
+    if (auto it = std::find(data.begin(), data.end(), value);
+        it != std::end(data)) {
+      return std::distance(data.begin(), it);
+    };
+
+    return invalide_index;
+  };
+
+  constexpr std::size_t size() const { return N; };
+
+private:
+  std::array<T, N> data;
+};
+template <typename T, T... value> struct list;
+
+template <> struct list<void> {
+  template <typename T, T... i2>
+  constexpr list<T, i2...> operator&(list<T, i2...>) {
+    return {};
+  }
+
+  constexpr decltype(auto) operator&(auto call) { return list{}; }
+
+  constexpr list<void> operator&(list<void>) { return {}; }
+};
+
+template <typename T, T... value> struct list {
+  template <T... i2>
+  constexpr list<T, value..., i2...> operator&(list<T, i2...>) {
+    return {};
+  }
+
+  constexpr list<T, value...> operator&(list<void>) { return {}; }
+
+  constexpr decltype(auto) operator&(std::invocable<list> auto call) {
+    return call(*this);
+  }
+
+  static constexpr list get() { return {}; };
+
+  static constexpr decltype(auto) expand(auto call) {
+    return call.template operator()<value...>();
+  };
+};
+}; // namespace ct
 }; // namespace iuic::utils

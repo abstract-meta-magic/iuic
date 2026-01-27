@@ -49,6 +49,65 @@ constexpr iuic::external::type opengl{};
 constexpr iuic::external::type opengl_text{opengl};
 
 int main() {
+  using namespace iuic::state;
+
+  constexpr auto &a = decl::unique_instance();
+  constexpr auto &b = decl::unique_instance();
+  constexpr auto &e = decl::unique_instance();
+
+  constexpr auto spec = machine::spec<
+      machine::transition_graph<machine::transition{a, b, true}>{}, app>{};
+
+  constexpr auto proto =
+      spec.get_protobuilder()
+          .entry<b>()
+          .transition(a, b,
+                      [](const machine::execute::state &state,
+                         app &app) -> machine::execute::transition {
+                        for (; not state.is_interrupted();) {
+                          // do job
+                          co_yield machine::execute::result::process;
+                        }
+                        co_return;
+                      })
+          .transition(b, a,
+                      [](const machine::execute::state &state,
+                         app &) -> machine::execute::transition {
+                        for (; not state.is_interrupted();) {
+                          // do job
+                          co_yield machine::execute::result::process;
+                        }
+                        co_return;
+                      })
+          .exception_handler([](const machine::execute::state &state,
+                                app &) -> machine::execute::stay {
+            if (state.exception) {
+              co_yield machine::execute::result::
+                  terminate_by_unexpected_exception;
+            }
+            co_return base::idle;
+          })
+          .stay(b,
+                [](const machine::execute::state &state,
+                   app &a) -> machine::execute::stay {
+                  int i{0};
+                  for (; not state.is_interrupted();) {
+                    std::println("num is :{}", ++i);
+                    co_yield machine::execute::result::process;
+                  };
+                  co_return base::idle;
+                })
+          .terminate([](const machine::execute::state &state,
+                        app &) -> machine::execute::transition { co_return; })
+          .finalize();
+
+  auto machine = spec.make_instance(proto);
+
+  machine->process();
+  machine->process();
+  machine->process();
+
+  /*
   using namespace iuic;
 
   // SDL BASE
@@ -170,4 +229,5 @@ int main() {
 
   CloseWindow();
   return 0;
+  */
 }

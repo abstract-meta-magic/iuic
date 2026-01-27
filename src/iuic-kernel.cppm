@@ -184,19 +184,19 @@ struct request {
 };
 
 struct state_model {
-  virtual void attach(units::uid, iuic::state) = 0;
+  virtual void attach(units::uid, iuic::state::value) = 0;
 
-  virtual void detach(units::uid, iuic::state) = 0;
+  virtual void detach(units::uid, iuic::state::value) = 0;
 
   // replace to std::ranges::view
-  virtual std::unique_ptr<utils::virtual_iterator<const iuic::state>>
-      get(units::uid, iuic::state) const = 0;
+  virtual std::unique_ptr<utils::virtual_iterator<const iuic::state::value>>
+      get(units::uid, iuic::state::value) const = 0;
 
   virtual bool is_exist(units::uid) const = 0;
 
   virtual bool update_livetime(units::uid) const = 0;
 
-  virtual bool has(units::uid, iuic::state) const = 0;
+  virtual bool has(units::uid, iuic::state::value) const = 0;
 };
 
 struct userspace {

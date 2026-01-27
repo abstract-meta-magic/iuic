@@ -103,7 +103,9 @@ struct decoration {
     units::color_t color;
   } border_radius; // decorations
 
+  // TOTO : replace to external::bind
   units::ui::background background{units::ui::none{}};
+
   units::color_t foreground{units::color_t{0, 0, 0, 0}};
   units::color_t border{units::color_t{0, 0, 0, 0}};
 };

@@ -5,10 +5,12 @@ import std;
 
 export namespace iuic::units {
 
+// TOTO : use -> enum uid : std::uint64_t;
 using uid = std::uint64_t;
+// TOTO : use -> enum hash : std::uint64_t;
+using hash = std::uint64_t;
 using pixel = std::int32_t;
 using upixel = std::uint32_t;
-using hash = std::uint64_t;
 using time = std::chrono::time_point<std::chrono::steady_clock>;
 using time_duration = std::chrono::duration<double>;
 
@@ -137,7 +139,7 @@ struct inherit {};
 
 struct auto_t {};
 
-struct image {};
+struct [[deprecated("use external::binding")]] image {};
 
 using background = std::variant<none, color_t, image>;
 

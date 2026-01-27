@@ -397,9 +397,11 @@ struct builder_state_interface : protected virtual builder_base {
     return kernel.state()->has(uid, state::base::hovered);
   };
 
-  bool has(units::uid uid, state s) { return kernel.state()->has(uid, s); }
+  bool has(units::uid uid, state::value s) {
+    return kernel.state()->has(uid, s);
+  }
 
-  void attach(units::uid uid, state s) {
+  void attach(units::uid uid, state::value s) {
     if (kernel.state()->is_exist(uid)) {
       kernel.state()->update_livetime(uid);
     } else {
@@ -407,42 +409,61 @@ struct builder_state_interface : protected virtual builder_base {
     }
   };
 
-  void detach(units::uid uid, state s) {
+  void detach(units::uid uid, state::value s) {
     return kernel.state()->detach(uid, s);
   };
 
-  void transfer(iuic::state from, iuic::state to, auto *coro) {
+  void transfer(state::value from, state::value to, auto *coro) {
     //
   };
 
   struct machine_accessor {
     machine_accessor(builder_state_interface &i_) : i{i_} {};
 
-    void use(auto proto);
+    void use(const auto &proto) {
+      auto el = i.kernel.get_selected();
+      hub.machine_instance(i.kernel.get_uid(el).value(), proto);
+    };
 
-    void use(units::uid, auto proto);
+    void use(units::uid uid, const auto &proto) {
+      hub.machine_instance(uid, proto);
+    };
 
-    void transition(iuic::state);
+    void transition(state::value state) {
+      auto el = i.kernel.get_selected();
+      auto *m = hub.get_machine(i.kernel.get_uid(el).value());
 
-    void transition(iuic::state, auto err);
+      if (m) {
+        m->get_controller().try_move(state);
+      }
+    };
 
-    void transition(units::uid, iuic::state);
+    void transition(units::uid uid, state::value state) {
+      auto *m = hub.get_machine(uid);
 
-    void transition(units::uid, iuic::state, auto err);
+      if (m) {
+        m->get_controller().try_move(state);
+      }
+    };
+
+    // TOTO : error handling
+    // void transition(units::uid, iuic::state, auto err);
+    // void transition(iuic::state, auto err);
 
     void try_visit_shared(
         erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call) {
-      // do job
+      auto el = i.kernel.get_selected();
+      auto *m = hub.get_machine(i.kernel.get_uid(el).value());
+
+      if (m) {
+        m->get_controller().try_visit_shared(
+            std::forward<decltype(call)>(call));
+      }
     };
-
-    // TODO : maybe unneeded
-    // iuic::state current_state();
-
-    // TODO : maybe unneeded
-    // iuic::state current_state(units::uid);
 
   private:
     builder_state_interface &i;
+    state::machine::hub hub;
   } machine{*this};
 };
 

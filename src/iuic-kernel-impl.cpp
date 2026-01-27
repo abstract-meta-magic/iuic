@@ -141,9 +141,10 @@ struct root_layout : frame_layout {
 
 struct base_state_model_impl : public state_model {
   using swap_t = swap_buffers<
-      std::unordered_map<units::uid, std::unordered_set<iuic::state>>, 2>;
+      std::unordered_map<units::uid, std::unordered_set<iuic::state::value>>,
+      2>;
 
-  void attach(units::uid uid, iuic::state state) noexcept {
+  void attach(units::uid uid, iuic::state::value state) noexcept {
     auto buff = swap.get_buffers();
 
     if (buff.current.contains(uid)) {
@@ -153,7 +154,7 @@ struct base_state_model_impl : public state_model {
     }
   };
 
-  void detach(units::uid uid, iuic::state state) noexcept {
+  void detach(units::uid uid, iuic::state::value state) noexcept {
     auto buff = swap.get_buffers();
     if (buff.current.contains(uid)) {
       buff.current.at(uid).erase(state);
@@ -161,8 +162,8 @@ struct base_state_model_impl : public state_model {
   };
 
   // replace to std::ranges::view
-  std::unique_ptr<utils::virtual_iterator<const iuic::state>>
-  get(units::uid, iuic::state) const {
+  std::unique_ptr<utils::virtual_iterator<const iuic::state::value>>
+  get(units::uid, iuic::state::value) const {
     return utils::invalid_virtual_iterator{};
   };
 
@@ -177,7 +178,7 @@ struct base_state_model_impl : public state_model {
     return true;
   };
 
-  bool has(units::uid uid, iuic::state state) const {
+  bool has(units::uid uid, iuic::state::value state) const {
     return swap.get_buffers().current.contains(uid)
                ? swap.get_buffers().current.at(uid).contains(state)
                : false;

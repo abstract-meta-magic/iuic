@@ -49,9 +49,9 @@ public:
   } memory{kernel};
 
   struct : component {
-    void attach(state){};
-    void detach(state){};
-    bool has(state) { return false; };
+    void attach(state::value){};
+    void detach(state::value){};
+    bool has(state::value) { return false; };
   } state{kernel};
 };
 
