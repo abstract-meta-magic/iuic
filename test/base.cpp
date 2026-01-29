@@ -64,24 +64,38 @@ int main() {
           .transition(a, b,
                       [](const machine::execute::state &state,
                          app &app) -> machine::execute::transition {
-                        for (; not state.is_interrupted();) {
+                        int i{0};
+                        for (; not state.is_interrupted() && ++i <= 4;) {
                           // do job
+                          std::println("job a -> b");
+
                           co_yield machine::execute::result::process;
+                        }
+
+                        if (state.is_interrupted()) {
+                          co_yield machine::execute::result::success_interrupt;
                         }
                         co_return;
                       })
           .transition(b, a,
                       [](const machine::execute::state &state,
                          app &) -> machine::execute::transition {
-                        for (; not state.is_interrupted();) {
+                        int i{0};
+                        for (; not state.is_interrupted() && ++i <= 2;) {
+                          std::println("job b -> a");
                           // do job
                           co_yield machine::execute::result::process;
+                        }
+
+                        if (state.is_interrupted()) {
+                          co_yield machine::execute::result::success_interrupt;
                         }
                         co_return;
                       })
           .exception_handler([](const machine::execute::state &state,
                                 app &) -> machine::execute::stay {
             if (state.exception) {
+              std::println("yo");
               co_yield machine::execute::result::
                   terminate_by_unexpected_exception;
             }
@@ -92,9 +106,27 @@ int main() {
                    app &a) -> machine::execute::stay {
                   int i{0};
                   for (; not state.is_interrupted();) {
-                    std::println("num is :{}", ++i);
+                    std::println("B num is :{}", ++i);
                     co_yield machine::execute::result::process;
                   };
+                  if (state.is_interrupted()) {
+                    std::println("interrupt");
+                    co_yield machine::execute::result::success_interrupt;
+                  }
+                  co_return base::idle;
+                })
+          .stay(a,
+                [](const machine::execute::state &state,
+                   app &a) -> machine::execute::stay {
+                  int i{0};
+                  for (; not state.is_interrupted();) {
+                    std::println("A num is :{}", ++i);
+                    co_yield machine::execute::result::process;
+                  };
+                  if (state.is_interrupted()) {
+                    std::println("interrupt");
+                    co_yield machine::execute::result::success_interrupt;
+                  }
                   co_return base::idle;
                 })
           .terminate([](const machine::execute::state &state,
@@ -103,6 +135,25 @@ int main() {
 
   auto machine = spec.make_instance(proto);
 
+  machine->process();
+  machine->process();
+  machine->process();
+  machine->get_controller().try_move(a);
+  machine->process(); // init tr
+  machine->process();
+  machine->process();
+  machine->process();
+  machine->process();
+  machine->process();
+  machine->get_controller().try_move(b);
+  machine->process(); // init tr
+  machine->process();
+  machine->process();
+  machine->process();
+  machine->get_controller().try_move(a);
+  machine->process(); // init tr
+  machine->process();
+  machine->process();
   machine->process();
   machine->process();
   machine->process();

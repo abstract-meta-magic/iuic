@@ -1,5 +1,5 @@
-// Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 abstract-meta-magic and contributors
 
 export module iuic.core:state;
 import std;
@@ -211,6 +211,8 @@ struct state {
     return value == transition_interrupt || value == stay_interrupt;
   };
 
+  constexpr void reverse() { std::swap(from, to); };
+
   using enum value_t;
 
   constexpr operator value_t() const noexcept { return value; }
@@ -241,13 +243,17 @@ struct transition {
 
     std::suspend_always final_suspend() noexcept { return {}; };
 
-    std::suspend_always yield_value(result) { return {}; };
+    std::suspend_always yield_value(result res) {
+      last_yield = res;
+      return {};
+    };
 
     void return_void() {};
 
-    void unhandled_exception() {};
+    void unhandled_exception() { exception = std::current_exception(); };
 
-  private:
+    result last_yield{result::process};
+    std::exception_ptr exception{nullptr};
   };
 
   constexpr transition(transition &&other) noexcept {
@@ -268,6 +274,10 @@ struct transition {
     if (handle && not handle.done())
       handle.resume();
   };
+
+  bool finished() const { return not handle || handle.done(); };
+
+  execute::result last_yeild() const { return handle.promise().last_yield; };
 
   ~transition() {
     if (handle)
@@ -293,23 +303,30 @@ struct stay {
 
     std::suspend_always final_suspend() noexcept { return {}; };
 
-    std::suspend_always yield_value(result) { return {}; };
+    std::suspend_always yield_value(result ret) {
+      last_yield = ret;
+      return {};
+    };
 
     // возврат невозможного перехода == UB
-    void return_value(iuic::state::value){};
+    void return_value(iuic::state::value ret) {
+      if (ret == iuic::state::base::null) {
+        result = iuic::state::base::idle;
+      } else {
+        result = ret;
+      }
+    };
 
-    void unhandled_exception() {};
+    void unhandled_exception() { exception = std::current_exception(); };
 
-  private:
+    std::exception_ptr exception{nullptr};
+    result last_yield{result::process};
+    iuic::state::value result{iuic::state::base::null};
   };
 
-  constexpr stay(stay &&other) noexcept {
-    std::swap(selected, other.selected);
-    std::swap(handle, other.handle);
-  };
+  constexpr stay(stay &&other) noexcept { std::swap(handle, other.handle); };
 
   constexpr stay &operator=(stay &&other) noexcept {
-    std::swap(selected, other.selected);
     std::swap(handle, other.handle);
     return *this;
   };
@@ -324,13 +341,18 @@ struct stay {
       handle.resume();
   };
 
+  bool finished() const { return not handle || handle.done(); };
+
+  execute::result last_yeild() const { return handle.promise().last_yield; };
+
+  iuic::state::value return_value() const { return handle.promise().result; };
+
   ~stay() {
     if (handle)
       handle.destroy();
   };
 
 private:
-  iuic::state::value selected{iuic::state::base::null};
   promise_type::handle_type handle;
 };
 }; // namespace execute
@@ -374,6 +396,11 @@ struct instance {
   virtual void process() = 0;
 };
 
+struct impossible_transition : std::runtime_error {
+  impossible_transition()
+      : std::runtime_error{"Inpossible transition from Machine-Stay"} {};
+};
+
 // TODO : DOCS
 export template <transition_graph graph, iuic::erasure::as_pure_type SharedData>
 struct spec {
@@ -388,16 +415,16 @@ private:
     using transition_ctor_map_t =
         std::array<transition_ctor_t, graph.transition_count>;
 
-    constexpr prototype_base(std::size_t entry_index_, stay_ctor_t excp_ctor,
+    constexpr prototype_base(value entry_, stay_ctor_t excp_ctor,
                              transition_ctor_t term_ctor,
                              transition_ctor_map_t tr_map,
                              stay_ctor_map_t st_map) noexcept
-        : entry_index{entry_index_}, exception_handler_ctor{excp_ctor},
+        : entry{entry_}, exception_handler_ctor{excp_ctor},
           terminate_handler_ctor{}, transition_ctor_map{tr_map},
           stay_ctor_map{st_map} {};
 
   protected:
-    std::size_t entry_index;
+    value entry;
     stay_ctor_t exception_handler_ctor;
     transition_ctor_t terminate_handler_ctor;
     transition_ctor_map_t transition_ctor_map;
@@ -423,12 +450,10 @@ private:
       return nullptr;
     };
 
-    prototype_base::stay_ctor_t get_entry() const {
-      return prototype_base::stay_ctor_map[prototype_base::entry_index];
-    };
+    value get_entry() const { return prototype_base::entry; };
 
     prototype_base::stay_ctor_t get_exception_handler() const {
-      return prototype_base::exception_handler;
+      return prototype_base::exception_handler_ctor;
     };
 
     prototype_base::transition_ctor_t get_terminate_handler() const {
@@ -524,7 +549,7 @@ private:
     constexpr protobuilder &entry()
       requires(graph.stay_index(val) != graph.invalid_index)
     {
-      prototype_base::entry_index = graph.stay_index(val);
+      prototype_base::entry = val;
       return *this;
     };
 
@@ -550,18 +575,14 @@ public:
 
   struct instance final : public machine::instance, private controller {
   private: // controller
-    bool can_move(state::value) const override {
-      // TODO : body
-      return false;
+    bool can_move(state::value st) const override {
+      return graph.transition_index(state.active, st) != graph.invalid_index;
     };
 
     // выставляет следующее состояние
     bool try_move(state::value nstate) override {
       if (can_move(nstate)) {
-        // DO MOVE
-        auto ctor = prototype.get_transition_ctor(state.to, nstate);
-
-        auto handle = ctor(state, data);
+        selected = nstate;
 
         return true;
       }
@@ -589,9 +610,10 @@ public:
 
   public: // instance
     instance(const prototype &p) : prototype{p} {
-      st_handler = p.get_entry()(state, data);
+      st_handler = p.get_stay_ctor(p.get_entry())(state, data);
       std::println("init");
       state.value = execute::state::stay;
+      state.active = p.get_entry();
     };
 
     controller &get_controller() override { return *this; };
@@ -601,51 +623,99 @@ public:
     std::size_t get_spec_id() const override { return spec::id; };
 
     void process() override {
-      if (selected != state::base::null) {
-        switch (state.value) {
-        case execute::state::idle: {
-          break;
-        }
-        case execute::state::stay: {
-          st_handler.process();
-          break;
-        }
-        case execute::state::stay_interrupt: {
-          break;
-        }
-        case execute::state::transition: {
-          break;
-        }
-        case execute::state::transition_interrupt: {
-          break;
-        }
-        case execute::state::err: {
-          break;
-        }
-        }
+      selected == state::base::null ? common_marshalling__()
+                                    : interruptr_marshalling__();
+    };
 
-      } else {
-        switch (state.value) {
-        case execute::state::idle: {
-          break;
+  private: // interruptr
+    template <typename T> void interruptr_marshalling__final__(T &handler) {
+      if (handler.last_yeild() == execute::result::success_interrupt) {
+        tr_handler =
+            prototype.get_transition_ctor(state.active, selected)(state, data);
+        state.reverse();
+        state.to = std::exchange(selected, base::null);
+        state.value = state.transition;
+      }
+      // error check
+    };
+
+    template <execute::state::value_t st, typename T>
+    void interruptr_marshalling__off_process__(T &handler) {
+      state.value = st;
+      handler.process();
+      interruptr_marshalling__final__(handler);
+    };
+
+    template <typename T>
+    void interruptr_marshalling__in_process__(T &handler) {
+      if (handler.last_yeild() == execute::result::process_interrupt)
+        handler.process();
+
+      interruptr_marshalling__final__(handler);
+    };
+
+    void interruptr_marshalling__() {
+      switch (state.value) {
+      case execute::state::stay: {
+        interruptr_marshalling__off_process__<execute::state::stay_interrupt>(
+            st_handler);
+        break;
+      }
+      case execute::state::stay_interrupt: {
+        interruptr_marshalling__in_process__(st_handler);
+        break;
+      }
+      case execute::state::transition: {
+        interruptr_marshalling__off_process__<
+            execute::state::transition_interrupt>(tr_handler);
+        break;
+      }
+      case execute::state::transition_interrupt: {
+        interruptr_marshalling__in_process__(tr_handler);
+        break;
+      }
+      default: {
+        // error check
+        break;
+      }
+      }
+    };
+
+  private: // common
+    void common_marshalling__() {
+      switch (state.value) {
+      case execute::state::stay: {
+        st_handler.process();
+        auto nstate = st_handler.return_value();
+        if (st_handler.finished()) {
+          if (graph.transition_index(state.active, nstate)) {
+            tr_handler = prototype.get_transition_ctor(state.active,
+                                                       nstate)(state, data);
+            state.value = state.transition;
+            state.reverse();
+            state.to = nstate;
+          } else {
+            st_handler = prototype.get_exception_handler()(state, data);
+            state.exception =
+                std::make_exception_ptr(machine::impossible_transition{});
+            state.reverse();
+            state.to = nstate;
+            state.value = state.stay;
+          }
         }
-        case execute::state::stay: {
-          st_handler.process();
-          break;
+        break;
+      }
+      case execute::state::transition: {
+        tr_handler.process();
+        if (tr_handler.finished()) {
+          st_handler = prototype.get_stay_ctor(state.to)(state, data);
+          state.value = state.stay;
         }
-        case execute::state::stay_interrupt: {
-          break;
-        }
-        case execute::state::transition: {
-          break;
-        }
-        case execute::state::transition_interrupt: {
-          break;
-        }
-        case execute::state::err: {
-          break;
-        }
-        }
+        break;
+      }
+      default: {
+        // throw exception
+      };
       }
     };
 
