@@ -77,6 +77,16 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
+add_library(backtrace__ SHARED IMPORTED)
+
+set_target_properties(backtrace__ PROPERTIES
+	IMPORTED_LOCATION ${BACKTRACE}/lib/libbacktrace.so
+	INTERFACE_INCLUDE_DIRECTORIES ${BACKTRACE}/include
+)
+
+target_link_libraries(${PROJECT_NAME}_core backtrace__)
+
+
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/test/iuic-state.test.cpp"
 )

@@ -1,15 +1,163 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
+module;
+
+#include <backtrace.h>
+#include <cxxabi.h>
 
 export module iuic.underlying:test;
 import std;
 import :utils;
 namespace iuic::test {
 
-export struct utils {
-  void eq() {};
+void trace_if_supported() {};
 
-  void neq() {};
+struct assert_base {
+  constexpr operator bool() const noexcept { return value; }
+
+  constexpr assert_base &assertion_true(std::string_view msg) & {
+    if_true = msg;
+    return *this;
+  };
+
+  constexpr assert_base &assertion_false(std::string_view msg) & {
+    if_false = msg;
+    return *this;
+  };
+
+  constexpr assert_base(bool v) : value{v} {}
+
+protected:
+  std::string_view if_true{""};
+  std::string_view if_false{""};
+  bool value{true};
+};
+
+struct assert : assert_base {
+  constexpr assert(bool value, std::string diagnostic_)
+      : assert_base{value}, diagnostic{diagnostic_} {}
+
+  constexpr assert(bool value) : assert_base{value} {}
+
+  constexpr std::string_view assert_msg() const noexcept {
+    return value ? if_true : if_false;
+  };
+
+  constexpr std::string_view diagnostic_msg() const noexcept {
+    return diagnostic;
+  };
+
+  constexpr bool has_assert_msg() const noexcept {
+    return not assert_msg().empty();
+  };
+
+  constexpr bool has_diagnostic() const noexcept {
+    return not diagnostic.empty();
+  };
+
+private:
+  std::string diagnostic{""};
+};
+
+inline void backtrace_err(void *d, const char *msg, int err) {}
+
+inline int backtrace_full(void *data, uintptr_t pc, const char *filename,
+                          int lineno, const char *function) {
+  if (function) {
+    int status{-1};
+    std::unique_ptr<char, void (*)(void *)> res(
+        abi::__cxa_demangle(function, nullptr, nullptr, &status), std::free);
+
+    std::string_view fn{res.get()};
+
+    if (fn.contains("iuic::test::utils@iuic.underlying&")) {
+      std::println("FILE: {}:{}:0", filename, lineno);
+      return -1;
+    };
+  }
+  return 0;
+};
+
+export struct utils {
+  template <typename T, typename U> assert_base &eq(const T &exp, U &&dir) {
+    if (exp != dir) {
+      std::println(">>>>>>>>>>>");
+      std::println("EQ  - FALSE");
+      trace_if_supported();
+      auto *st = backtrace_create_state(nullptr, 0, backtrace_err, nullptr);
+      backtrace_full(st, 0, backtrace_full, backtrace_err, nullptr);
+      std::println("<<<<<<<<<<<");
+      asserts.push_back(false);
+    } else {
+      asserts.push_back(true);
+    }
+    return asserts.back();
+  };
+
+  template <typename T> assert_base &eq(const T &exp) {
+    if (not exp) {
+      std::println(">>>>>>>>>>>");
+      std::println("EQ  - FALSE");
+      trace_if_supported();
+      auto *st = backtrace_create_state(nullptr, 0, backtrace_err, nullptr);
+      backtrace_full(st, 0, backtrace_full, backtrace_err, nullptr);
+      std::println("<<<<<<<<<<<");
+      asserts.push_back(false);
+    } else {
+      asserts.push_back(true);
+    }
+    return asserts.back();
+  };
+
+  template <typename T, typename U> assert_base &neq(const T &exp, U &&dir) {
+    if (exp == dir) {
+      std::println(">>>>>>>>>>>");
+      std::println("NEQ - FALSE");
+      auto *st = backtrace_create_state(nullptr, 0, backtrace_err, nullptr);
+      backtrace_full(st, 0, backtrace_full, backtrace_err, nullptr);
+      std::println("<<<<<<<<<<<");
+      asserts.push_back(false);
+    } else {
+      asserts.push_back(true);
+    }
+    return asserts.back();
+  };
+
+  template <typename T> assert_base &neq(const T &exp) {
+    if (exp) {
+      std::println(">>>>>>>>>>>");
+      std::println("NEQ - FALSE");
+      auto *st = backtrace_create_state(nullptr, 0, backtrace_err, nullptr);
+      backtrace_full(st, 0, backtrace_full, backtrace_err, nullptr);
+      std::println("<<<<<<<<<<<");
+      asserts.push_back(false);
+    } else {
+      asserts.push_back(true);
+    }
+    return asserts.back();
+  };
+
+  void dump(std::invocable<const assert &> auto &&st) {
+    for (auto &&assert : asserts) {
+      st(assert);
+    };
+  };
+
+  void dump() {
+    constexpr auto base = [](const assert &assert) {
+      if (assert.has_assert_msg()) {
+        std::println("{} - msg : {}", assert ? "[TRUE] " : "[FALSE]",
+                     assert.assert_msg());
+      } else {
+        std::println("{}", assert ? "[TRUE] " : "[FALSE]");
+      }
+    };
+
+    dump(base);
+  };
+
+private:
+  std::vector<assert> asserts;
 };
 
 using body_ptr = void (*)(utils &);
@@ -74,12 +222,15 @@ inline void run() {
       std::println("DESC  : {}", test.desc);
       std::println("----------START----------");
       if (test.body) {
+        std::println("----------BODY-----------");
         utils u;
         try {
           test.body(u);
         } catch (...) {
           // do
         }
+        std::println("---------ASSERTS---------");
+        u.dump();
       }
       std::println("-----------END-----------");
       std::println("---------------|IUIC-TEST");
