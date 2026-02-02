@@ -75,6 +75,14 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-kernel-impl.cpp"
 )
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+target_sources(${PROJECT_NAME}_core PUBLIC
+	"src/test/iuic-state.test.cpp"
+)
+
+endif()
+
 ## Main alias
 add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
 

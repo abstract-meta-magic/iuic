@@ -245,5 +245,10 @@ template <typename T, T... value> struct list {
     return call.template operator()<value...>();
   };
 };
+
+template <std::size_t N> struct str {
+  char cstr[N];
+  constexpr std::string_view to_view() const { return {cstr}; };
+};
 }; // namespace ct
 }; // namespace iuic::utils

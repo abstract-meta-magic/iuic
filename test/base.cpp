@@ -135,6 +135,8 @@ int main() {
 
   auto machine = spec.make_instance(proto);
 
+  iuic::test::run();
+
   machine->process();
   machine->process();
   machine->process();
