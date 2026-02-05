@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 abstract-meta-magic and contributors
-
-module;
-
-#include <backtrace.h>
-#include <cxxabi.h>
-
 module iuic.core;
 import iuic.underlying;
 
@@ -14,9 +8,8 @@ using namespace iuic::test;
 
 template ticket usecase<unit<[](utils &test) {
   using namespace iuic::state;
-
-  constexpr auto &a = decl::unique_instance();
-  constexpr auto &b = decl::unique_instance();
+  static constexpr decl a = decl::instance_of<a>();
+  static constexpr decl b = decl::instance_of<b>();
 
   struct Data {
     int counter{0};
@@ -26,7 +19,6 @@ template ticket usecase<unit<[](utils &test) {
     int ba{0};
     int i{0};
   };
-
   auto spec = machine::spec<
       machine::transition_graph<machine::transition{a, b, true}>{}, Data>{};
 
@@ -137,4 +129,104 @@ template ticket usecase<unit<[](utils &test) {
         test.eq(data.a, 2).assertion_true("success job");
       }))
       .assertion_true("visit data");
+}>{}>;
+
+template ticket usecase<unit<[](utils &test) {
+  using namespace iuic::state;
+  static constexpr decl a = decl::instance_of<a>();
+  static constexpr decl b = decl::instance_of<b>();
+
+  struct Data {
+    int value{0};
+  };
+
+  auto spec = machine::spec<
+      machine::transition_graph<machine::transition{a, b, true}>{}, Data>{};
+
+  auto proto = spec.get_protobuilder()
+                   .entry<a>()
+                   .stay(a,
+                         [](const machine::execute::state &state,
+                            Data &data) -> machine::execute::stay {
+                           for (; not state.is_interrupted();) {
+                             ++data.value;
+                             co_yield machine::execute::result::process;
+                           }
+                           co_return base::null;
+                         })
+                   .finalize();
+
+  constexpr iuic::units::uid au{44};
+  constexpr iuic::units::uid bu{48};
+
+  iuic::advance::pool p;
+
+  machine::dispatcher dp;
+  dp.rebind(p);
+
+  dp.machine_instance(au, proto);
+  dp.machine_instance(bu, proto);
+
+  test.eq(dp.get_machine(au)).assertion_true("Machine [a] exist");
+
+  std::println("run ----- before advance");
+  dp.execute();
+
+  auto *machine_1 = dp.get_machine(au);
+  auto *machine_2 = dp.get_machine(bu);
+
+  if (test.eq(machine_1)
+          .assertion_true("get-machine [a]")
+          .assertion_false("machine-nonexist [a]")) {
+    machine_1->get_controller().try_visit_shared([&](Data &data) {
+      test.eq(data.value, 1).assertion_true("correct process [a]");
+    });
+  }
+  if (test.eq(machine_2)
+          .assertion_true("get-machine [b]")
+          .assertion_false("machine-nonexist [b]")) {
+    machine_2->get_controller().try_visit_shared([&](Data &data) {
+      test.eq(data.value, 1).assertion_true("correct process [a]");
+    });
+  }
+
+  p.advance();
+  std::println("run ----- after advance");
+  test.neq(dp.get_machine(au)).assertion_true("machine-advanced [a]");
+  test.neq(dp.get_machine(bu)).assertion_true("machine-advanced [b]");
+  dp.execute();
+  if (test.eq(machine_1)
+          .assertion_true("get-machine [a]")
+          .assertion_false("machine-nonexist [a]")) {
+    machine_1->get_controller().try_visit_shared([&](Data &data) {
+      test.eq(data.value, 1).assertion_true("correct process [a]");
+    });
+  }
+  if (test.eq(machine_2)
+          .assertion_true("get-machine [b]")
+          .assertion_false("machine-nonexist [b]")) {
+    machine_2->get_controller().try_visit_shared([&](Data &data) {
+      test.eq(data.value, 1).assertion_true("correct process [a]");
+    });
+  }
+
+  std::println("update machine -----");
+  dp.machine_instance(au, proto);
+  dp.machine_instance(bu, proto);
+  std::println("run ----- after update");
+  dp.execute();
+  if (test.eq(machine_1)
+          .assertion_true("get-machine [a]")
+          .assertion_false("machine-nonexist [a]")) {
+    machine_1->get_controller().try_visit_shared([&](Data &data) {
+      test.eq(data.value, 2).assertion_true("correct process [a]");
+    });
+  }
+  if (test.eq(machine_2)
+          .assertion_true("get-machine [b]")
+          .assertion_false("machine-nonexist [b]")) {
+    machine_2->get_controller().try_visit_shared([&](Data &data) {
+      test.eq(data.value, 2).assertion_true("correct process [a]");
+    });
+  }
 }>{}>;

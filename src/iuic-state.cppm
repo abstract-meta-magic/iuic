@@ -36,7 +36,6 @@ export struct value final {
 
 struct decl final {
 
-  decl(const decl &) = delete;
   decl &operator=(const decl &) = delete;
   decl(decl &&) = delete;
   decl &operator=(decl &&) = delete;
@@ -46,36 +45,32 @@ struct decl final {
   // force static\global
   const decl *self{this};
 
-  // constexpr static unique instance
-  // use for unique 'state::decl' pointer address
-  template <typename... UNIQUE_GUARD, typename UNIQUE = decltype([]() {
-                                        struct _ {};
-                                        return _{};
-                                      }())>
-  static constexpr const decl &unique_instance() {
-    return unique_instance_impl(UNIQUE{});
-  };
-
 private:
   consteval decl() noexcept {};
+  decl(const decl &) = default;
 
-  template <typename UNIQUE>
-  static constexpr const decl &unique_instance_impl(UNIQUE unique) {
+public:
+  template <const decl &of> static consteval decl instance_of() {
     static constexpr decl _{};
     return _;
   };
 };
 
 export namespace base {
-constexpr auto &null{decl::unique_instance()};
+constexpr decl hh{decl::instance_of<hh>()};
 
-constexpr auto &hovered{decl::unique_instance()};
+constexpr decl null{decl::instance_of<null>()};
 
-constexpr auto &idle{decl::unique_instance()};
+constexpr decl hovered{decl::instance_of<hovered>()};
 
-constexpr auto &exception_marshaling{decl::unique_instance()};
+constexpr decl idle{decl::instance_of<idle>()};
 
-constexpr auto &terminate{decl::unique_instance()};
+constexpr decl exception_marshaling{decl::instance_of<exception_marshaling>()};
+
+constexpr decl terminate{decl::instance_of<terminate>()};
+static_assert(null.self == null.self, "STATE INSTANCE IS EQ");
+static_assert(null.self != idle.self, "STATE INSTANCE IS EQ");
+static_assert(null.self != hovered.self, "STATE INSTANCE IS EQ");
 }; // namespace base
 
 /* -- Прерывание
@@ -125,7 +120,7 @@ template <value val> struct help_s {
   };
 };
 
-template <transition... val> consteval auto make_stay_index_tree() {
+template <transition... val> consteval inline auto make_stay_index_tree() {
   static constexpr auto expand =
       (utils::ct::list<value>{} & ... &
        (utils::ct::list<value, val.from>{} & utils::ct::list<value, val.to>{}));
@@ -138,7 +133,8 @@ template <transition... val> consteval auto make_stay_index_tree() {
       []<value... list>() { return std::array{list...}; })};
 };
 
-template <transition... value> consteval auto make_transition_index_tree() {
+template <transition... value>
+consteval inline auto make_transition_index_tree() {
 
   static constexpr auto expand =
       ((utils::ct::list<transition, value>{} &
@@ -740,9 +736,11 @@ public:
   };
 };
 
+// dispatcher
+
 // стуктура управляющая
 // всеми машинами
-struct hub {
+struct dispatcher : public advance::interface {
   // у хаба должна быть своя память под машины
 
   // Есть активный вопрос
@@ -751,7 +749,7 @@ struct hub {
   // выполняеться этот метод ?
   // начало(фафорит), где-то в промежутке или в конце
   void execute() {
-    for (auto &&[_, machine] : machines) {
+    for (auto &&[_, machine] : pool.get_buffers().current) {
       if (machine) {
         // TOTO : normal processing
         machine->process();
@@ -760,26 +758,48 @@ struct hub {
   };
 
   instance *get_machine(iuic::units::uid uid) {
-    return machines.contains(uid) ? machines.at(uid).get() : nullptr;
+    return pool.get_buffers().current.contains(uid)
+               ? pool.get_buffers().current.at(uid).get()
+               : nullptr;
   };
 
   const instance *get_machine(iuic::units::uid uid) const {
-    return machines.contains(uid) ? machines.at(uid).get() : nullptr;
+    return pool.get_buffers().current.contains(uid)
+               ? pool.get_buffers().current.at(uid).get()
+               : nullptr;
   };
 
   // init or update livetime
   bool machine_instance(iuic::units::uid uid, const auto &prototype) {
     using spec = typename std::remove_cvref_t<decltype(prototype)>::spec;
 
-    if (not machines.contains(uid)) {
-      machines.insert(uid, spec::make_instance(prototype));
-    } else if (machines.at(uid)->get_spec_id() != spec::id) {
-      machines.at(uid).swap(spec::make_instance(prototype));
-    };
+    auto bufs = pool.get_buffers();
+
+    if (not bufs.current.contains(uid)) {
+      if (bufs.prev.contains(uid)) {
+        pool.move_forward(uid);
+      } else {
+        auto instance = spec::make_instance(prototype);
+        bufs.current.insert(std::pair{uid, std::move(instance)});
+      }
+    }
+
+    if (bufs.current.at(uid)->get_spec_id() != spec::id) {
+      auto instance = spec::make_instance(prototype);
+      bufs.current.at(uid).swap(instance);
+    }
+
+    return true;
   };
 
+private: // advance
+  void advance() override { pool.swap(); };
+
 private:
-  std::map<iuic::units::uid, std::unique_ptr<instance>> machines;
+  using pool_t = utils::swap_buffers<
+      std::unordered_map<iuic::units::uid, std::unique_ptr<instance>>, 2>;
+
+  pool_t pool;
 };
 }; // namespace machine
 
@@ -796,9 +816,9 @@ export template <> struct std::hash<iuic::state::value> {
 
 constexpr void test() {
   using namespace iuic::state;
-  static auto &a{iuic::state::decl::unique_instance()};
-  static auto &b{iuic::state::decl::unique_instance()};
-  static auto &c{iuic::state::decl::unique_instance()};
+  static constexpr decl a{iuic::state::decl::instance_of<a>()};
+  static constexpr decl b{iuic::state::decl::instance_of<b>()};
+  static constexpr decl c{iuic::state::decl::instance_of<c>()};
 
   static constexpr auto tree_t =
       machine::make_transition_index_tree<{a, b, true}, {b, c, true}, {a, b},

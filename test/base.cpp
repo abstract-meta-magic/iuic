@@ -49,9 +49,8 @@ constexpr iuic::external::type opengl{};
 constexpr iuic::external::type opengl_text{opengl};
 
 int main() {
-  iuic::test::run();
+  // iuic::test::run();
 
-  /*
   using namespace iuic;
 
   // SDL BASE
@@ -173,5 +172,4 @@ int main() {
 
   CloseWindow();
   return 0;
-  */
 }

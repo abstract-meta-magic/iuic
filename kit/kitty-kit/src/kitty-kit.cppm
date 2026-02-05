@@ -1,9 +1,49 @@
 export module iuic.kitty_kit;
+import :state;
 import std;
 export import iuic.core;
 export import iuic.key_map.base;
 
 // используются цвета - https://catppuccin.com/palette/
+namespace kitty_kit {
+using namespace iuic::state;
+struct Style {
+  iuic::style::ref target{nullptr};
+};
+
+constexpr auto spec =
+    machine::spec<machine::transition_graph<machine::transition{
+                      state::k_h, state::k_p, true}>{},
+                  Style>{};
+
+constexpr auto proto = spec.get_protobuilder().entry<state::k_h>().stay(
+    state::k_h,
+    [](const machine::execute::state &state,
+       Style &) -> machine::execute::stay {
+      for (; not state.is_interrupted();) {
+        std::println("in machine [heh]");
+        co_yield machine::execute::result::process;
+      }
+      co_return state::k_h;
+    });
+} // namespace kitty_kit
+
+namespace kitty_kit {
+using namespace iuic::state;
+
+inline auto bb() {
+  using namespace iuic::state;
+
+  static decl a = decl::instance_of<a>();
+  static decl b = decl::instance_of<a>();
+
+  constexpr machine::transition o{a, b, true};
+  constexpr machine::transition r{a, b, true};
+
+  constexpr machine::transition_graph<o, r> g{};
+};
+}; // namespace kitty_kit
+
 export namespace kitty_kit::color::catppuccin {
 using namespace iuic;
 
@@ -642,10 +682,13 @@ void button(builder &b, std::invocable<> auto &&callback,
       style::button, layout_);
 };
 
+void machine_use(builder &b);
+
 void text_button(builder &b, std::string_view text,
                  std::invocable<> auto &&callback, utils::anchor anchor = {}) {
   static layout::short_text text_layout;
   static layout::text_button button_layout;
+  struct BaseD {};
 
   auto uid = b.uid.make(iuic::policy::unique{}, "text-button", anchor);
 
@@ -665,6 +708,8 @@ void text_button(builder &b, std::string_view text,
           b.style.override(iuic::style::decoration{
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
+
+        b.state.machine.use(proto);
 
         b.event(
             [](event::local::key e) static {

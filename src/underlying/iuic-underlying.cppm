@@ -4,5 +4,6 @@ export module iuic.underlying;
 export import :utils;
 export import :test;
 export import :units;
+export import :advance;
 export import :erasure;
 export import :external;

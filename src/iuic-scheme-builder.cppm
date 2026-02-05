@@ -10,6 +10,7 @@ import :text.buff;
 import :text.present;
 import :layout.frame.box;
 import :layout.text.box;
+import :state;
 import :event;
 import :scheme;
 
@@ -36,8 +37,10 @@ struct builder_base {
   };
 
   builder_base(kernel::root &ctx_, event_collector &collector_,
-               iuic::text::present::aggregator &tpa_, builder &builder_)
-      : kernel{ctx_}, collector{collector_}, tpa{tpa_}, builder{builder_} {
+               iuic::text::present::aggregator &tpa_,
+               state::machine::dispatcher &md_, builder &builder_)
+      : kernel{ctx_}, collector{collector_}, tpa{tpa_}, machine_dispatcher{md_},
+        builder{builder_} {
     static std::string root_uid{"root-uid-hash-str-4467532667"};
     unit.push(unit_t{.uid = kernel.hash(std::as_bytes(std::span(root_uid)))});
   };
@@ -46,6 +49,7 @@ protected: // builder unit stack
   kernel::root &kernel;
   event_collector &collector;
   iuic::text::present::aggregator &tpa;
+  state::machine::dispatcher &machine_dispatcher;
   builder &builder;
   // tmp memory
   std::stack<unit_t> unit;
@@ -422,16 +426,17 @@ struct builder_state_interface : protected virtual builder_base {
 
     void use(const auto &proto) {
       auto el = i.kernel.get_selected();
-      hub.machine_instance(i.kernel.get_uid(el).value(), proto);
+      i.machine_dispatcher.machine_instance(i.kernel.get_uid(el).value(),
+                                            proto);
     };
 
     void use(units::uid uid, const auto &proto) {
-      hub.machine_instance(uid, proto);
+      i.machine_dispatcher.machine_instance(uid, proto);
     };
 
     void transition(state::value state) {
       auto el = i.kernel.get_selected();
-      auto *m = hub.get_machine(i.kernel.get_uid(el).value());
+      auto *m = i.machine_dispatcher.get_machine(i.kernel.get_uid(el).value());
 
       if (m) {
         m->get_controller().try_move(state);
@@ -439,7 +444,7 @@ struct builder_state_interface : protected virtual builder_base {
     };
 
     void transition(units::uid uid, state::value state) {
-      auto *m = hub.get_machine(uid);
+      auto *m = i.machine_dispatcher.get_machine(uid);
 
       if (m) {
         m->get_controller().try_move(state);
@@ -453,7 +458,7 @@ struct builder_state_interface : protected virtual builder_base {
     void try_visit_shared(
         erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call) {
       auto el = i.kernel.get_selected();
-      auto *m = hub.get_machine(i.kernel.get_uid(el).value());
+      auto *m = i.machine_dispatcher.get_machine(i.kernel.get_uid(el).value());
 
       if (m) {
         m->get_controller().try_visit_shared(
@@ -463,7 +468,6 @@ struct builder_state_interface : protected virtual builder_base {
 
   private:
     builder_state_interface &i;
-    state::machine::hub hub;
   } machine{*this};
 };
 

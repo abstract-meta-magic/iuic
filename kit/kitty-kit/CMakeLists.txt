@@ -16,6 +16,7 @@ target_sources(kitty_kit PUBLIC
     FILE_SET kitty_kit_modules
     TYPE CXX_MODULES
     FILES
+    "src/kitty-kit-decl.cppm"
     "src/kitty-kit.cppm"
 )
 

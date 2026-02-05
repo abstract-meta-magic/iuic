@@ -71,6 +71,9 @@ private:
     }
   };
   */
+  advance::pool adp;
+
+  state::machine::dispatcher machine_dispatcher;
 
   text::present::aggregator tpa{};
   // плоское дерево вычислений
@@ -78,7 +81,8 @@ private:
 
   event_collector event_collector;
 
-  scheme::builder b{scheme::builder_base{*kernel, event_collector, tpa, b}};
+  scheme::builder b{scheme::builder_base{*kernel, event_collector, tpa,
+                                         machine_dispatcher, b}};
 
 public:
   text::fontslot font;
@@ -93,11 +97,14 @@ void context::make(scheme::builder_block_cpt auto &&call) {
   // step 1
   reset();
 
-  // построение FCT
-  call(b);
+  machine_dispatcher.execute(); // <-- execute all machine's
 
-  proccess_measure();
-  proccess_arrange();
+  adp.advance(); // <-- advance all mechanism
+
+  call(b); // <-- make base scheme
+
+  proccess_measure(); // <-|
+  proccess_arrange(); // <-|--- compute scheme
 
   apply_event_pack__(event, event_collector.build_pack(*kernel));
   // dop

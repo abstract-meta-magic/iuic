@@ -91,5 +91,29 @@ short_text::arrange(text_arrange_utils utils) const noexcept {
 
   return utils.capture_glyphs(pl);
 };
+
 // scroll_box
 }; // namespace kitty_kit::layout
+namespace kitty_kit {
+void machine_use(builder &b) {
+  struct Data {};
+  using namespace iuic::state;
+  constexpr auto spec =
+      machine::spec<machine::transition_graph<machine::transition{
+                        state::k_h, state::k_p, true}>{},
+                    Data>{};
+
+  constexpr auto proto = spec.get_protobuilder().entry<state::k_h>().stay(
+      state::k_h,
+      [](const machine::execute::state &state,
+         Data &) -> machine::execute::stay {
+        for (; not state.is_interrupted();) {
+          std::println("in machine");
+          co_yield machine::execute::result::process;
+        }
+        co_return state::k_h;
+      });
+
+  b.state.machine.use(proto);
+}
+} // namespace kitty_kit

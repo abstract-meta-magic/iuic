@@ -23,7 +23,7 @@ target_link_libraries(te xxLib)
 
 
 # -Wall -Wextra
-target_compile_options(te PRIVATE  -O0 -fcolor-diagnostics)
+target_compile_options(te PRIVATE  -O0 -fcolor-diagnostics )
 
 if(IUIC_TEST_TYPE STREQUAL "ADDRESS")
 	message("Address test mode")

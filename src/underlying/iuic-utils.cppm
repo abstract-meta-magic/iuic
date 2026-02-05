@@ -1,6 +1,7 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 export module iuic.underlying:utils;
+import :erasure;
 import std;
 
 export namespace iuic::utils {
@@ -189,6 +190,86 @@ struct anchor {
 
   //
   std::size_t value;
+};
+/// ---------- SWAP BUFFERS ---------- ///
+template <typename T, typename Container>
+concept buffer_value_mover_cpt =
+    requires {
+      typename T::container_type;
+      typename T::key_type;
+    } &&
+    requires(T &obj, typename T::container_type &c,
+             const typename T::key_type &key, typename T::move_type value) {
+      obj.move_to(c, obj.move_from(c, key));
+    } &&
+    erasure::as_pure_type<Container> &&
+    std::same_as<Container, typename T::container_type> &&
+    std::is_default_constructible_v<T>;
+
+template <typename T> struct buffer_value_mover_trait;
+
+template <typename T, std::size_t N,
+          buffer_value_mover_cpt<T> Mover =
+              typename buffer_value_mover_trait<T>::mover_type>
+  requires(N > 1)
+struct swap_buffers {
+  auto get_buffers() {
+    struct _ {
+      T &prev;
+      T &current;
+    };
+
+    return _{buffers_[prev], buffers_[current]};
+  };
+
+  auto get_buffers() const {
+    struct _ {
+      const T &prev;
+      const T &current;
+    };
+
+    return _{buffers_[prev], buffers_[current]};
+  };
+
+  void swap() {
+    prev = (prev + 1) % N;
+    current = (current + 1) % N;
+  };
+
+  void move_forward(typename Mover::key_type key) const {
+    Mover m;
+    m.move_to(buffers_[current], m.move_from(buffers_[prev], key));
+  };
+
+private:
+  std::int32_t prev{0};
+  std::int32_t current{1};
+  mutable std::array<T, N> buffers_;
+};
+
+template <typename Map> struct forward_for_map {
+  using key_type = typename Map::key_type;
+  using container_type = Map;
+  using move_type = std::optional<typename Map::node_type>;
+
+  static move_type move_from(Map &v, const key_type &key) {
+    if (v.contains(key)) {
+      return v.extract(key);
+    }
+
+    return std::nullopt;
+  };
+
+  static void move_to(Map &v, move_type swap) {
+    if (swap) {
+      v.insert(std::move(swap.value()));
+    }
+  };
+};
+
+template <typename T, typename Key>
+struct buffer_value_mover_trait<std::unordered_map<T, Key>> {
+  using mover_type = forward_for_map<std::unordered_map<T, Key>>;
 };
 
 namespace ct {
