@@ -435,10 +435,12 @@ struct builder_state_interface : protected virtual builder_base {
     };
 
     void transition(state::value state) {
+      std::println("eua");
       auto el = i.kernel.get_selected();
       auto *m = i.machine_dispatcher.get_machine(i.kernel.get_uid(el).value());
 
       if (m) {
+        std::println("eua");
         m->get_controller().try_move(state);
       }
     };

@@ -59,6 +59,44 @@ private:
   std::string diagnostic{""};
 };
 
+struct benchmark {
+  using time_point =
+      std::chrono::time_point<std::chrono::high_resolution_clock>;
+  using value_t = std::chrono::nanoseconds;
+
+  benchmark &limit(value_t l) & {
+    limit_ = l;
+    return *this;
+  };
+
+  benchmark &name(std::string_view str) & {
+    name_ = str;
+    return *this;
+  };
+
+  benchmark(value_t res) : middle_{res}, lower_{res}, upper_{res} {}
+
+  benchmark(value_t l, value_t m, value_t u)
+      : middle_{m}, lower_{l}, upper_{u} {}
+
+  value_t get_lower() const { return lower_; };
+  value_t get_upper() const { return upper_; };
+  value_t get_middle() const { return middle_; };
+
+  std::string_view get_name() const { return name_; };
+
+private:
+  std::string name_{"unnamed"};
+  value_t middle_{0};
+  value_t lower_{0};
+  value_t upper_{0};
+  value_t limit_{0};
+
+  // lower
+  // middle
+  // upper
+};
+
 inline void backtrace_err(void *d, const char *msg, int err) {}
 
 inline int backtrace_full(void *data, uintptr_t pc, const char *filename,
@@ -137,14 +175,34 @@ export struct utils {
     return asserts.back();
   };
 
+  void dump(std::invocable<const benchmark &> auto &&bm) {
+    for (auto &&benchmark : benches) {
+      bm(benchmark);
+    }
+  };
+
   void dump(std::invocable<const assert &> auto &&st) {
     for (auto &&assert : asserts) {
       st(assert);
     };
   };
 
-  void dump() {
-    constexpr auto base = [](const assert &assert) {
+  void dump(std::invocable<const assert &> auto &&st,
+            std::invocable<const benchmark &> auto &&bm,
+            std::invocable<> auto &&separator) {
+    for (auto &&assert : asserts) {
+      st(assert);
+    };
+    separator();
+    for (auto &&benchmark : benches) {
+      bm(benchmark);
+    }
+  };
+
+  void dump(std::invocable<> auto &&separotor = []() {
+    std::println("-------------------");
+  }) {
+    constexpr auto base_1 = [](const assert &assert) {
       if (assert.has_assert_msg()) {
         std::println("{} - msg : {}", assert ? "[TRUE] " : "[FALSE]",
                      assert.assert_msg());
@@ -153,11 +211,48 @@ export struct utils {
       }
     };
 
-    dump(base);
+    constexpr auto base_2 = [](const benchmark &benchmark) {
+      std::println("[{}] - time : {}|{}|{}", benchmark.get_name(),
+                   benchmark.get_lower(), benchmark.get_middle(),
+                   benchmark.get_upper());
+    };
+
+    dump(base_1, base_2, std::forward<decltype(separotor)>(separotor));
+  };
+
+  template <std::size_t N = 1> benchmark &bench(std::invocable<> auto &&call) {
+    std::vector<benchmark::value_t> result;
+    for (std::size_t i{0}; i < N; ++i) {
+      auto begin = benchmark::time_point::clock::now();
+      call();
+      auto end = benchmark::time_point::clock::now();
+      result.push_back({end - begin});
+    }
+
+    benchmark::value_t l{100000000000000000};
+    benchmark::value_t u{0};
+    benchmark::value_t m{0};
+
+    m = std::accumulate(result.begin(), result.end(), benchmark::value_t{0}) /
+        result.size();
+
+    for (auto &&r : result) {
+      if (r < l) {
+        l = r;
+      }
+      if (r > u) {
+        u = r;
+      }
+    }
+
+    benches.push_back({l, m, u});
+
+    return benches.back();
   };
 
 private:
   std::vector<assert> asserts;
+  std::vector<benchmark> benches;
 };
 
 using body_ptr = void (*)(utils &);
@@ -230,7 +325,7 @@ inline void run() {
           // do
         }
         std::println("---------ASSERTS---------");
-        u.dump();
+        u.dump([]() { std::println("----------BENCH----------"); });
       }
       std::println("-----------END-----------");
       std::println("---------------|IUIC-TEST");

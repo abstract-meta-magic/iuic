@@ -579,7 +579,6 @@ public:
     bool try_move(state::value nstate) override {
       if (can_move(nstate)) {
         selected = nstate;
-
         return true;
       }
 
@@ -607,7 +606,6 @@ public:
   public: // instance
     instance(const prototype &p) : prototype{p} {
       st_handler = p.get_stay_ctor(p.get_entry())(state, data);
-      std::println("init");
       state.value = execute::state::stay;
       state.active = p.get_entry();
     };
@@ -684,9 +682,11 @@ public:
         st_handler.process();
         auto nstate = st_handler.return_value();
         if (st_handler.finished()) {
-          if (graph.transition_index(state.active, nstate)) {
+          if (graph.transition_index(state.active, nstate) !=
+              graph.invalid_index) {
             tr_handler = prototype.get_transition_ctor(state.active,
                                                        nstate)(state, data);
+
             state.value = state.transition;
             state.reverse();
             state.to = nstate;
@@ -736,25 +736,15 @@ public:
   };
 };
 
-// dispatcher
-
-// стуктура управляющая
-// всеми машинами
 struct dispatcher : public advance::interface {
-  // у хаба должна быть своя память под машины
-
-  // Есть активный вопрос
-  // в кокой момет исполнения
-  // ctx.make();
-  // выполняеться этот метод ?
-  // начало(фафорит), где-то в промежутке или в конце
   void execute() {
-    for (auto &&[_, machine] : pool.get_buffers().current) {
-      if (machine) {
-        // TOTO : normal processing
-        machine->process();
-      }
-    };
+
+    auto &buf = pool.get_buffers().current;
+
+    std::for_each(buf.begin(), buf.end(), [](auto &&machine) {
+      if (machine.second)
+        machine.second->process();
+    });
   };
 
   instance *get_machine(iuic::units::uid uid) {
@@ -802,7 +792,6 @@ private:
   pool_t pool;
 };
 }; // namespace machine
-
 }; // namespace iuic::state
 
 namespace std {
@@ -813,66 +802,3 @@ export template <> struct std::hash<iuic::state::value> {
 };
 
 }; // namespace std
-
-constexpr void test() {
-  using namespace iuic::state;
-  static constexpr decl a{iuic::state::decl::instance_of<a>()};
-  static constexpr decl b{iuic::state::decl::instance_of<b>()};
-  static constexpr decl c{iuic::state::decl::instance_of<c>()};
-
-  static constexpr auto tree_t =
-      machine::make_transition_index_tree<{a, b, true}, {b, c, true}, {a, b},
-                                          {a, b}>();
-
-  static constexpr auto tree_s =
-      machine::make_stay_index_tree<{a, b, true}, {b, c, true}, {a, b},
-                                    {a, b}>();
-
-  static constexpr std::size_t sz_t = tree_t.size();
-  static constexpr std::size_t sz_s = tree_s.size();
-
-  static constexpr std::size_t i_t = tree_t.get_index({c, b});
-
-  struct Anim {};
-
-  using spec = machine::spec<
-      machine::transition_graph<machine::transition{a, b, true},
-                                machine::transition{b, c, true}>{},
-      Anim>;
-
-  constexpr auto proto =
-      spec::get_protobuilder()
-          .transition(a, b,
-                      [](const machine::execute::state &state,
-                         Anim &data) -> machine::execute::transition {
-                        for (; not state.is_interrupted();) {
-                          // do job
-                          co_yield machine::execute::result::process;
-                        }
-
-                        if (state.is_interrupted()) {
-                          co_yield machine::execute::result::success_interrupt;
-                        }
-
-                        co_return;
-                      })
-          .stay(a,
-                [](const machine::execute::state &state,
-                   Anim &) -> machine::execute::stay {
-                  for (; not state.is_interrupted();) {
-                    // do job
-                    co_yield machine::execute::result::process;
-                  }
-
-                  if (state.is_interrupted()) {
-                    co_yield machine::execute::result::success_interrupt;
-                  }
-
-                  co_return base::idle;
-                })
-          .finalize();
-
-  auto machine_ptr = spec::make_instance(proto);
-
-  machine_ptr->process();
-};

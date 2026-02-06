@@ -229,4 +229,7 @@ template ticket usecase<unit<[](utils &test) {
       test.eq(data.value, 2).assertion_true("correct process [a]");
     });
   }
+
+  test.bench<1000>([&]() { machine_1->process(); }).name("test - machine");
+  test.bench<1000>([&]() { dp.execute(); }).name("test - desp");
 }>{}>;

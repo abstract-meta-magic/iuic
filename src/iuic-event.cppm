@@ -22,13 +22,6 @@ private:
   kernel::root &kernel;
 
 public:
-  struct not_function {};
-
-  template <typename T> static consteval auto type(T) -> not_function;
-
-  template <typename T, typename A>
-  static consteval auto type(std::function<T(A &)>) -> A;
-
   struct vis : component {
     void try_visit(
         units::uid uid,

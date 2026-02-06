@@ -16,33 +16,32 @@ constexpr auto spec =
                       state::k_h, state::k_p, true}>{},
                   Style>{};
 
-constexpr auto proto = spec.get_protobuilder().entry<state::k_h>().stay(
-    state::k_h,
-    [](const machine::execute::state &state,
-       Style &) -> machine::execute::stay {
-      for (; not state.is_interrupted();) {
-        std::println("in machine [heh]");
-        co_yield machine::execute::result::process;
-      }
-      co_return state::k_h;
-    });
+constexpr auto proto =
+    spec.get_protobuilder()
+        .entry<state::k_h>()
+        .stay(state::k_h,
+              [](const machine::execute::state &state,
+                 Style &) -> machine::execute::stay {
+                int hah{0};
+                for (; not state.is_interrupted() && hah < 60;) {
+                  std::println("in machine [heh][{}]", ++hah);
+                  co_yield machine::execute::result::process;
+                }
+                co_return state::k_p;
+              })
+        .stay(state::k_p,
+              [](const machine::execute::state &state,
+                 Style &) -> machine::execute::stay {
+                int hah{0};
+                for (; not state.is_interrupted() && hah < 60;) {
+                  std::println("in machine [hah][{}]", ++hah);
+
+                  co_yield machine::execute::result::process;
+                }
+                co_return state::k_h;
+              })
+        .finalize();
 } // namespace kitty_kit
-
-namespace kitty_kit {
-using namespace iuic::state;
-
-inline auto bb() {
-  using namespace iuic::state;
-
-  static decl a = decl::instance_of<a>();
-  static decl b = decl::instance_of<a>();
-
-  constexpr machine::transition o{a, b, true};
-  constexpr machine::transition r{a, b, true};
-
-  constexpr machine::transition_graph<o, r> g{};
-};
-}; // namespace kitty_kit
 
 export namespace kitty_kit::color::catppuccin {
 using namespace iuic;
