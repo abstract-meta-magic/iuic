@@ -17,7 +17,7 @@ export import :text.token;
 export import :text.present;
 export import :text.fontset;
 export import :style;
-export import :state;
+export import :machine.dispatcher;
 export import :event;
 
 export namespace iuic {

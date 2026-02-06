@@ -4,15 +4,16 @@
 export module iuic.core:scheme.builder;
 import std;
 import iuic.underlying;
+import iuic.state;
 import :kernel;
 import :text.token;
 import :text.buff;
 import :text.present;
 import :layout.frame.box;
 import :layout.text.box;
-import :state;
 import :event;
 import :scheme;
+import :machine.dispatcher;
 
 export namespace iuic::scheme {
 

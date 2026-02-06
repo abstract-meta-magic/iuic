@@ -3,8 +3,8 @@
 export module iuic.core:event;
 import std;
 import iuic.underlying;
+import iuic.state;
 import :kernel;
-import :state;
 export import :key_code;
 
 export namespace iuic {

@@ -1,5 +1,6 @@
 
 export module iuic.kitty_kit:state;
+import iuic.state;
 import iuic.core;
 
 namespace kitty_kit::state {

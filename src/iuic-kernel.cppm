@@ -3,8 +3,8 @@
 export module iuic.core:kernel;
 import std;
 import iuic.underlying;
+import iuic.state;
 import :style;
-import :state;
 import :policy;
 import :layout.def;
 

@@ -2,8 +2,8 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 module iuic.core;
 import iuic.underlying;
+import iuic.state;
 
-import :state;
 using namespace iuic::test;
 
 template ticket usecase<unit<[](utils &test) {
@@ -129,7 +129,8 @@ template ticket usecase<unit<[](utils &test) {
         test.eq(data.a, 2).assertion_true("success job");
       }))
       .assertion_true("visit data");
-}>{}>;
+},
+                             {"machine::instance"}, {"iuic::state"}>{}>;
 
 template ticket usecase<unit<[](utils &test) {
   using namespace iuic::state;
@@ -232,4 +233,78 @@ template ticket usecase<unit<[](utils &test) {
 
   test.bench<1000>([&]() { machine_1->process(); }).name("test - machine");
   test.bench<1000>([&]() { dp.execute(); }).name("test - desp");
-}>{}>;
+},
+                             {"machine::dispatcher"}, {"iuic::state"}>{}>;
+
+template ticket usecase<unit<[](utils &test) {
+  using namespace iuic::state;
+  static decl a = decl::instance_of<a>();
+  static decl b = decl::instance_of<b>();
+
+  struct Data {
+    int counter{0};
+    int exc{0};
+  };
+
+  auto spec = machine::spec<
+      machine::transition_graph<machine::transition{a, b, true}>{}, Data>{};
+
+  auto proto = spec.get_protobuilder()
+                   .entry<a>()
+                   .stay(a,
+                         [](const machine::execute::state &state,
+                            Data &data) -> machine::execute::stay {
+                           for (; not state.is_interrupted();) {
+                             if (data.counter == 5) {
+                               ++data.counter;
+                               throw "mew";
+                             }
+                             ++data.counter;
+                             co_yield machine::execute::result::process;
+                           }
+                           co_return b;
+                         })
+                   .stay(b,
+                         [](const machine::execute::state &state,
+                            Data &data) -> machine::execute::stay {
+                           for (; not state.is_interrupted();) {
+                             data.counter += 10;
+                             co_yield machine::execute::result::process;
+                           }
+                           co_return b;
+                         })
+                   .exception_handler([](const machine::execute::state &state,
+                                         Data &data) -> machine::execute::stay {
+                     if (state.exception) {
+                       try {
+                         std::rethrow_exception(state.exception);
+                       } catch (std::runtime_error &err) {
+                         std::println("{}", err.what());
+                         ++data.exc;
+                       } catch (...) {
+                         ++data.exc;
+                         std::println("mew");
+                       }
+                     }
+
+                     co_return b;
+                   })
+                   .finalize();
+
+  auto machine = spec.make_instance(proto);
+  auto &c = machine->get_controller();
+  machine->process();
+  machine->process();
+  machine->process();
+  machine->process();
+  machine->process(); // <-- [data = 6]
+
+  test.eq(c.try_visit_shared([&](Data &d) { test.eq(d.counter, 5); }));
+
+  machine->process(); // <-- throw here [data = 6] ++ before throw
+  test.eq(c.try_visit_shared([&](Data &d) { test.eq(d.exc, 1); }));
+
+  machine->process(); // <-- [data = 16]
+  test.eq(c.try_visit_shared([&](Data &d) { test.eq(d.counter, 16); }));
+},
+                             {"machine::exception"}, {"iuic::state"}>{}>;

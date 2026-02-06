@@ -21,13 +21,14 @@ endif()
 
 add_subdirectory(utils/cmake)
 add_subdirectory(src/underlying)
+add_subdirectory(src/state)
 
 
 option(IUIC_INFO "Вывод информации" ON)
 
 add_library(${PROJECT_NAME}_core STATIC)
 
-target_link_libraries(${PROJECT_NAME}_core iuic::underlying)
+target_link_libraries(${PROJECT_NAME}_core iuic::underlying iuic::state)
 
 if(IUIC_TMP_CXX_STD)
 	target_link_libraries(${PROJECT_NAME}_core tmp_cxx_std)
@@ -59,7 +60,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-layout.cppm"
 	"src/iuic-kernel.cppm"
 	"src/iuic-ctx.cppm"
-	"src/iuic-state.cppm"
+	"src/iuic-machine-dispatcher.cppm"
 	"src/iuic-base-color.cppm"
 	"src/iuic-policy.cppm"
 	"src/iuic-scheme.cppm"
@@ -70,7 +71,6 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-ctx.cpp"
 	"src/iuic-text-present.cpp"
 	"src/iuic-layout-utils.cpp"
-	"src/iuic-state.cpp"
 	"src/iuic-text-font.cpp"
 	"src/iuic-kernel-impl.cpp"
 )
