@@ -13,6 +13,9 @@ target_sources(${PROJECT_NAME}_underlying PUBLIC
 	"iuic-test.cppm"
 	"iuic-erasure.cppm"
 	"iuic-external.cppm"
+	"iuic-utils-tree.cppm"
+	"iuic-utils-tree-node-type.cppm"
+	"iuic-utils-tree-flat-bfs-type.cppm"
 )
 target_sources(${PROJECT_NAME}_underlying PUBLIC
 	"iuic-advance.cpp"

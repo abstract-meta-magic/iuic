@@ -7,3 +7,7 @@ export import :units;
 export import :advance;
 export import :erasure;
 export import :external;
+// -- tree
+export import :utils.tree.decl;
+export import :utils.tree.node;
+export import :utils.tree.bfs;

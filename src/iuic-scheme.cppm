@@ -3,21 +3,71 @@
 export module iuic.core:scheme;
 import std;
 import iuic.underlying;
+import :policy;
 import :style;
 import :text.present;
-
+import :event;
+// env
+//
 namespace iuic {
-
 namespace scheme {
-
+// MB transform to SAO presentation
 struct element {
   units::ui::rect rect; // x,y w,h
   std::optional<text::glyph::sequence> text{std::nullopt};
-  units::z_order_t order;
   style::cref style;
-  enum class mask {
-    Pop = 1 << 0,
-  };
+  std::span<event::value> events;
+  units::z_order_t order;
+  policy::event event_policy;
+  policy::hovered hovered_policy;
+};
+
+// using element_tree = utils::ftree<element>;
+
+struct raw {
+  // element_tree tree;
+  std::vector<event::value> events;
+};
+
+struct base_context {
+  const style::ref &style_of(units::uid);
+
+  policy::hovered hovered_policy_of(units::uid);
+
+  policy::event event_policy_of(units::uid);
+
+  const units::ui::area &area_of(units::uid);
+
+  bool has_state(units::uid, state::value);
+
+  units::uid self();
+
+  units::uid parent_of(units::uid);
+
+  std::vector<units::uid> childs_of(units::uid);
+
+  std::span<const units::uid> get_selected();
+
+  void reset_selected();
+
+  void select(units::uid);
+
+  units::ui::position get_pointer_position();
+
+  key_code get_key_code();
+
+private:
+  environment::persist &env;
+  raw &scheme;
+  std::vector<units::uid> selected__;
+  // element_tree::base_iterator it;
+};
+
+struct el {
+  units::ui::rect borderless_rect; // x,y w,h
+  units::ui::rect bordered_rect;   // x,y w,h
+  style::cref style;
+  units::uid uid;
 };
 
 struct incomplete {
@@ -37,6 +87,7 @@ struct incomplete {
 
 private:
   std::vector<element> elements;
+  std::vector<event::value> events;
 };
 
 export struct frame {
@@ -50,68 +101,90 @@ export struct text {
   style::cref style;
 };
 
-export struct dump_t {
-  // ...
+namespace eval {
+
+export struct context : base_context {
+
+  void attach_state(units::uid uid, state::value);
 };
 
 template <typename T>
-concept frame_visit_cpt = requires(T obj, const units::ui::rect &rect,
-                                   const style::cref &style) {
-  obj.frame(rect, style);
-} || requires(T obj, const units::ui::rect &rect, const style::cref &style) {
-  obj.operator()(rect, style);
-} || requires(T obj, const units::ui::rect &rect, const style::cref &style) {
-  obj.operator()({rect, style});
-} || requires(T obj, const units::ui::rect &rect, const style::cref &style) {
-  obj.frame({rect, style});
+concept visitor = requires(T obj, context &ctx) { obj(ctx); };
+} // namespace eval
+
+namespace reval {
+//
+//
+export struct context {};
+template <typename T>
+concept visitor = requires(T obj, context &ctx) { obj(ctx); };
+} // namespace reval
+
+// global scheme eval
+namespace geval {
+export struct context {
+
+  void set_pointer_position(units::ui::position);
+
+  void set_key_code(key_code);
+};
+template <typename T>
+concept visitor = requires(T obj, context &ctx) { obj(ctx); };
+}; // namespace geval
+
+namespace proc {
+//
+//
+
+export struct context : base_context {
+  void machine_of(units::uid);
+
+  std::span<event::value> events_of(units::uid);
 };
 
 template <typename T>
-concept text_visit_cpt =
-    requires(T obj, const units::ui::rect &rect,
-             iuic::text::glyph::sequence present,
-             const style::cref &style) { obj.text(rect, present, style); } ||
-    requires(T obj, const units::ui::rect &rect,
-             iuic::text::glyph::sequence present, const style::cref &style) {
-      obj.operator()(rect, present, style);
-    } ||
-    requires(T obj, const units::ui::rect &rect,
-             iuic::text::glyph::sequence present, const style::cref &style) {
-      obj.operator()({rect, present, style});
-    } ||
-    requires(T obj, const units::ui::rect &rect,
-             iuic::text::glyph::sequence present,
-             const style::cref &style) { obj.text({rect, present, style}); };
+concept visitor = requires(T obj, context &ctx) { obj(ctx); };
+}; // namespace proc
 
-// TODO : mb rename to any_*
-template <typename T>
-concept partial_visit_cpt = frame_visit_cpt<T> != text_visit_cpt<T>;
+namespace rproc {
+//
+//
 
-template <typename T>
-concept full_visit_cpt = frame_visit_cpt<T> && text_visit_cpt<T>;
+export struct context : base_context {
+  void machine_of(units::uid);
 
-template <typename T>
-concept has_visit_base_cpt = partial_visit_cpt<T> || full_visit_cpt<T>;
+  std::span<const event::value> events_of(units::uid);
 
-template <typename T>
-concept variant_visit_cpt = requires {
-  []<has_visit_base_cpt... Ts>(std::type_identity<std::variant<Ts...>>) {
-    static_assert(sizeof...(Ts) > 0);
-  }(std::type_identity<std::remove_cvref_t<T>>{});
+  void trigger(const event::value &e);
 };
-
 template <typename T>
-concept has_visit_cpt =
-    partial_visit_cpt<T> || full_visit_cpt<T> || variant_visit_cpt<T>;
+concept visitor = requires(T obj, context &ctx) { obj(ctx); };
+}; // namespace rproc
 
-template <typename T>
-concept tuple_visit_cpt = requires {
-  []<has_visit_cpt... Ts>(std::type_identity<std::tuple<Ts...>>) {
-    static_assert(sizeof...(Ts) > 0);
-  }(std::type_identity<std::remove_cvref_t<T>>{});
+namespace ordered {
+//
+//
+
+export struct context {
+  void get_unit();
+
+  void get_element();
 };
+template <typename T>
+concept visitor = requires(T obj, context &ctx) { obj(ctx); };
+}; // namespace ordered
 
-struct explorer {
+namespace explore {
+template <typename T>
+concept visitor = geval::visitor<T> || eval::visitor<T> || reval::visitor<T> ||
+                  proc::visitor<T> || rproc::visitor<T> || ordered::visitor<T>;
+}
+/*
+Сначала будет неоптимальный
+пошаговый обход.
+На дистанций упорядоченный параллельный\асинхронный обход.
+ */
+export struct explorer {
 
   explorer(incomplete &&inc) : elements{std::move(inc).extract()} {};
   explorer(const incomplete &inc) : elements{inc.copy()} {};
@@ -124,186 +197,12 @@ struct explorer {
     return *this;
   };
 
-  void explore(tuple_visit_cpt auto &&) const;
-
-  void explore(has_visit_cpt auto &&...visitors) const
-    requires(sizeof...(visitors) > 0);
-
-  void explore(units::ui::rect rect, tuple_visit_cpt auto &&) const;
-
-  void explore(units::ui::rect rect, has_visit_cpt auto &&...visitors) const
-    requires(sizeof...(visitors) > 0);
-
-  void explore(const dump_t &d, tuple_visit_cpt auto &&) const;
-
-  void explore(const dump_t &, has_visit_cpt auto &&...visitors) const
-    requires(sizeof...(visitors) > 0);
-
-  dump_t dump() const;
-
-private:
-  void visit(const element &el, frame_visit_cpt auto &visitor) const;
-
-  void visit(const element &el, text_visit_cpt auto &visitor) const;
-
-  void visit_text_element(const element &el,
-                          has_visit_cpt auto &&...visitors) const;
-
-  void visit_frame_element(const element &el,
-                           has_visit_cpt auto &&...visitors) const;
-
-  void visit_if_text(const element &el, has_visit_cpt auto &&) const;
-
-  void visit_if_frame(const element &el, has_visit_cpt auto &&) const;
-
-  void resolve_text_visitor(const element &el, variant_visit_cpt auto &&) const;
-
-  void resolve_frame_visitor(const element &el,
-                             variant_visit_cpt auto &&) const;
+  void explore(explore::visitor auto &&...visitors) {};
 
 private:
   std::vector<element> elements;
+  std::vector<event::value> events;
   units::hash hash;
-};
-
-// --- VISIT ---
-
-void explorer::visit(const element &el, frame_visit_cpt auto &visitor) const {
-  // do call
-  if constexpr (requires() { visitor(el.rect, el.style); }) {
-    visitor(el.rect, el.style);
-  } else if constexpr (requires() { visitor.frame(el.rect, el.style); }) {
-    visitor.frame(el.rect, el.style);
-  } else if constexpr (requires() { visitor({el.rect, el.style}); }) {
-    visitor({el.rect, el.style});
-  } else if constexpr (requires() { visitor.frame({el.rect, el.style}); }) {
-    visitor.frame({el.rect, el.style});
-  }
-};
-
-void explorer::visit(const element &el, text_visit_cpt auto &visitor) const {
-  if (!el.text) {
-    // err
-    return;
-  }
-
-  if constexpr (requires() { visitor(el.rect, el.text.value(), el.style); }) {
-    visitor(el.rect, el.text.value(), el.style);
-  } else if constexpr (requires() {
-                         visitor.frame(el.rect, el.text.value(), el.style);
-                       }) {
-    visitor.frame(el.rect, el.text, el.style);
-  } else if constexpr (requires() {
-                         visitor({el.rect, el.text.value(), el.style});
-                       }) {
-    visitor({el.rect, el.text.value(), el.style});
-  } else if constexpr (requires() {
-                         visitor.frame({el.rect, el.text.value(), el.style});
-                       }) {
-    visitor.frame({el.rect, el.text.value(), el.style});
-  }
-};
-
-void explorer::resolve_text_visitor(const element &el,
-                                    variant_visit_cpt auto &&variant) const {
-  std::visit([&](auto &visitor) { visit_if_text(el, visitor); }, variant);
-};
-
-void explorer::resolve_frame_visitor(const element &el,
-                                     variant_visit_cpt auto &&variant) const {
-  std::visit([&](auto &visitor) { visit_if_frame(el, visitor); }, variant);
-};
-
-void explorer::visit_if_text(const element &el,
-                             has_visit_cpt auto &&visitor) const {
-  if constexpr (text_visit_cpt<decltype(visitor)>) {
-    visit(el, visitor);
-  } else if constexpr (variant_visit_cpt<decltype(visitor)>) {
-    resolve_text_visitor(el, visitor);
-  }
-};
-
-void explorer::visit_if_frame(const element &el,
-                              has_visit_cpt auto &&visitor) const {
-  if constexpr (frame_visit_cpt<decltype(visitor)>) {
-    visit(el, visitor);
-  } else if constexpr (variant_visit_cpt<decltype(visitor)>) {
-    resolve_frame_visitor(el, visitor);
-  }
-};
-
-void explorer::visit_text_element(const element &el,
-                                  has_visit_cpt auto &&...visitors) const {
-  (visit_if_text(el, visitors), ...);
-};
-
-void explorer::visit_frame_element(const element &el,
-                                   has_visit_cpt auto &&...visitors) const {
-  (visit_if_frame(el, visitors), ...);
-};
-
-// --- EXPLORE ---
-void explorer::explore(has_visit_cpt auto &&...visitors) const
-  requires(sizeof...(visitors) > 0)
-{
-  for (auto &&element : elements) {
-    if (element.text) {
-      visit_text_element(element, visitors...);
-    } else {
-      visit_frame_element(element, visitors...);
-    }
-  }
-}
-
-void explorer::explore(const dump_t &dump,
-                       has_visit_cpt auto &&...visitors) const
-  requires(sizeof...(visitors) > 0)
-{
-  // wrong
-  for (auto &&element : elements) {
-    if (element.text) {
-      visit_text_element(element, visitors...);
-    } else {
-      visit_frame_element(element, visitors...);
-    }
-  }
-}
-
-void explorer::explore(units::ui::rect rect,
-                       has_visit_cpt auto &&...visitors) const
-  requires(sizeof...(visitors) > 0)
-{
-  // code
-  for (auto &&element : elements) {
-    // do job
-  }
-}
-
-// --- RECALL ---
-void explorer::explore(tuple_visit_cpt auto &&visitor) const {
-  std::apply(
-      [this](auto &&...visitors) {
-        explore(std::forward<decltype(visitors)>(visitors)...);
-      },
-      std::forward<decltype(visitor)>(visitor));
-};
-
-void explorer::explore(const dump_t &dump,
-                       tuple_visit_cpt auto &&visitor) const {
-  std::apply(
-      [this, &dump](auto &&...visitors) {
-        explore(dump, std::forward<decltype(visitors)>(visitors)...);
-      },
-      std::forward<decltype(visitor)>(visitor));
-};
-
-void explorer::explore(units::ui::rect rect,
-                       tuple_visit_cpt auto &&visitor) const {
-  std::apply(
-      [this, rect = std::move(rect)](auto &&...visitors) {
-        explore(std::move(rect), std::forward<decltype(visitors)>(visitors)...);
-      },
-      std::forward<decltype(visitor)>(visitor));
 };
 
 } // namespace scheme

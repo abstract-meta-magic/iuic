@@ -703,7 +703,7 @@ void text_button(builder &b, std::string_view text,
 
         b.policy.hovered(policy::hovered::propagate);
 
-        if (b.state.hovered(uid)) {
+        if (b.state.has(uid, base::hovered)) {
           b.style.override(iuic::style::decoration{
               .background{color::catppuccin::macchiato::surface_0{}}});
         }
@@ -715,6 +715,8 @@ void text_button(builder &b, std::string_view text,
               e.utils.memory.try_visit(e.object, [&](callback_type &call) {
                 if (e.code == iuic::key_map::mouse("left")) {
                   call();
+
+                  // e.utils.send(/* object */); to event queue
                 }
               });
             },

@@ -16,7 +16,8 @@ constexpr decl idle{decl::instance_of<idle>()};
 constexpr decl exception_handling{decl::instance_of<exception_handling>()};
 
 constexpr decl terminate{decl::instance_of<terminate>()};
-static_assert(null.self == null.self, "STATE INSTANCE IS EQ");
+
+static_assert(null.self == null.self, "STATE INSTANCE IS NEQ");
 static_assert(null.self != idle.self, "STATE INSTANCE IS EQ");
 static_assert(null.self != hovered.self, "STATE INSTANCE IS EQ");
 }; // namespace iuic::state::base

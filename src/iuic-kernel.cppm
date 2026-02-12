@@ -249,6 +249,8 @@ struct userspace {
   virtual const state_model *state() const = 0;
 
   virtual std::uint64_t hash(std::span<const std::byte>) const = 0;
+
+  // dupm в tree::node_type
 };
 
 struct memory_model {

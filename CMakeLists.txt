@@ -47,6 +47,8 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"src/iuic-style.cppm"
+	"src/iuic-environment-tmp.cppm"
+	"src/iuic-environment-persist.cppm"
 	"src/iuic-token.cppm"
 	"src/iuic-text-font.cppm"
 	"src/iuic-text-fontset.cppm"
@@ -64,6 +66,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-base-color.cppm"
 	"src/iuic-policy.cppm"
 	"src/iuic-scheme.cppm"
+	"src/iuic-scheme-hitscan.cppm"
 	"src/iuic-scheme-builder.cppm"
 )
 

@@ -10,6 +10,7 @@ import :layout.frame.box;
 import :layout.text.box;
 export import :kernel;
 export import :scheme;
+export import :scheme.hitscan;
 export import :scheme.builder;
 export import :policy;
 export import :text.font;
@@ -43,11 +44,11 @@ constexpr style::decl def_style = []() {
 
 class context {
 public: // api
-  void set_view_size(units::ui::size sz);
-
-  void make(scheme::builder_block_cpt auto &&call);
+  void make(units::ui::size viewport, scheme::builder_block_cpt auto &&call);
 
 private:
+  void set_view_size(units::ui::size sz);
+
   void reset();
   // первичное вычисление своего размера
   void proccess_measure();
@@ -56,7 +57,7 @@ private:
   // балансировка
   void proccess_position();
   // построение списка отрисовки на основе FTC
-  void build_render_list();
+  void complite_scheme();
 
 private:
   /* Концепт для поддержки __attribute__((weak))
@@ -79,36 +80,42 @@ private:
   // плоское дерево вычислений
   std::unique_ptr<kernel::hardware> kernel{kernel::default_kernel()};
 
-  event_collector event_collector;
+  event::collector event_collector;
 
   scheme::builder b{scheme::builder_base{*kernel, event_collector, tpa,
                                          machine_dispatcher, b}};
 
+  environment event_env{*kernel, machine_dispatcher};
+
 public:
   text::fontslot font;
-
-  event_reciver event{*kernel};
 
   scheme::explorer scheme{scheme::incomplete{}};
 };
 
 // Contex Template Impl
-void context::make(scheme::builder_block_cpt auto &&call) {
+void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
+
   // step 1
   reset();
+  // <<-----------------------<< advance
+  adp.advance();
 
-  machine_dispatcher.execute(); // <-- execute all machine's
+  // <<-----------------------<< begin
+  set_view_size(vp);
 
-  adp.advance(); // <-- advance all mechanism
+  // <<-----------------------<< execute machines
+  machine_dispatcher.execute();
 
-  call(b); // <-- make base scheme
+  // <<-----------------------<< make base
 
-  proccess_measure(); // <-|
-  proccess_arrange(); // <-|--- compute scheme
+  // env.set_viewport_size(vp);
 
-  apply_event_pack__(event, event_collector.build_pack(*kernel));
-  // dop
-  build_render_list();
+  // scheme::director d{env};
+
+  // auto row_scheme = d.make(std::forward<decltype(call)>(call));
+
+  // auto comp_scheme = scheme::computing(row_sheme, env);
 };
 
 } // namespace iuic

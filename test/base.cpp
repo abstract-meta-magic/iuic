@@ -1,5 +1,6 @@
 #include <raylib.h>
 
+import iuic.state;
 import iuic.core;
 import iuic.kitty_kit;
 import std;
@@ -49,9 +50,8 @@ constexpr iuic::external::type opengl{};
 constexpr iuic::external::type opengl_text{opengl};
 
 int main() {
-  iuic::test::run();
+  // iuic::test::run();
 
-  /*
   using namespace iuic;
 
   // SDL BASE
@@ -97,74 +97,40 @@ int main() {
 
   app app;
 
-  ctx.set_view_size({600, 800});
-
   auto mouse_position = GetMousePosition();
 
   while (not WindowShouldClose() && not app.quit) {
 
-    ctx.set_view_size(
-        {(units::upixel)GetScreenWidth(), (units::upixel)GetScreenHeight()});
+    units::ui::size viewport{(units::upixel)GetScreenWidth(),
+                             (units::upixel)GetScreenHeight()};
 
-    ctx.make([&](auto &b) { main_window(b, app); }); // iuic test
+    ctx.make(viewport, [&](auto &b) { main_window(b, app); }); // iuic test
 
-    auto new_mouse_position = GetMousePosition();
+    // TODO :
 
-    if (mouse_position.x != new_mouse_position.x ||
-        mouse_position.y != new_mouse_position.y) {
-      std::exchange(mouse_position, new_mouse_position);
-      ctx.event.pointer_move({(int)mouse_position.x, (int)mouse_position.y});
-    }
+    static constexpr auto in = [](units::ui::position,
+                                  units::ui::rect) -> bool { return true; };
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-      ctx.event.key(iuic::key_map::mouse("left"));
-    } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-      ctx.event.key(iuic::key_map::mouse("right"));
-    }
+    ctx.scheme.explore([](iuic::scheme::eval::context &ctx) {
+      auto el = ctx.self();
+      ctx.parent_of(el);
+      ctx.childs_of(el);
+
+      ctx.style_of(el);
+      ctx.area_of(el);
+      ctx.hovered_policy_of(el);
+      ctx.event_policy_of(el);
+
+      ctx.select(el);
+
+      if (in(ctx.get_pointer_position(), ctx.area_of(el).bordered)) {
+        ctx.attach_state(el, state::base::hovered);
+      }
+    });
 
     // std::cout << "GO" << std::endl;
     BeginDrawing();
     ClearBackground(WHITE);
-    // сначала эксперимент на gl
-
-    // code
-
-    ctx.scheme.explore(
-        [](iuic::scheme::frame frame) {
-          std::visit(
-              [&](auto &obj) {
-                using type = std::remove_cvref_t<decltype(obj)>;
-                if constexpr (std::same_as<type, iuic::units::color_t>) {
-                  auto [x, y, w, h] = frame.rect.xywh();
-                  Rectangle rect{(float)x, (float)y, (float)w, (float)h};
-                  Color color{obj.r, obj.g, obj.b, obj.a};
-                  DrawRectangleRec(rect, color);
-                  // DrawRectangleRounded(rect, .80f, 20, color);
-                }
-              },
-              frame.style.get_decoration().background);
-
-          auto fref = frame.style.get_advance().text.font;
-        },
-        [&](iuic::scheme::text text) {
-          auto fref = text.style.get_advance().text.font;
-
-          auto &atlas = ctx.font.get(fref);
-
-          auto &b = atlas.get_binding();
-
-          Color color{.r = 0, .g = 0, .b = 0, .a = 255};
-          //         auto [x, y, w, h] = text.rect.xywh();
-          // DrawRectangle(x - 4, y, w + 8, h, color);
-
-          if (b.type() == opengl_text) {
-            for (auto &&g : text.text) {
-              DrawRectangle(g.position.x, g.position.y, 6, 12, color);
-              color.r += 40;
-              color.g += 40;
-            }
-          }
-        });
 
     DrawFPS(0, 0);
 
@@ -173,5 +139,4 @@ int main() {
 
   CloseWindow();
   return 0;
-  */
 }

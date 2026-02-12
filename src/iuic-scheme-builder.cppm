@@ -14,6 +14,8 @@ import :layout.text.box;
 import :event;
 import :scheme;
 import :machine.dispatcher;
+import :environment.persist;
+import :environment.tmp;
 
 export namespace iuic::scheme {
 
@@ -37,7 +39,7 @@ struct builder_base {
     std::size_t index{0};
   };
 
-  builder_base(kernel::root &ctx_, event_collector &collector_,
+  builder_base(kernel::root &ctx_, event::collector &collector_,
                iuic::text::present::aggregator &tpa_,
                state::machine::dispatcher &md_, builder &builder_)
       : kernel{ctx_}, collector{collector_}, tpa{tpa_}, machine_dispatcher{md_},
@@ -48,7 +50,7 @@ struct builder_base {
 
 protected: // builder unit stack
   kernel::root &kernel;
-  event_collector &collector;
+  event::collector &collector;
   iuic::text::present::aggregator &tpa;
   state::machine::dispatcher &machine_dispatcher;
   builder &builder;
@@ -303,22 +305,15 @@ struct builder_memory_interface : protected virtual builder_base {
 struct builder_event_interface : protected virtual builder_base {
   builder_event_interface(builder_base &&bb) : builder_base{bb} {};
 
-  void operator()(event_callback_cpt auto &&call, units::uid object = 0) {
+  void operator()(event::callback_cpt auto &&call, units::uid object = 0) {
     attach(std::forward<decltype(call)>(call), object);
   };
 
-  void operator()(custom_event_callback_cpt auto &&call,
-                  units::uid object = 0) {
-    attach(std::forward<decltype(call)>(call), object);
-  };
-
-  template <event_callback_cpt Call>
+  template <event::callback_cpt Call>
   void attach(Call &&call, units::uid object = 0) {
     collector.push(
-        revent{std::forward<Call>(call), object, kernel.get_selected()});
+        event::row{std::forward<Call>(call), object, kernel.get_selected()});
   };
-
-  void attach(custom_event_callback_cpt auto &&call, units::uid uid) {};
 };
 
 struct builder_style_interface : protected virtual builder_base {
@@ -597,5 +592,35 @@ void builder_element_interface::text(const iuic::text::token &token,
   tpa.reserve_present(el.self, iuic::text::token::sequence{
                                    static_cast<iuic::text::token *>(mem), 1});
   kernel.launch(el);
+};
+}; // namespace iuic::scheme
+
+namespace iuic::scheme {
+struct blueprint {
+  struct element {
+    units::uid uid;
+    std::variant<const frame_layout *, const text_layout *> layout;
+  };
+
+  environment::tmp env;
+  utils::tree::flat_bfs_type<el> tree;
+};
+
+struct director {
+  director(environment::persist &);
+
+  blueprint make(std::invocable<builder &> auto &&call) {
+    environment::tmp tenv;
+    utils::tree::node_type<blueprint::element> tree;
+    // builder b{...};
+
+    // b.call(std::forward<decltype(call)>(call));
+
+    // make blueprint
+    // etc
+  };
+
+private:
+  environment::persist &env;
 };
 }; // namespace iuic::scheme

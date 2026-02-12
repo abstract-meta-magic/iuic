@@ -133,6 +133,13 @@ struct rect {
   constexpr auto operator<=>(const rect &) const = default;
 };
 
+struct area {
+  rect bordered;
+  rect borderless;
+
+  constexpr auto operator<=>(const area &) const = default;
+};
+
 struct none {};
 
 struct inherit {};

@@ -121,7 +121,7 @@ void context::proccess_arrange() {
   }
 };
 
-void context::build_render_list() {
+void context::complite_scheme() {
   // тут нужно будет отсеять лишние и
   // маркерованные элементы
   // после чего составить простой список
