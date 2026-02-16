@@ -578,20 +578,25 @@ struct crust : public units::color_t {
 
 export namespace kitty_kit::layout {
 using namespace iuic;
-struct text_button : public frame_layout {
-  measure_result measure(frame_measure_utils utils) const noexcept override;
-  bool arrange(frame_arrange_utils utils) const noexcept override;
+
+struct text_button : public iuic::layout::frame {
+  iuic::layout::measure::result
+  measure(iuic::layout::measure::frame_utils utils) noexcept override;
+  bool arrange(iuic::layout::arrange::frame_utils utils) noexcept override;
 };
 
-struct simple_box : public frame_layout {
-  measure_result measure(frame_measure_utils utils) const noexcept override;
-  bool arrange(frame_arrange_utils utils) const noexcept override;
+struct simple_box : public iuic::layout::frame {
+  iuic::layout::measure::result
+  measure(iuic::layout::measure::frame_utils utils) noexcept override;
+  bool arrange(iuic::layout::arrange::frame_utils utils) noexcept override;
 };
 
-struct short_text : public text_layout {
-  measure_result measure(text_measure_utils utils) const noexcept override;
+struct short_text : public iuic::layout::text {
+  iuic::layout::measure::result
+  measure(iuic::layout::measure::text_utils utils) noexcept override;
+
   iuic::text::glyph::sequence
-  arrange(text_arrange_utils utils) const noexcept override;
+  arrange(iuic::layout::arrange::text_utils utils) noexcept override;
 };
 }; // namespace kitty_kit::layout
 
@@ -606,8 +611,8 @@ constexpr inline iuic::style::font::decl font_base_hovered{font_base};
 constexpr iuic::style::decl base{[]() {
   iuic::style::decl res{};
 
-  res.shape.min_size.h = iuic::units::percent{100};
-  res.shape.min_size.w = iuic::units::percent{100};
+  res.shape.min_size.height = iuic::units::percent{100};
+  res.shape.min_size.width = iuic::units::percent{100};
 
   res.decoration.background = color::catppuccin::macchiato::surface_2{};
 
@@ -619,8 +624,8 @@ constexpr iuic::style::decl base{[]() {
 constexpr iuic::style::decl button{[]() {
   iuic::style::decl res{};
 
-  res.shape.min_size.h = iuic::units::vh{3};
-  res.shape.min_size.w = iuic::units::vh{18};
+  res.shape.min_size.height = iuic::units::vh{3};
+  res.shape.min_size.width = iuic::units::vh{18};
   res.shape.margin.top = iuic::units::upixel{20};
   res.shape.margin.bottom = iuic::units::upixel{20};
   res.shape.margin.left = iuic::units::upixel{20};
@@ -650,35 +655,33 @@ void button(builder &b, std::invocable<> auto &&callback,
   static layout::simple_box layout_;
 
   auto uid = b.uid.make(policy::unique{}, "kitty-kit-button", anchor);
-  b.frame(
-      uid,
-      [&](auto &b) {
-        using callback_type = std::remove_cvref_t<decltype(callback)>;
+  b.frame(uid, style::button, layout_, [&](auto &b) {
+    using callback_type = std::remove_cvref_t<decltype(callback)>;
 
-        b.memory.persist(uid);
+    // b.memory.persist(uid);
 
-        b.memory.init_if_not(
-            uid, [&]() { return std::forward<decltype(callback)>(callback); });
+    // b.memory.init_if_not(
+    //    uid, [&]() { return std::forward<decltype(callback)>(callback); });
 
-        b.policy.hovered(policy::hovered::propagate);
+    b.policy.hovered(policy::hovered::propagate);
 
-        if (b.state.hovered(uid)) {
-          b.style.override(iuic::style::decoration{
-              .background{color::catppuccin::macchiato::surface_0{}}});
-        }
+    /*
+    if (b.state.has(uid,iuic::state::base::hovered)) {
+      b.style.override(iuic::style::decoration{
+          .background{color::catppuccin::macchiato::surface_0{}}});
+    }
+    */
 
-        b.event(
-            [](event::local::key e) static {
-              e.utils.memory.try_visit(e.object, [&](callback_type &call) {
-                if (e.code == iuic::key_map::mouse("left")) {
-                  call();
-                }
-              });
-            },
-            uid);
-      },
-
-      style::button, layout_);
+    b.event(
+        [](event::local::key e) static {
+          e.utils.memory.try_visit(e.object, [&](callback_type &call) {
+            if (e.code == iuic::key_map::mouse("left")) {
+              call();
+            }
+          });
+        },
+        uid);
+  });
 };
 
 void machine_use(builder &b);
@@ -691,39 +694,37 @@ void text_button(builder &b, std::string_view text,
 
   auto uid = b.uid.make(iuic::policy::unique{}, "text-button", anchor);
 
-  b.element.frame(
-      uid,
-      [&](builder &b) {
-        using callback_type = std::remove_cvref_t<decltype(callback)>;
+  b.element.frame(uid, style::button, button_layout, [&](builder &b) {
+    using callback_type = std::remove_cvref_t<decltype(callback)>;
 
-        b.memory.persist<callback_type>(uid);
+    b.memory.persist<callback_type>(uid);
 
-        b.memory.init_if_not(
-            uid, [&]() { return std::forward<decltype(callback)>(callback); });
+    // b.memory.init_if_not(
+    //    uid, [&]() { return std::forward<decltype(callback)>(callback);
+    //    });
 
-        b.policy.hovered(policy::hovered::propagate);
+    b.policy.hovered(policy::hovered::propagate);
 
-        if (b.state.has(uid, base::hovered)) {
-          b.style.override(iuic::style::decoration{
-              .background{color::catppuccin::macchiato::surface_0{}}});
-        }
+    if (b.state.has(uid, base::hovered)) {
+      b.style.override(iuic::style::decoration{
+          .background{color::catppuccin::macchiato::surface_0{}}});
+    }
 
-        b.state.machine.use(proto);
+    b.state.machine.use(proto);
 
-        b.event(
-            [](event::local::key e) static {
-              e.utils.memory.try_visit(e.object, [&](callback_type &call) {
-                if (e.code == iuic::key_map::mouse("left")) {
-                  call();
+    b.event(
+        [](event::local::key e) static {
+          e.utils.memory.try_visit(e.object, [&](callback_type &call) {
+            if (e.code == iuic::key_map::mouse("left")) {
+              call();
 
-                  // e.utils.send(/* object */); to event queue
-                }
-              });
-            },
-            uid);
+              // e.utils.send(/* object */); to event queue
+            }
+          });
+        },
+        uid);
 
-        b.element.text(text::token{text}, style::base, text_layout);
-      },
-      style::button, button_layout);
+    //       b.element.text(text::token{text}, style::base, text_layout);
+  });
 }
 }; // namespace kitty_kit

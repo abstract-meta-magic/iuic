@@ -9,17 +9,49 @@ import :style;
 namespace iuic::environment {
 
 struct persist {
-  state::machine::instance *get_machine(units::uid);
+  struct {
+    void get(units::uid);
 
-  erasure::visited::as_mutable get_object(units::uid);
+    void construct(units::uid, auto &&call);
 
-  bool has_state(units::uid);
+    void destruct(units::uid);
 
-  units::ui::size get_viewport_size();
+    void update_lifetime(units::uid);
 
-  units::ui::position get_pointer_position();
+    void state(units::uid);
+  } object;
 
-  // get_momory_model();
+  struct {
+    void attach(units::uid, iuic::state::value);
+
+    void detach(units::uid, iuic::state::value);
+
+    bool has(units::uid, iuic::state::value);
+
+  private:
+    // map
+  } state;
+
+  struct {
+  } machine;
+
+  struct {
+    units::ui::size get_viewport_size();
+
+    void set_viewport_size(units::ui::size);
+
+    units::ui::position get_pointer_position();
+
+    // TODO : mb? get_old_pointer_position();
+
+    void set_pointer_position(units::ui::position);
+  } external;
+};
+
+void heh(persist &env, units::uid uid) {
+  env.object.get(uid);
+  env.state.has(uid, iuic::state::base::hovered);
+  env.external.get_pointer_position();
 };
 
 }; // namespace iuic::environment

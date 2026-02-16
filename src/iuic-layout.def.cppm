@@ -8,8 +8,8 @@ import :text.font;
 export namespace iuic {
 
 struct request_size {
-  units::ui::adaptive_unit width;
-  units::ui::adaptive_unit height;
+  units::ui::adaptive::unit width;
+  units::ui::adaptive::unit height;
 };
 
 struct measure_request {

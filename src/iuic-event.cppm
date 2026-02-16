@@ -45,7 +45,7 @@ struct key : event_base {
   units::ui::position current_mouse_position{};
 };
 
-struct mouse : event_base {
+struct pointer : event_base {
   units::ui::position current_mouse_position{};
   units::ui::position old_mouse_position{};
 };
@@ -59,7 +59,7 @@ struct key : event_base {
   units::ui::rect rect;
 };
 
-struct mouse : event_base {
+struct pointer : event_base {
   units::ui::position current_mouse_position{};
   units::ui::position old_mouse_position{};
   units::ui::rect rect;
@@ -72,8 +72,8 @@ struct mouse : event_base {
 namespace iuic::event {
 
 // pointer
-using global_pointer_move_event_fpt = void (*)(event::global::mouse);
-using local_pointer_move_event_fpt = void (*)(event::local::mouse);
+using global_pointer_move_event_fpt = void (*)(event::global::pointer);
+using local_pointer_move_event_fpt = void (*)(event::local::pointer);
 
 // key
 using global_key_event_fpt = void (*)(event::global::key);
@@ -86,29 +86,22 @@ using variadic_callback =
 template <typename T>
 concept callback_cpt = requires(T &&call) { variadic_callback{call}; };
 
-// хешировать
-struct row {
-  variadic_callback call;
-  units::uid object;
-};
-
-// TOTO : Rename
 struct value {
-  variadic_callback call;
+  /*
+    Why not std::variant?
+    Becaose aligned. 32
+  */
+  union {
+    local_key_event_fpt lk;
+    local_pointer_move_event_fpt lpm;
+    global_key_event_fpt gk;
+    global_pointer_move_event_fpt gpm;
+  };
   units::uid object;
   units::uid uid;
-  bool triggered{false};
-  bool local{false};
-};
-
-struct pack {
-  std::vector<value> local;
-  std::vector<value> global;
-};
-
-// главная обязанность - сборка событий
-class collector {
-  // TODO :
+  enum meta_e { triggered = 0, local, key, pointer };
+  using meta_t = std::bitset<4>;
+  meta_t meta;
 };
 
 }; // namespace iuic::event

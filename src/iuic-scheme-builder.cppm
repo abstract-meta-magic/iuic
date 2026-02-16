@@ -5,17 +5,35 @@ export module iuic.core:scheme.builder;
 import std;
 import iuic.underlying;
 import iuic.state;
-import :kernel;
 import :text.token;
 import :text.buff;
 import :text.present;
-import :layout.frame.box;
-import :layout.text.box;
 import :event;
-import :scheme;
+import :policy;
 import :machine.dispatcher;
 import :environment.persist;
 import :environment.tmp;
+
+// forward
+namespace iuic::layout {
+struct frame;
+struct text;
+}; // namespace iuic::layout
+
+namespace iuic::scheme {
+
+struct sketch {
+  struct element {
+    std::variant<const layout::frame *, const layout::text *> layout;
+    units::uid uid;
+    style::sid sid;
+    units::ui::zorder zorder;
+  };
+  environment::tmp env;
+  utils::tree::flat_bfs_type<element> tree;
+};
+
+}; // namespace iuic::scheme
 
 export namespace iuic::scheme {
 
@@ -24,38 +42,34 @@ struct builder;
 template <typename T>
 concept builder_block_cpt = std::invocable<T, builder &>;
 
-constexpr style::decl def_style{};
-
-struct memory {
-  // object  - storage
-  // text    - storage
-  // persist - memory
-  // tmp     - memory
-};
-
 struct builder_base {
+protected:
+  using insert_iterator =
+      utils::tree::insert_iterator<utils::tree::node_type<sketch::element>>;
+  using root_iterator =
+      utils::tree::root_iterator<utils::tree::node_type<sketch::element>>;
+  using sibling_iterator =
+      utils::tree::root_iterator<utils::tree::node_type<sketch::element>>;
+
+public:
   struct unit_t {
     units::uid uid{0};
     std::size_t index{0};
   };
 
-  builder_base(kernel::root &ctx_, event::collector &collector_,
-               iuic::text::present::aggregator &tpa_,
-               state::machine::dispatcher &md_, builder &builder_)
-      : kernel{ctx_}, collector{collector_}, tpa{tpa_}, machine_dispatcher{md_},
-        builder{builder_} {
-    static std::string root_uid{"root-uid-hash-str-4467532667"};
-    unit.push(unit_t{.uid = kernel.hash(std::as_bytes(std::span(root_uid)))});
-  };
+  builder_base(environment::tmp &tenv_, environment::persist &penv_,
+               insert_iterator it_)
+      : tenv{tenv_}, penv{penv_}, it{it_} {
+
+          //   static std::string root_uid{"root-uid-hash-str-4467532667"};
+          // unit.push(unit_t{.uid =
+          // kernel.hash(std::as_bytes(std::span(root_uid)))});
+        };
 
 protected: // builder unit stack
-  kernel::root &kernel;
-  event::collector &collector;
-  iuic::text::present::aggregator &tpa;
-  state::machine::dispatcher &machine_dispatcher;
-  builder &builder;
-  // tmp memory
-  std::stack<unit_t> unit;
+  environment::tmp &tenv;
+  environment::persist &penv;
+  insert_iterator it;
 };
 
 struct builder_element_interface : protected virtual builder_base {
@@ -65,63 +79,38 @@ struct builder_element_interface : protected virtual builder_base {
     Базовая форма для всего.Стелизуемый рамка.
     TODO : можно заменить на нешаблонный вызов
   */
-  void frame(builder_block_cpt auto &&call, style::ref = def_style,
-             const frame_layout & = box_layout) noexcept;
+  void frame(const style::decl &, const layout::frame &,
+             builder_block_cpt auto &&call) noexcept;
 
-  void frame(builder_block_cpt auto &&call, const frame_layout &) noexcept;
-
-  void frame(style::ref = def_style,
-             const frame_layout & = box_layout) noexcept;
-
-  void frame(const frame_layout &) noexcept;
-
-  void frame(units::uid uid, builder_block_cpt auto &&call,
-             style::ref = def_style,
-             const frame_layout & = box_layout) noexcept;
-
-  void frame(units::uid uid, builder_block_cpt auto &&call,
-             const frame_layout &) noexcept;
-
-  void frame(units::uid uid, style::ref = def_style,
-             const frame_layout & = box_layout) noexcept;
-
-  void frame(units::uid uid, const frame_layout &) noexcept;
+  void frame(units::uid uid, const style::decl &, const layout::frame &,
+             builder_block_cpt auto &&call) noexcept;
 
   /*
     Является конечной точкой.Отрисовка текста
   */
-  void text(iuic::text::token &&, style::ref = def_style,
-            const text_layout & = text_def_layout);
+  void text(iuic::text::token &&, const style::decl *, const layout::text &);
 
   // in frame
-  void text(const iuic::text::token &, style::ref = def_style,
-            const text_layout & = text_def_layout);
+  void text(const iuic::text::token &, const style::decl *,
+            const layout::text &);
 };
 
 struct builder_order_interface : protected virtual builder_base {
   builder_order_interface(builder_base &&bb) : builder_base{bb} {}
 
-  void group(std::uint16_t value) {
-    // ctx.ctree.current()->get_info().order.group = value;
-  };
+  void group(std::uint16_t value);
 
-  void up() {
-    // kernel.override(kernel.get_selected(),z_order_t{});
-  };
+  void up();
 
-  void set(std::uint16_t value) {
-    // ctx.ctree.current()->get_info().order.priority += value;
-  };
+  void set(std::uint16_t value);
 };
 
 struct builder_policy_interface : protected virtual builder_base {
   builder_policy_interface(builder_base &&bb) : builder_base{bb} {};
 
-  void hovered(policy::hovered p) {
-    kernel.override(kernel.get_selected(), p);
-  };
+  void hovered(policy::hovered p);
 
-  void event(policy::event p) { kernel.override(kernel.get_selected(), p); };
+  void event(policy::event p);
 };
 
 struct builder_uid_interface : protected virtual builder_base {
@@ -130,339 +119,89 @@ struct builder_uid_interface : protected virtual builder_base {
   builder_uid_interface(builder_base &&bb) : builder_base{bb} {};
 
   units::uid make(const std::string &str,
-                  const utils::anchor &anchor = default_anchor) const noexcept {
-    std::stringstream ss;
-    ss << str;
-    ss << anchor.value;
-
-    auto hash_string = ss.str();
-
-    return kernel.hash(std::as_bytes(std::span(hash_string)));
-  };
+                  const utils::anchor &anchor = default_anchor) const noexcept;
 
   units::uid make(policy::shared sh, const std::string &str,
-                  const utils::anchor &anchor = default_anchor) {
-    // ok
-
-    auto el = kernel.get_selected();
-
-    for (std::size_t i{0}; i < sh.up; ++i) {
-      el = kernel.get_parent(el);
-    }
-
-    std::stringstream ss;
-    ss << str;
-    ss << anchor.value;
-    ss << el.self;
-
-    auto hash_string = ss.str();
-
-    return kernel.hash(std::as_bytes(std::span(hash_string)));
-  };
+                  const utils::anchor &anchor = default_anchor);
 
   units::uid make(policy::unique, const std::string &str,
-                  const utils::anchor &anchor = default_anchor) {
-    auto el = kernel.get_selected();
-
-    std::stringstream ss;
-    ss << str;
-    ss << anchor.value;
-    ss << el.self;
-
-    auto ch = kernel.get_childs(el);
-
-    if (not ch->valid()) {
-      ss << kernel.get_uid(el).value();
-    } else {
-      kernel::element che;
-      for (auto &e : ch->range()) {
-        che = e;
-      }
-      ss << ch->get()->self;
-      ss << kernel.get_uid(che).value();
-    }
-
-    auto hash_string = ss.str();
-    auto uid = kernel.hash(std::as_bytes(std::span(hash_string)));
-
-    return uid;
-  };
+                  const utils::anchor &anchor = default_anchor);
 
   units::uid make(policy::indexed, const std::string &str,
-                  const utils::anchor &anchor = default_anchor) {
-    std::stringstream ss;
-    ss << str;
-    ss << anchor.value;
+                  const utils::anchor &anchor = default_anchor);
 
-    ss << kernel.get_selected().parent;
-    ss << ++unit.top().index; // save | always contains root
-
-    auto hash_string = ss.str();
-
-    return kernel.hash(std::as_bytes(std::span(hash_string)));
-  };
-
-  units::uid self() const noexcept {
-    return kernel.get_uid(kernel.get_selected()).value_or(0);
-  };
+  units::uid self() const noexcept;
 };
-
-struct not_function {};
-
-template <typename R, typename... ARGS>
-consteval R function_return_type_identyty(std::function<R(ARGS...)>);
-
-template <typename T> consteval auto function_return_type(T &&obj) {
-  if constexpr (requires() { std::function{obj}; }) {
-    return std::type_identity<std::remove_cvref_t<
-        decltype(function_return_type_identyty(std::function{obj}))>>{};
-  } else {
-    return std::type_identity<not_function>{};
-  }
-}
-
-template <typename T>
-using function_return_type_t =
-    typename decltype(function_return_type(std::declval<T>()))::type;
-
-template <typename T> struct ctor_info {
-  using type = function_return_type_t<T>;
-
-  static constexpr auto mtype() { return erasure::type::from<type>(); }
-  // other create meta info
-};
-
-template <typename T>
-concept ctor_cpt = not std::same_as<typename ctor_info<T>::type, not_function>;
 
 struct builder_memory_interface : protected virtual builder_base {
   builder_memory_interface(builder_base &&bb) : builder_base{bb} {};
 
   template <typename T>
-  void try_visit(units::uid uid, std::invocable<T &> auto &&call) {
-    //
-    auto *mem = kernel.memory();
-    auto *type = erasure::type::from<erasure::pure_t<T>>();
+  void try_visit(units::uid uid, std::invocable<T &> auto &&call);
 
-    if (mem->state(uid, type) ==
-        kernel::memory_model::object_state::alive_this_type) {
-      if (auto *locate = mem->locate(uid, type)) {
-        call(*static_cast<T *>(locate));
-      }
-    }
-  };
+  // void init_if_not(units::uid uid, ctor_cpt auto &&call);
 
-  void init_if_not(units::uid uid, ctor_cpt auto &&call) {
-    using ctor_info = ctor_info<decltype(call)>;
-    using T = ctor_info::type;
-    auto *type = ctor_info::mtype();
-    auto *mem = kernel.memory();
+  template <typename T> void typed_dirty(units::uid uid);
 
-    if (auto state = mem->state(uid, type);
-        state == kernel::memory_model::object_state::outdated_this_type) {
-      mem->update_livetime(uid);
-    } else if (state == kernel::memory_model::object_state::reserve_this_type ||
-               state == kernel::memory_model::object_state::reserve_none_type) {
-      mem->launch(uid, type);
-
-      auto *located = static_cast<T *>(kernel.memory()->locate(uid, type));
-
-      new (located) T{call()}; // call typed persist
-    }
-  };
-
-  template <typename T> void typed_dirty(units::uid uid) {
-    auto *mem = kernel.memory();
-    mem->reserve(uid, erasure::type::from<T>());
-  };
-
-  void dirty(units::uid uid) {
-    auto *mem = kernel.memory();
-    mem->reserve(uid);
-  };
+  void dirty(units::uid uid);
 
   template <typename T>
-  void persist(units::uid uid, std::type_identity<T> = {}) {
-
-    auto *mem = kernel.memory();
-    auto *type = erasure::type::from<T>();
-
-    if (mem->state(uid) == kernel::memory_model::object_state::none_exist) {
-      mem->reserve(uid, type);
-    };
-  };
-
-  void persist(units::uid uid) {
-
-    auto *mem = kernel.memory();
-
-    if (mem->state(uid) == kernel::memory_model::object_state::none_exist) {
-      mem->reserve(uid);
-    };
-  };
+  void persist(units::uid uid, std::type_identity<T> = {});
 };
 
 struct builder_event_interface : protected virtual builder_base {
   builder_event_interface(builder_base &&bb) : builder_base{bb} {};
 
-  void operator()(event::callback_cpt auto &&call, units::uid object = 0) {
-    attach(std::forward<decltype(call)>(call), object);
-  };
+  void operator()(event::callback_cpt auto &&call, units::uid object = 0);
 
   template <event::callback_cpt Call>
-  void attach(Call &&call, units::uid object = 0) {
-    collector.push(
-        event::row{std::forward<Call>(call), object, kernel.get_selected()});
-  };
+  void attach(Call &&call, units::uid object = 0);
 };
 
 struct builder_style_interface : protected virtual builder_base {
   builder_style_interface(builder_base &&bb) : builder_base{bb} {};
 
-  void override(style::shape &&shape) {
-    // allocate tmp
-    auto ptr = frame_memory<style::shape>();
+  void override(style::shape &&shape);
 
-    auto el = kernel.get_selected();
-    new (ptr) style::shape{std::move(shape)};
-    kernel.override(el, ptr);
-  };
+  void override(style::transform &&transform);
 
-  void override(style::transform &&transform) {
-    auto ptr = frame_memory<style::transform>();
+  void override(style::decoration &&decoration);
 
-    auto el = kernel.get_selected();
+  void override(std::invocable<style::transform &> auto &&call);
 
-    new (ptr) style::transform{std::move(transform)};
+  void override(std::invocable<style::shape &> auto &&call);
 
-    kernel.override(el, ptr);
-  };
-
-  void override(style::decoration &&decoration) {
-    auto ptr = frame_memory<style::decoration>();
-
-    auto el = kernel.get_selected();
-
-    new (ptr) style::decoration{std::move(decoration)};
-
-    kernel.override(el, ptr);
-  };
-
-  void override(std::invocable<style::transform &> auto &&call) {
-    auto ptr = frame_memory<style::transform>();
-
-    auto el = kernel.get_selected();
-
-    new (ptr) style::transform{kernel.get_style(el).value()->get_transphorm()};
-
-    kernel.override(el, ptr);
-
-    call(*ptr);
-  };
-
-  void override(std::invocable<style::shape &> auto &&call) {
-    auto ptr = frame_memory<style::shape>();
-
-    auto el = kernel.get_selected();
-
-    new (ptr) style::shape{kernel.get_style(el).value()->get_shape()};
-
-    kernel.override(el, ptr);
-
-    call(*ptr);
-  };
-
-  void override(std::invocable<style::decoration &> auto &&call) {
-    auto ptr = frame_memory<style::decoration>();
-
-    auto el = kernel.get_selected();
-
-    new (ptr) style::decoration{kernel.get_style(el).value()->get_decoration()};
-
-    kernel.override(el, ptr);
-
-    call(*ptr);
-  };
+  void override(std::invocable<style::decoration &> auto &&call);
 
 private:
-  template <typename T> T *frame_memory() {
-    return static_cast<T *>(kernel.memory()->tmp(erasure::type::from<T>(), 1));
-  };
+  template <typename T> T *frame_memory();
 };
 
 struct builder_state_interface : protected virtual builder_base {
   builder_state_interface(builder_base &&bb) : builder_base{bb} {};
 
-  bool hovered(units::uid uid) {
-    return kernel.state()->has(uid, state::base::hovered);
-  };
+  bool has(units::uid uid, state::value s);
+  void attach(units::uid uid, state::value s);
 
-  bool has(units::uid uid, state::value s) {
-    return kernel.state()->has(uid, s);
-  }
-
-  void attach(units::uid uid, state::value s) {
-    if (kernel.state()->is_exist(uid)) {
-      kernel.state()->update_livetime(uid);
-    } else {
-      kernel.state()->attach(uid, s);
-    }
-  };
-
-  void detach(units::uid uid, state::value s) {
-    return kernel.state()->detach(uid, s);
-  };
-
-  void transfer(state::value from, state::value to, auto *coro) {
-    //
-  };
+  void detach(units::uid uid, state::value s);
 
   struct machine_accessor {
     machine_accessor(builder_state_interface &i_) : i{i_} {};
 
-    void use(const auto &proto) {
-      auto el = i.kernel.get_selected();
-      i.machine_dispatcher.machine_instance(i.kernel.get_uid(el).value(),
-                                            proto);
-    };
+    void use(const auto &proto);
 
-    void use(units::uid uid, const auto &proto) {
-      i.machine_dispatcher.machine_instance(uid, proto);
-    };
+    void use(units::uid uid, const auto &proto);
 
-    void transition(state::value state) {
-      std::println("eua");
-      auto el = i.kernel.get_selected();
-      auto *m = i.machine_dispatcher.get_machine(i.kernel.get_uid(el).value());
+    void transition(state::value state);
 
-      if (m) {
-        std::println("eua");
-        m->get_controller().try_move(state);
-      }
-    };
-
-    void transition(units::uid uid, state::value state) {
-      auto *m = i.machine_dispatcher.get_machine(uid);
-
-      if (m) {
-        m->get_controller().try_move(state);
-      }
-    };
+    void transition(units::uid uid, state::value state);
 
     // TOTO : error handling
     // void transition(units::uid, iuic::state, auto err);
     // void transition(iuic::state, auto err);
 
     void try_visit_shared(
-        erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call) {
-      auto el = i.kernel.get_selected();
-      auto *m = i.machine_dispatcher.get_machine(i.kernel.get_uid(el).value());
-
-      if (m) {
-        m->get_controller().try_visit_shared(
-            std::forward<decltype(call)>(call));
-      }
-    };
+        erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call);
 
   private:
     builder_state_interface &i;
@@ -504,123 +243,26 @@ public: // public forward decl
 
 // impl
 
-void builder_element_interface::frame(builder_block_cpt auto &&call,
-                                      style::ref style,
-                                      const frame_layout &layout) noexcept {
-  auto el = kernel.instance(unit.top().uid, &layout, style);
-  unit.push(unit_t{.uid = unit.top().uid});
-  call(builder);
-  kernel.launch(el);
-};
-
-void builder_element_interface::frame(builder_block_cpt auto &&call,
-                                      const frame_layout &layout) noexcept {
-  frame(std::forward<decltype(call)>(call), def_style, layout);
-};
-
-void builder_element_interface::frame(style::ref style,
-                                      const frame_layout &layout) noexcept {
-  auto el = kernel.instance(unit.top().uid, &layout, style);
-  kernel.launch(el);
-};
-
-void builder_element_interface::frame(const frame_layout &layout) noexcept {
-  frame(def_style, layout);
-};
-
-void builder_element_interface::frame(units::uid uid,
-                                      builder_block_cpt auto &&call,
-                                      style::ref style,
-                                      const frame_layout &layout) noexcept {
-  kernel.state()->update_livetime(uid);
-  auto el = kernel.instance(uid, &layout, style);
-  unit.push(unit_t{.uid = uid});
-  call(builder);
-  kernel.launch(el);
-};
-
-void builder_element_interface::frame(units::uid uid,
-                                      builder_block_cpt auto &&call,
-                                      const frame_layout &layout) noexcept {
-  kernel.state()->update_livetime(uid);
-  frame(uid, std::forward<decltype(call)>(call), def_style, layout);
-}
-
-void builder_element_interface::frame(units::uid uid, style::ref style,
-                                      const frame_layout &layout) noexcept {
-  kernel.state()->update_livetime(uid);
-  auto el = kernel.instance(uid, &layout, style);
-  kernel.launch(el);
-};
-
-void builder_element_interface::frame(units::uid uid,
-                                      const frame_layout &layout) noexcept {
-  kernel.state()->update_livetime(uid);
-  frame(uid, def_style, layout);
-};
-
-/*
-  Является конечной точкой.Отрисовка текста
-*/
-void builder_element_interface::text(iuic::text::token &&token,
-                                     style::ref style,
-                                     const text_layout &layout) {
-  // reg TPA
-  // BROKEN
-  auto el = kernel.instance(unit.top().uid, &layout, style);
-
-  auto mem = kernel.memory()->tmp(erasure::type::from<iuic::text::token>());
-
-  new (mem) iuic::text::token{std::move(token)};
-
-  tpa.reserve_present(el.self, iuic::text::token::sequence{
-                                   static_cast<iuic::text::token *>(mem), 1});
-  kernel.launch(el);
-};
-
-void builder_element_interface::text(const iuic::text::token &token,
-                                     style::ref style,
-                                     const text_layout &layout) {
-  // reg TPA
-  // BROKEN
-  auto el = kernel.instance(unit.top().uid, &layout, style);
-
-  auto mem = kernel.memory()->tmp(erasure::type::from<iuic::text::token>());
-
-  new (mem) iuic::text::token{token};
-
-  tpa.reserve_present(el.self, iuic::text::token::sequence{
-                                   static_cast<iuic::text::token *>(mem), 1});
-  kernel.launch(el);
-};
 }; // namespace iuic::scheme
 
 namespace iuic::scheme {
-struct blueprint {
-  struct element {
-    units::uid uid;
-    std::variant<const frame_layout *, const text_layout *> layout;
-  };
-
-  environment::tmp env;
-  utils::tree::flat_bfs_type<el> tree;
-};
 
 struct director {
   director(environment::persist &);
 
-  blueprint make(std::invocable<builder &> auto &&call) {
+  sketch make(std::invocable<builder &> auto &&call) {
     environment::tmp tenv;
-    utils::tree::node_type<blueprint::element> tree;
-    // builder b{...};
+    utils::tree::node_type<sketch::element> tree;
 
-    // b.call(std::forward<decltype(call)>(call));
+    // builder b{builder_base{penv, tenv, tree.insert_point()}};
+
+    // call(b);
 
     // make blueprint
     // etc
   };
 
 private:
-  environment::persist &env;
+  environment::persist &penv;
 };
 }; // namespace iuic::scheme

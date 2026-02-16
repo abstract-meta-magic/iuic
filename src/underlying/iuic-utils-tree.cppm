@@ -15,8 +15,11 @@ template <erasure::as_pure_type T> struct sentinel {
 // --
 template <erasure::as_pure_type T> struct base_iterator;
 template <erasure::as_pure_type T> struct access_iterator;
+template <erasure::as_pure_type T> struct const_access_iterator;
 template <erasure::as_pure_type T> struct root_iterator;
+template <erasure::as_pure_type T> struct const_root_iterator;
 template <erasure::as_pure_type T> struct sibling_iterator;
+template <erasure::as_pure_type T> struct const_sibling_iterator;
 template <erasure::as_pure_type T> struct insert_iterator;
 
 // --

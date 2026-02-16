@@ -191,12 +191,43 @@ template <erasure::as_pure_type T> struct node_type {
 
   void bfs();
 
-  insert_point insert_point() { return {&root}; };
+  base_iterator begin() { return {&root}; };
 
 private:
   node root{.parent = node::root_wall_ptr(),
             .left = node::root_wall_ptr(),
             .right = node::root_wall_ptr(),
             .child = nullptr};
+};
+
+template <typename T> struct base_iterator<node_type<T>> {};
+
+template <typename T>
+struct root_iterator<node_type<T>> : base_iterator<node_type<T>> {
+  root_iterator &operator++() {}
+  root_iterator operator++(int) {}
+};
+
+template <typename T>
+struct sibling_iterator<node_type<T>> : base_iterator<node_type<T>> {
+  sibling_iterator &operator++() {}
+  sibling_iterator operator++(int) {}
+
+  sibling_iterator &operator--() {}
+  sibling_iterator operator--(int) {}
+};
+
+template <typename T>
+struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
+
+  void operator=(T &&);
+
+  void operator=(const T &);
+
+  void at(T &&);
+  void at(const T &);
+
+  void to(T &&);
+  void to(const T &);
 };
 }; // namespace iuic::utils::tree

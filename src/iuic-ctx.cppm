@@ -6,13 +6,11 @@ import std;
 export import iuic.underlying;
 export import :base.color;
 export import :layout.def;
-import :layout.frame.box;
-import :layout.text.box;
-export import :kernel;
 export import :scheme;
 export import :scheme.hitscan;
 export import :scheme.builder;
 export import :policy;
+export import :layout.utils;
 export import :text.font;
 export import :text.token;
 export import :text.present;
@@ -77,20 +75,11 @@ private:
   state::machine::dispatcher machine_dispatcher;
 
   text::present::aggregator tpa{};
-  // плоское дерево вычислений
-  std::unique_ptr<kernel::hardware> kernel{kernel::default_kernel()};
-
-  event::collector event_collector;
-
-  scheme::builder b{scheme::builder_base{*kernel, event_collector, tpa,
-                                         machine_dispatcher, b}};
-
-  environment event_env{*kernel, machine_dispatcher};
 
 public:
   text::fontslot font;
 
-  scheme::explorer scheme{scheme::incomplete{}};
+  scheme::explorer scheme{};
 };
 
 // Contex Template Impl

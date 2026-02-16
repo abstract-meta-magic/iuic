@@ -8,6 +8,8 @@ import :text.font;
 
 export namespace iuic::style {
 
+enum class sid : std::uint64_t;
+
 namespace font {
 
 struct decl {
@@ -79,7 +81,7 @@ private:
 
 // limit 128
 struct shape {
-  units::ui::adaptive_size min_size, max_size;
+  units::ui::adaptive::size min_size, max_size;
 
   units::ui::indent border;
 
@@ -203,6 +205,8 @@ protected: //
   const transform *transform_override_ptr{nullptr}; // null
 };
 
+// decl -> decl * transform
+
 struct ref : public cref {
   ref(const decl *decl) : cref{decl} {};
 
@@ -217,5 +221,25 @@ struct ref : public cref {
   void override(const transform *transform) {
     transform_override_ptr = transform;
   };
+};
+
+struct sheet {
+  ref get(sid id);
+
+  cref get(sid id) const;
+
+  sid get_default();
+
+  void set_default(const decl *);
+
+  sid make();
+
+  sid make(sid id);
+
+  sid override(sid, ...);
+
+  sid get_or_make(const decl *);
+
+  // decl -> ovveride list
 };
 }; // namespace iuic::style

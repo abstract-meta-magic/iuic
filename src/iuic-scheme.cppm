@@ -13,20 +13,10 @@ namespace iuic {
 namespace scheme {
 // MB transform to SAO presentation
 struct element {
-  units::ui::rect rect; // x,y w,h
-  std::optional<text::glyph::sequence> text{std::nullopt};
-  style::cref style;
-  std::span<event::value> events;
-  units::z_order_t order;
-  policy::event event_policy;
-  policy::hovered hovered_policy;
-};
-
-// using element_tree = utils::ftree<element>;
-
-struct raw {
-  // element_tree tree;
-  std::vector<event::value> events;
+  units::ui::area area; // x,y w,h
+  units::uid uid;
+  style::sid sid;
+  units::ui::zorder zorder;
 };
 
 struct base_context {
@@ -58,7 +48,6 @@ struct base_context {
 
 private:
   environment::persist &env;
-  raw &scheme;
   std::vector<units::uid> selected__;
   // element_tree::base_iterator it;
 };
@@ -68,26 +57,6 @@ struct el {
   units::ui::rect bordered_rect;   // x,y w,h
   style::cref style;
   units::uid uid;
-};
-
-struct incomplete {
-
-  void push_text(units::ui::rect rect, text::glyph::sequence text_,
-                 style::cref style) {
-    elements.push_back(element{.rect = rect, .text = text_, .style = style});
-  };
-
-  void push_frame(units::ui::rect rect, style::cref style) {
-    elements.push_back(element{.rect = rect, .style = style});
-  };
-
-  std::vector<element> &&extract() && { return std::move(elements); };
-
-  std::vector<element> copy() const & { return elements; };
-
-private:
-  std::vector<element> elements;
-  std::vector<event::value> events;
 };
 
 export struct frame {
@@ -185,17 +154,6 @@ concept visitor = geval::visitor<T> || eval::visitor<T> || reval::visitor<T> ||
 На дистанций упорядоченный параллельный\асинхронный обход.
  */
 export struct explorer {
-
-  explorer(incomplete &&inc) : elements{std::move(inc).extract()} {};
-  explorer(const incomplete &inc) : elements{inc.copy()} {};
-  explorer &operator=(incomplete &&inc) {
-    elements = std::move(inc).extract();
-    return *this;
-  };
-  explorer &operator=(const incomplete &inc) {
-    elements = inc.copy();
-    return *this;
-  };
 
   void explore(explore::visitor auto &&...visitors) {};
 

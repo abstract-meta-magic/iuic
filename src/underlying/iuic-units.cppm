@@ -95,11 +95,6 @@ struct rem {
 };
 // need px,%,rem,vh,vw
 
-struct z_order_t {
-  std::uint16_t group;
-  std::uint16_t priority;
-};
-
 struct color_t {
   static constexpr color_t get_white() noexcept {
     return {255, 255, 255, 255};
@@ -115,6 +110,11 @@ struct upm {
 };
 
 namespace ui {
+struct zorder {
+  std::uint16_t group;
+  std::uint16_t priority;
+};
+
 struct position {
   pixel x, y = 0;
   constexpr auto operator<=>(const position &) const = default;
@@ -144,26 +144,28 @@ struct none {};
 
 struct inherit {};
 
-struct auto_t {};
+struct adapt {};
 
 struct [[deprecated("use external::binding")]] image {};
 
 using background = std::variant<none, color_t, image>;
 
-using adaptive_unit = std::variant<auto_t, upixel, percent, vw, vh, rem>;
-
-struct indent {
-  adaptive_unit top{upixel{0}}, bottom{upixel{0}}, left{upixel{0}},
-      right{upixel{0}};
-};
-
 struct border_radius {
   // TODO : body
 };
 
-struct adaptive_size {
-  adaptive_unit w{upixel{0}};
-  adaptive_unit h{upixel{0}};
+namespace adaptive {
+using unit = std::variant<none, adapt, upixel, percent, vw, vh>;
+
+struct size {
+  unit width;
+  unit height;
+};
+} // namespace adaptive
+
+struct indent {
+  adaptive::unit top{upixel{0}}, bottom{upixel{0}}, left{upixel{0}},
+      right{upixel{0}};
 };
 
 struct aspect_ratio {

@@ -56,11 +56,11 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-text-buff.cppm"
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
-	"src/iuic-box-layout.cppm"
-	"src/iuic-text-box-layout.cppm"
+	#"src/iuic-box-layout.cppm"
+	#"src/iuic-text-box-layout.cppm"
 	"src/iuic-layout.def.cppm"
-	"src/iuic-layout.cppm"
-	"src/iuic-kernel.cppm"
+	"src/iuic-layout-utils.cppm"
+	# "src/iuic-kernel.cppm" [depricated]
 	"src/iuic-ctx.cppm"
 	"src/iuic-machine-dispatcher.cppm"
 	"src/iuic-base-color.cppm"
@@ -75,7 +75,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-text-present.cpp"
 	"src/iuic-layout-utils.cpp"
 	"src/iuic-text-font.cpp"
-	"src/iuic-kernel-impl.cpp"
+	#"src/iuic-kernel-impl.cpp" [depricated]
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
