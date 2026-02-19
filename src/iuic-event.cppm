@@ -91,17 +91,65 @@ struct value {
     Why not std::variant?
     Becaose aligned. 32
   */
+  value(local_key_event_fpt lk_, units::uid uid_, units::uid object_);
+  value(local_pointer_move_event_fpt lpm_, units::uid uid_, units::uid object_);
+  value(global_key_event_fpt gk_, units::uid uid_, units::uid object_);
+  value(global_pointer_move_event_fpt gpm_, units::uid uid_,
+        units::uid object_);
+
+  bool is_local();
+
+  bool is_global();
+
+  bool is_key_event();
+
+  bool is_pointer_event();
+
+  void is_triggered();
+
+  const void *callback_address();
+
+  const units::uid uid;
+
+private:
+  friend void trigger(value &, environment::persist &);
+  units::uid object;
   union {
     local_key_event_fpt lk;
     local_pointer_move_event_fpt lpm;
     global_key_event_fpt gk;
     global_pointer_move_event_fpt gpm;
   };
-  units::uid object;
-  units::uid uid;
   enum meta_e { triggered = 0, local, key, pointer };
   using meta_t = std::bitset<4>;
   meta_t meta;
 };
 
+}; // namespace iuic::event
+
+namespace iuic::event {
+void trigger(value &e, environment::persist &penv) {
+  switch (e.meta.to_ulong()) {
+  case 1 << value::key | 1 << value::local: {
+    e.lk({penv});
+    e.meta.set(value::triggered);
+    break;
+  }
+  case 1 << value::key: {
+    e.gk({penv});
+    e.meta.set(value::triggered);
+    break;
+  }
+  case 1 << value::pointer | 1 << value::local: {
+    e.lpm({penv});
+    e.meta.set(value::triggered);
+    break;
+  }
+  case 1 << value::pointer: {
+    e.gpm({penv});
+    e.meta.set(value::triggered);
+    break;
+  }
+  }
+};
 }; // namespace iuic::event

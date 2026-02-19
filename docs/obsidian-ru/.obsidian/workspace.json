@@ -67,12 +67,14 @@
             "id": "808d31366008c3aa",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "markdown",
               "state": {
-                "currentVersion": "1.10.3"
+                "file": "builder-uid.md",
+                "mode": "preview",
+                "source": false
               },
-              "icon": "lucide-book-up",
-              "title": "примечания к выпуску 1.10.3"
+              "icon": "lucide-file",
+              "title": "builder-uid"
             }
           }
         ],
@@ -226,6 +228,7 @@
   },
   "active": "808d31366008c3aa",
   "lastOpenFiles": [
+    "uid.md",
     "builder-policy.md",
     "builder.md",
     "builder-element.md",
@@ -240,7 +243,6 @@
     "builder-event.md",
     "element.md",
     "storage.md",
-    "uid.md",
     "relement.md",
     "src/image",
     "src",

@@ -56,6 +56,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-text-buff.cppm"
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
+	"src/iuic-event-collector.cppm"
 	#"src/iuic-box-layout.cppm"
 	#"src/iuic-text-box-layout.cppm"
 	"src/iuic-layout.def.cppm"

@@ -59,12 +59,6 @@ template <erasure::as_pure_type T> struct flat_bfs_type {
     }
   };
 
-  template <typename U>
-  friend auto tree::childs_of(tree::base_iterator<flat_bfs_type<U>> it);
-
-  template <typename U>
-  friend auto parent_of(tree::base_iterator<flat_bfs_type<U>> it);
-
 private:
   std::vector<T> data__;
   std::vector<hierarchy_node_t> hierarchy__;
@@ -115,9 +109,9 @@ struct access_iterator<flat_bfs_type<T>> : base_iterator<flat_bfs_type<T>> {
 
   access_iterator(base b) : base{b} {};
 
-  T *operator->() { return &base::owner->data__[base::self]; }
+  base::pointer_t operator->() { return &base::owner->data__[base::self]; }
 
-  T &operator*() { return base::owner->data__[base::self]; }
+  base::lvalue_t operator*() { return base::owner->data__[base::self]; }
 };
 
 template <typename T>
@@ -311,6 +305,14 @@ struct const_sibling_iterator<flat_bfs_type<T>>
 };
 
 template <typename T>
+access_iterator(base_iterator<flat_bfs_type<T>> it)
+    -> access_iterator<flat_bfs_type<T>>;
+
+template <typename T>
+const_access_iterator(base_iterator<flat_bfs_type<T>> it)
+    -> const_access_iterator<flat_bfs_type<T>>;
+
+template <typename T>
 sibling_iterator(base_iterator<flat_bfs_type<T>> it)
     -> sibling_iterator<flat_bfs_type<T>>;
 
@@ -358,5 +360,25 @@ template <typename T> auto parent_of(base_iterator<flat_bfs_type<T>> it) {
     return base_iterator<flat_bfs_type<T>>{};
   }
 }
+
+template <typename T, typename U>
+base_iterator<flat_bfs_type<T>> shift(base_iterator<flat_bfs_type<T>> lhs,
+                                      base_iterator<flat_bfs_type<U>> rhs) {
+  // UNSAFE
+  // NEED TO CHECK HIERARCHY
+  struct shift_iterator : decltype(lhs), decltype(rhs) {
+    operator decltype(lhs)() {
+      return decltype(lhs){decltype(rhs)::self, decltype(lhs)::owner};
+    };
+  } shift{lhs, rhs};
+
+  return shift;
+};
+
+template <typename T>
+base_iterator<flat_bfs_type<T>> shift(base_iterator<flat_bfs_type<T>> lhs,
+                                      base_iterator<flat_bfs_type<T>> rhs) {
+  return rhs;
+};
 
 } // namespace iuic::utils::tree

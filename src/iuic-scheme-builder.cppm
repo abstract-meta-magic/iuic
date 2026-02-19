@@ -20,6 +20,8 @@ struct frame;
 struct text;
 }; // namespace iuic::layout
 
+namespace iuic::hash {};
+
 namespace iuic::scheme {
 
 struct sketch {
@@ -58,8 +60,8 @@ public:
   };
 
   builder_base(environment::tmp &tenv_, environment::persist &penv_,
-               insert_iterator it_)
-      : tenv{tenv_}, penv{penv_}, it{it_} {
+               insert_iterator it_, builder &builder_)
+      : tenv{tenv_}, penv{penv_}, it{it_}, builder{builder_} {
 
           //   static std::string root_uid{"root-uid-hash-str-4467532667"};
           // unit.push(unit_t{.uid =
@@ -70,6 +72,7 @@ protected: // builder unit stack
   environment::tmp &tenv;
   environment::persist &penv;
   insert_iterator it;
+  builder &builder;
 };
 
 struct builder_element_interface : protected virtual builder_base {
@@ -139,11 +142,7 @@ struct builder_memory_interface : protected virtual builder_base {
   template <typename T>
   void try_visit(units::uid uid, std::invocable<T &> auto &&call);
 
-  // void init_if_not(units::uid uid, ctor_cpt auto &&call);
-
-  template <typename T> void typed_dirty(units::uid uid);
-
-  void dirty(units::uid uid);
+  void init_if_not(units::uid uid, std::invocable<> auto &&call);
 
   template <typename T>
   void persist(units::uid uid, std::type_identity<T> = {});
@@ -152,10 +151,10 @@ struct builder_memory_interface : protected virtual builder_base {
 struct builder_event_interface : protected virtual builder_base {
   builder_event_interface(builder_base &&bb) : builder_base{bb} {};
 
-  void operator()(event::callback_cpt auto &&call, units::uid object = 0);
-
   template <event::callback_cpt Call>
   void attach(Call &&call, units::uid object = 0);
+
+  void operator()(event::callback_cpt auto &&call, units::uid object = 0);
 };
 
 struct builder_style_interface : protected virtual builder_base {
@@ -166,12 +165,6 @@ struct builder_style_interface : protected virtual builder_base {
   void override(style::transform &&transform);
 
   void override(style::decoration &&decoration);
-
-  void override(std::invocable<style::transform &> auto &&call);
-
-  void override(std::invocable<style::shape &> auto &&call);
-
-  void override(std::invocable<style::decoration &> auto &&call);
 
 private:
   template <typename T> T *frame_memory();
@@ -218,14 +211,13 @@ struct builder final : public virtual builder_base,
                        private builder_style_interface {
   // TOTO пересмотреть концепцию конструктора
   // перестроить его через kernel(module private)
-  builder(builder_base &&bb) noexcept
-      : builder_base{bb}, builder_element_interface{std::move(bb)},
-        builder_state_interface{std::move(bb)},
-        builder_uid_interface{std::move(bb)},
-        builder_policy_interface{std::move(bb)},
-        builder_memory_interface{std::move(bb)},
-        builder_event_interface{std::move(bb)},
-        builder_style_interface{std::move(bb)} {};
+  builder(environment::tmp &tenv, environment::persist &penv,
+          insert_iterator it) noexcept
+      : builder_base{tenv, penv, it, *this}, builder_element_interface{*this},
+        builder_state_interface{*this}, builder_uid_interface{*this},
+        builder_policy_interface{*this}, builder_memory_interface{*this},
+        builder_event_interface{*this}, builder_style_interface{*this} {};
+
   builder_element_interface &element{*this};
   builder_state_interface &state{*this};
   builder_uid_interface &uid{*this};
@@ -254,9 +246,9 @@ struct director {
     environment::tmp tenv;
     utils::tree::node_type<sketch::element> tree;
 
-    // builder b{builder_base{penv, tenv, tree.insert_point()}};
+    builder b{tenv, penv, tree.begin()};
 
-    // call(b);
+    call(b);
 
     // make blueprint
     // etc
@@ -264,5 +256,174 @@ struct director {
 
 private:
   environment::persist &penv;
+};
+
+// ---- IMPL ----
+
+// ---- IMPL [elemnet] ----
+void builder_element_interface::frame(const style::decl &style,
+                                      const layout::frame &layout,
+                                      builder_block_cpt auto &&call) noexcept {
+  auto sid_ = tenv.style.get_or_make(&style);
+  auto ait = utils::tree::access_iterator{it};
+
+  auto nit = it.at(sketch::element{
+      .layout = &layout, .uid = ait->uid, .sid = sid_, .zorder = ait->zorder});
+
+  std::swap(nit, it);
+  call(builder);
+  std::swap(nit, it);
+};
+
+void builder_element_interface::frame(units::uid uid_,
+                                      const style::decl &style_,
+                                      const layout::frame &layout_,
+                                      builder_block_cpt auto &&call) noexcept {
+  auto sid_ = tenv.style.get_or_make(&style_);
+  auto ait = utils::tree::access_iterator{it};
+
+  auto nit = it.at(sketch::element{
+      .layout = &layout_, .uid = uid_, .sid = sid_, .zorder = ait->zorder});
+
+  std::swap(nit, it);
+  call(builder);
+  std::swap(nit, it);
+};
+
+// ---- IMPL [uid] ----
+
+units::uid
+builder_uid_interface::make(const std::string &str,
+                            const utils::anchor &anchor) const noexcept {
+
+  std::stringstream ss;
+  ss << anchor.value;
+  ss << str;
+  return std::hash<std::string>{}(ss.str());
+};
+
+units::uid builder_uid_interface::make(policy::shared sh,
+                                       const std::string &str,
+                                       const utils::anchor &anchor) {
+  std::stringstream ss;
+  ss << anchor.value;
+  ss << "shared--";
+  ss << str;
+  utils::tree::root_iterator rit{it};
+
+  if (++rit) {
+    ss << ++rit->uid;
+  } else {
+    ss << "--root-of";
+  }
+
+  return std::hash<std::string>{}(ss.str());
+};
+
+units::uid builder_uid_interface::make(policy::unique, const std::string &str,
+                                       const utils::anchor &anchor) {
+
+  // Тут скорей всего будет нормальный hash алгоритм.
+  std::stringstream ss;
+  ss << anchor.value;
+  ss << "unique--";
+  ss << str;
+  utils::tree::sibling_iterator sit{it};
+  utils::tree::root_iterator rit{it};
+
+  if (++rit) {
+    ss << rit->uid;
+  }
+
+  if (auto inner = sit--) {
+    ss << inner->uid;
+  }
+
+  std::size_t counter{0};
+
+  for (; sit.valid(); --sit) {
+    ++counter;
+  }
+
+  ss << counter;
+
+  for (; rit.valid(); ++rit) {
+    ++counter;
+  }
+
+  ss << counter;
+
+  return std::hash<std::string>{}(ss.str());
+};
+
+units::uid builder_uid_interface::self() const noexcept {
+  return utils::tree::access_iterator{it}->uid;
+};
+
+// ---- IMPL [state] ----
+
+void builder_state_interface::attach(units::uid uid, state::value v) {
+  penv.state.attach(uid, v);
+};
+void builder_state_interface::detach(units::uid uid, state::value v) {
+  penv.state.detach(uid, v);
+};
+bool builder_state_interface::has(units::uid uid, state::value v) {
+  return penv.state.has(uid, v);
+};
+
+// ---- IMPL [event] ----
+template <event::callback_cpt Call>
+void builder_event_interface::attach(Call &&call, units::uid object) {
+  tenv.event.push({call, utils::tree::access_iterator{it}->uid, object});
+};
+
+void builder_event_interface::operator()(event::callback_cpt auto &&call,
+                                         units::uid uid) {
+  attach(std::forward<decltype(call)>(call), uid);
+};
+// ---- IMPL [style] ----
+
+void builder_style_interface::override(style::shape &&shape) {
+  auto ait = utils::tree::access_iterator{it};
+  ait->sid = tenv.style.override(ait->sid, std::move(shape));
+};
+
+void builder_style_interface::override(style::transform &&transform) {
+  auto ait = utils::tree::access_iterator{it};
+  ait->sid = tenv.style.override(ait->sid, std::move(transform));
+};
+
+void builder_style_interface::override(style::decoration &&decoration) {
+  auto ait = utils::tree::access_iterator{it};
+  ait->sid = tenv.style.override(ait->sid, std::move(decoration));
+};
+// ---- IMPL [memory] ----
+template <typename T>
+void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
+  auto state = penv.object.state(uid);
+
+  if (state == penv.object.non_exist || state == penv.object.deleted) {
+    penv.object.reserve<T>(uid);
+  }
+};
+
+template <typename T>
+void builder_memory_interface::try_visit(units::uid uid,
+                                         std::invocable<T &> auto &&call) {
+  return penv.object.get(uid).try_visit(std::forward<decltype(call)>(call));
+};
+
+void builder_memory_interface::init_if_not(units::uid uid,
+                                           std::invocable<> auto &&call) {
+  auto state = penv.object.state(uid);
+
+  if (state == penv.object.reserve_this_type ||
+      state == penv.object.reserve_undefined_type) {
+    penv.object.construct(std::forward<decltype(call)>(call));
+  } else if (state == penv.object.alive_this_type ||
+             state == penv.object.outdated_this_type) {
+    penv.object.update_lifetime(uid);
+  }
 };
 }; // namespace iuic::scheme

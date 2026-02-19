@@ -7,10 +7,6 @@ export namespace iuic::utils::tree {
 
 struct bfs_tag {};
 struct dfs_tag {};
-// --
-template <erasure::as_pure_type T> struct sentinel {
-  sentinel(const T &) {}
-};
 
 // --
 template <erasure::as_pure_type T> struct base_iterator;
@@ -22,6 +18,12 @@ template <erasure::as_pure_type T> struct sibling_iterator;
 template <erasure::as_pure_type T> struct const_sibling_iterator;
 template <erasure::as_pure_type T> struct insert_iterator;
 
+// --
+template <erasure::as_pure_type T> struct sentinel {
+  sentinel(const T &) {}
+  sentinel(const base_iterator<T>) {}
+  sentinel() {};
+};
 // --
 // using approach = bfs_tag;
 template <erasure::as_pure_type T> struct copy_iterator;
@@ -138,6 +140,9 @@ insert_iterator<T> move(move_iterator<T>, sentinel<T>, insert_iterator<U>);
 template <typename T> base_iterator<T> begin(T &&);
 
 template <typename T> sentinel<base_iterator<T>> end(T &&) { return {}; };
+
+template <typename T, typename U>
+base_iterator<T> shift(base_iterator<T>, base_iterator<U>);
 
 template <erasure::as_pure_type T>
   requires has_tree_walk<T>
