@@ -1,26 +1,20 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-export module iuic.core:scheme;
+
+export module iuic.core:scheme.explorer;
 import std;
 import iuic.underlying;
 import :policy;
 import :style;
 import :text.present;
 import :event;
-// env
-//
+import :scheme.base;
+
 namespace iuic {
 namespace scheme {
-// MB transform to SAO presentation
-struct element {
-  units::ui::area area; // x,y w,h
-  units::uid uid;
-  style::sid sid;
-  units::ui::zorder zorder;
-};
 
 struct base_context {
-  const style::ref &style_of(units::uid);
+  style::value style_of(units::uid);
 
   policy::hovered hovered_policy_of(units::uid);
 
@@ -47,27 +41,19 @@ struct base_context {
   key_code get_key_code();
 
 private:
-  environment::persist &env;
   std::vector<units::uid> selected__;
   // element_tree::base_iterator it;
 };
 
-struct el {
-  units::ui::rect borderless_rect; // x,y w,h
-  units::ui::rect bordered_rect;   // x,y w,h
-  style::cref style;
-  units::uid uid;
-};
-
 export struct frame {
   units::ui::rect rect;
-  style::cref style;
+  style::value style;
 };
 
 export struct text {
   units::ui::rect rect;
   iuic::text::glyph::sequence text;
-  style::cref style;
+  style::value style;
 };
 
 namespace eval {
@@ -148,19 +134,27 @@ template <typename T>
 concept visitor = geval::visitor<T> || eval::visitor<T> || reval::visitor<T> ||
                   proc::visitor<T> || rproc::visitor<T> || ordered::visitor<T>;
 }
-/*
-Сначала будет неоптимальный
-пошаговый обход.
-На дистанций упорядоченный параллельный\асинхронный обход.
- */
+
 export struct explorer {
 
   void explore(explore::visitor auto &&...visitors) {};
 
+  explorer(blueprint &&data_) : data{std::move(data_)} {}
+  explorer(const blueprint &data_) : data{data_} {}
+
+  explorer() {};
+
+  explorer &operator=(const blueprint &data_) {
+    data = data_;
+    return *this;
+  };
+  explorer &operator=(blueprint &&data_) {
+    std::swap(data, data_);
+    return *this;
+  };
+
 private:
-  std::vector<element> elements;
-  std::vector<event::value> events;
-  units::hash hash;
+  blueprint data;
 };
 
 } // namespace scheme

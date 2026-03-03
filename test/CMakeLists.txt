@@ -7,18 +7,11 @@ add_executable(te base.cpp)
 
 set(CMAKE_CXX_MODULE_STD 1)
 
-## xxHash - START
-add_library(xxLib STATIC IMPORTED)
-
-set_target_properties(xxLib PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/tmp_solutions/hash/libxxhash.a)
-
 target_link_libraries(te iuic::core kitty_kit raylib)
 
 if(IUIC_TMP_CXX_STD)
 	target_link_libraries(te tmp_cxx_std)
 endif()
-
-target_link_libraries(te xxLib)
 ## xxHash - END
 
 

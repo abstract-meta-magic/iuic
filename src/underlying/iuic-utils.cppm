@@ -6,6 +6,23 @@ import std;
 
 export namespace iuic::utils {
 
+template <erasure::as_pure_type Owner> struct child_for {
+  child_for(Owner &owner_) : owner{owner_} {}
+
+protected:
+  Owner &owner;
+};
+
+// TODO : make full
+template <typename T, typename Inner>
+consteval auto get_type_of(const Inner T::*) -> Inner;
+
+template <auto v> struct type_of_impl {
+  using type = decltype(get_type_of(v));
+};
+
+template <auto i> using type_of = type_of_impl<i>::type;
+
 template <typename T>
 concept defer_call_cpt =
     std::is_nothrow_destructible_v<T> && std::is_nothrow_invocable_v<T> &&

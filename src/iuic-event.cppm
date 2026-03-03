@@ -91,23 +91,39 @@ struct value {
     Why not std::variant?
     Becaose aligned. 32
   */
-  value(local_key_event_fpt lk_, units::uid uid_, units::uid object_);
-  value(local_pointer_move_event_fpt lpm_, units::uid uid_, units::uid object_);
-  value(global_key_event_fpt gk_, units::uid uid_, units::uid object_);
-  value(global_pointer_move_event_fpt gpm_, units::uid uid_,
-        units::uid object_);
+  value(local_key_event_fpt lk_, units::uid uid_, units::uid object_)
+      : lk{lk_}, uid{uid_}, object{object_} {
+    meta.set(local);
+    meta.set(key);
+  };
 
-  bool is_local();
+  value(local_pointer_move_event_fpt lpm_, units::uid uid_, units::uid object_)
+      : lpm{lpm_}, uid{uid_}, object{object_} {
+    meta.set(local);
+    meta.set(pointer);
+  };
 
-  bool is_global();
+  value(global_key_event_fpt gk_, units::uid uid_, units::uid object_)
+      : gk{gk_}, uid{uid_}, object{object_} {
+    meta.set(key);
+  };
 
-  bool is_key_event();
+  value(global_pointer_move_event_fpt gpm_, units::uid uid_, units::uid object_)
+      : gpm{gpm_}, uid{uid_}, object{object_} {
+    meta.set(pointer);
+  };
 
-  bool is_pointer_event();
+  bool is_local() const { return meta.test(local); };
 
-  void is_triggered();
+  bool is_global() const { return not meta.test(local); };
 
-  const void *callback_address();
+  bool is_key_event() const { return meta.test(key); };
+
+  bool is_pointer_event() const { return meta.test(pointer); };
+
+  bool is_triggered() const { return meta.test(triggered); };
+
+  const void *callback_address() const { return reinterpret_cast<void *>(lk); };
 
   const units::uid uid;
 

@@ -8,6 +8,27 @@ import :machine.instance;
 
 export namespace iuic::state::machine {
 
+template <typename T>
+concept is_spec = requires(T &obj, typename T::prototype &proto) {
+  obj.get_instance(proto);
+  T::get_protobuilder();
+  T::runtime_id();
+};
+
+template <typename T>
+concept is_prototype = requires(T &obj, state::value value) {
+  typename T::spec;
+  typename T::stay_ctor_t;
+  typename T::transition_ctor_t;
+  requires is_spec<typename T::spec>;
+  //
+  obj.get_stay_ctor(value)->T::stay_ctor_t;
+  obj.get_transition_ctor(value, value)->T::transition_ctor_t;
+  obj.get_entry()->state::value;
+  obj.get_exception_handler()->T::stay_ctor_t;
+  obj.get_terminate_handler()->T::transition_ctor_t;
+};
+
 template <transition_graph graph, iuic::erasure::as_pure_type SharedData>
 struct spec {
   using shared_type = SharedData;
@@ -179,6 +200,11 @@ private:
 public:
   static consteval protobuilder get_protobuilder() { return {}; };
 
+  static std::size_t runtime_id() {
+    static void *_{};
+    return reinterpret_cast<std::size_t>(_);
+  };
+
   struct instance final : public machine::instance, private controller {
   private: // controller
     bool can_move(state::value st) const override {
@@ -224,7 +250,7 @@ public:
 
     const execute::state &get_execute_state() const override { return state; };
 
-    std::size_t get_spec_id() const override { return spec::id; };
+    std::size_t get_spec_id() const override { return spec::runtime_id(); };
 
     void process() override {
       if (state.active == base::exception_handling) {
@@ -383,12 +409,6 @@ public:
     execute::state state{iuic::state::base::idle};
     execute::transition tr_handler{nullptr};
     execute::stay st_handler{nullptr};
-  };
-
-  static constexpr std::size_t id{0};
-
-  static constexpr prototype make_prototype(auto... state_handler) {
-    return {};
   };
 
   static constexpr std::unique_ptr<machine::instance>

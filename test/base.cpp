@@ -93,7 +93,7 @@ int main() {
       text::glyph::atlas{std::unique_ptr<text::glyph::decoder>{new d{}},
                          std::unique_ptr<external::binding>{new b{}}});
 
-  ctx.font.link(base_font);
+  // ctx.font.link(base_font);
 
   app app;
 

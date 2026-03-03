@@ -8,7 +8,7 @@ export import iuic.key_map.base;
 namespace kitty_kit {
 using namespace iuic::state;
 struct Style {
-  iuic::style::ref target{nullptr};
+  iuic::style::value target{nullptr};
 };
 
 constexpr auto spec =
@@ -31,11 +31,10 @@ constexpr auto proto =
               })
         .stay(state::k_p,
               [](const machine::execute::state &state,
-                 Style &) -> machine::execute::stay {
+                 Style &u) -> machine::execute::stay {
                 int hah{0};
                 for (; not state.is_interrupted() && hah < 60;) {
                   std::println("in machine [hah][{}]", ++hah);
-
                   co_yield machine::execute::result::process;
                 }
                 co_return state::k_h;
@@ -655,7 +654,9 @@ void button(builder &b, std::invocable<> auto &&callback,
   static layout::simple_box layout_;
 
   auto uid = b.uid.make(policy::unique{}, "kitty-kit-button", anchor);
-  b.frame(uid, style::button, layout_, [&](auto &b) {
+  auto sid = b.style.make(style::button);
+
+  b.frame(uid, sid, layout_, [&](auto &b) {
     using callback_type = std::remove_cvref_t<decltype(callback)>;
 
     // b.memory.persist(uid);
@@ -665,12 +666,9 @@ void button(builder &b, std::invocable<> auto &&callback,
 
     b.policy.hovered(policy::hovered::propagate);
 
-    /*
-    if (b.state.has(uid,iuic::state::base::hovered)) {
-      b.style.override(iuic::style::decoration{
-          .background{color::catppuccin::macchiato::surface_0{}}});
+    if (b.state.has(uid, iuic::state::base::hovered)) {
+      // b.style.override(b.style.make(style));
     }
-    */
 
     b.event(
         [](event::local::key e) static {
@@ -693,8 +691,9 @@ void text_button(builder &b, std::string_view text,
   struct BaseD {};
 
   auto uid = b.uid.make(iuic::policy::unique{}, "text-button", anchor);
+  auto sid = b.style.make(style::base);
 
-  b.element.frame(uid, style::button, button_layout, [&](builder &b) {
+  b.element.frame(uid, sid, button_layout, [&](builder &b) {
     using callback_type = std::remove_cvref_t<decltype(callback)>;
 
     b.memory.persist<callback_type>(uid);
@@ -706,8 +705,9 @@ void text_button(builder &b, std::string_view text,
     b.policy.hovered(policy::hovered::propagate);
 
     if (b.state.has(uid, base::hovered)) {
-      b.style.override(iuic::style::decoration{
-          .background{color::catppuccin::macchiato::surface_0{}}});
+      b.style.override(
+          b.style.make(sid, iuic::style::decoration{.background{
+                                color::catppuccin::macchiato::surface_0{}}}));
     }
 
     b.state.machine.use(proto);
@@ -718,7 +718,7 @@ void text_button(builder &b, std::string_view text,
             if (e.code == iuic::key_map::mouse("left")) {
               call();
 
-              // e.utils.send(/* object */); to event queue
+              // e.utils.send(object); to event queue
             }
           });
         },

@@ -7,6 +7,7 @@ import :text.present;
 namespace iuic::text {
 
 void present::aggregator::reserve_present(std::size_t id, token::sequence sq) {
+
   if (presents.contains(id)) {
     std::swap(presents.at(id).tokens, sq);
   } else {

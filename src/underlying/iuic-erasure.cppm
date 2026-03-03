@@ -4,6 +4,7 @@ export module iuic.underlying:erasure;
 import std;
 
 namespace iuic::erasure {
+
 template <typename T> consteval auto remove_all_pointer() {
   if constexpr (std::is_pointer_v<T>) {
     return remove_all_pointer<std::remove_pointer_t<T>>();
@@ -22,6 +23,43 @@ using pure_t =
 template <typename T>
 concept as_pure_type =
     std::same_as<std::remove_cvref_t<T>, T> && not std::is_pointer_v<T>;
+
+// advanced tech
+using ctor_fptr_t = void (*)(void *memory);
+using copy_ctor_fptr_t = void (*)(void *memory, void *object);
+using move_ctor_fptr_t = void (*)(void *memory, void *object);
+using copy_assign_fptr_t = void (*)(void *lhs, void *rhs);
+using move_assign_fptr_t = void (*)(void *lhs, void *rhs);
+
+template <typename T> ctor_fptr_t ctor_for() {
+  return [](void *memory) static { new (memory) T{}; };
+};
+
+template <typename T> copy_ctor_fptr_t copy_ctor_for() {
+  return [](void *memory, void *object) static {
+    new (memory) T{*static_cast<T *>(object)};
+  };
+};
+
+template <typename T> copy_ctor_fptr_t move_ctor_for() {
+  return [](void *memory, void *object) static {
+    new (memory) T{std::move(*static_cast<T *>(object))};
+  };
+};
+
+template <typename T> copy_ctor_fptr_t copy_assign_for() {
+  return [](void *lhs, void *rhs) static {
+    *static_cast<T *>(lhs) = *static_cast<T *>(rhs);
+  };
+};
+
+template <typename T> copy_ctor_fptr_t move_assign_for() {
+  return [](void *lhs, void *rhs) static {
+    *static_cast<T *>(lhs) = std::move(*static_cast<T *>(rhs));
+  };
+};
+
+// using args_ctor_fptr_t = void(void*memory,/* args ? */);
 
 struct type {
   template <as_pure_type T> static const type *from() {
@@ -183,6 +221,16 @@ template <as_func_sig_cpt T> struct func_type {
   constexpr func_type(T) {};
 
   constexpr func_type(auto &&heh) {};
+
+  constexpr func_type() {};
+
+  constexpr bool operator==(const func_type &) const noexcept { return true; }
+
+  template <as_func_sig_cpt Other>
+  constexpr bool operator==(const func_type<Other> &) const noexcept {
+    return std::same_as<typename traits::signature_t,
+                        typename func_type<Other>::traits::signature_t>;
+  }
 };
 
 func_type(auto t) -> func_type<decltype(&decltype(t)::operator())>;
@@ -195,6 +243,13 @@ template <typename T, typename D>
 concept func_as_decoy = requires(T call) {
   { func_type{call} };
   requires decltype(func_type{call})::traits::template as_decoy<D>();
+};
+
+template <typename T, typename D>
+concept func_as_strong = requires(T call, D strong) {
+  { func_type{call} };
+  { func_type<D>{} };
+  requires decltype(func_type{call}){} == func_type<D>{};
 };
 
 struct visited {

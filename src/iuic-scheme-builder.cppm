@@ -11,31 +11,7 @@ import :text.present;
 import :event;
 import :policy;
 import :machine.dispatcher;
-import :environment.persist;
-import :environment.tmp;
-
-// forward
-namespace iuic::layout {
-struct frame;
-struct text;
-}; // namespace iuic::layout
-
-namespace iuic::hash {};
-
-namespace iuic::scheme {
-
-struct sketch {
-  struct element {
-    std::variant<const layout::frame *, const layout::text *> layout;
-    units::uid uid;
-    style::sid sid;
-    units::ui::zorder zorder;
-  };
-  environment::tmp env;
-  utils::tree::flat_bfs_type<element> tree;
-};
-
-}; // namespace iuic::scheme
+import :scheme.base;
 
 export namespace iuic::scheme {
 
@@ -47,7 +23,8 @@ concept builder_block_cpt = std::invocable<T, builder &>;
 struct builder_base {
 protected:
   using insert_iterator =
-      utils::tree::insert_iterator<utils::tree::node_type<sketch::element>>;
+      utils::tree::insert_iterator<utils::tree::type::dfs,
+                                   utils::tree::node_type<sketch::element>>;
   using root_iterator =
       utils::tree::root_iterator<utils::tree::node_type<sketch::element>>;
   using sibling_iterator =
@@ -76,16 +53,20 @@ protected: // builder unit stack
 };
 
 struct builder_element_interface : protected virtual builder_base {
-  builder_element_interface(builder_base &&bb) : builder_base{bb} {};
+
+  builder_element_interface(environment::tmp &tenv_,
+                            environment::persist &penv_, insert_iterator it_,
+                            struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
   /*
     Базовая форма для всего.Стелизуемый рамка.
     TODO : можно заменить на нешаблонный вызов
   */
-  void frame(const style::decl &, const layout::frame &,
+  void frame(style::sid, const layout::frame &,
              builder_block_cpt auto &&call) noexcept;
 
-  void frame(units::uid uid, const style::decl &, const layout::frame &,
+  void frame(units::uid uid, style::sid, const layout::frame &,
              builder_block_cpt auto &&call) noexcept;
 
   /*
@@ -99,7 +80,9 @@ struct builder_element_interface : protected virtual builder_base {
 };
 
 struct builder_order_interface : protected virtual builder_base {
-  builder_order_interface(builder_base &&bb) : builder_base{bb} {}
+  builder_order_interface(environment::tmp &tenv_, environment::persist &penv_,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
   void group(std::uint16_t value);
 
@@ -109,7 +92,9 @@ struct builder_order_interface : protected virtual builder_base {
 };
 
 struct builder_policy_interface : protected virtual builder_base {
-  builder_policy_interface(builder_base &&bb) : builder_base{bb} {};
+  builder_policy_interface(environment::tmp &tenv_, environment::persist &penv_,
+                           insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
   void hovered(policy::hovered p);
 
@@ -119,7 +104,9 @@ struct builder_policy_interface : protected virtual builder_base {
 struct builder_uid_interface : protected virtual builder_base {
   static inline utils::anchor default_anchor{};
 
-  builder_uid_interface(builder_base &&bb) : builder_base{bb} {};
+  builder_uid_interface(environment::tmp &tenv_, environment::persist &penv_,
+                        insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
   units::uid make(const std::string &str,
                   const utils::anchor &anchor = default_anchor) const noexcept;
@@ -137,7 +124,9 @@ struct builder_uid_interface : protected virtual builder_base {
 };
 
 struct builder_memory_interface : protected virtual builder_base {
-  builder_memory_interface(builder_base &&bb) : builder_base{bb} {};
+  builder_memory_interface(environment::tmp &tenv_, environment::persist &penv_,
+                           insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
   template <typename T>
   void try_visit(units::uid uid, std::invocable<T &> auto &&call);
@@ -149,7 +138,9 @@ struct builder_memory_interface : protected virtual builder_base {
 };
 
 struct builder_event_interface : protected virtual builder_base {
-  builder_event_interface(builder_base &&bb) : builder_base{bb} {};
+  builder_event_interface(environment::tmp &tenv_, environment::persist &penv_,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
   template <event::callback_cpt Call>
   void attach(Call &&call, units::uid object = 0);
@@ -158,29 +149,37 @@ struct builder_event_interface : protected virtual builder_base {
 };
 
 struct builder_style_interface : protected virtual builder_base {
-  builder_style_interface(builder_base &&bb) : builder_base{bb} {};
+  builder_style_interface(environment::tmp &tenv_, environment::persist &penv_,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
-  void override(style::shape &&shape);
+  void override(style::sid sid);
 
-  void override(style::transform &&transform);
+  style::sid make(style::sid sid);
 
-  void override(style::decoration &&decoration);
+  style::sid make(const style::decl *s);
 
-private:
-  template <typename T> T *frame_memory();
+  style::sid make(const style::decl &s);
+
+  style::sid make(style::sid sid, style::shape &&);
+
+  style::sid make(style::sid sid, style::transform &&);
+
+  style::sid make(style::sid sid, style::decoration &&);
 };
 
 struct builder_state_interface : protected virtual builder_base {
-  builder_state_interface(builder_base &&bb) : builder_base{bb} {};
+  builder_state_interface(environment::tmp &tenv_, environment::persist &penv_,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
 
   bool has(units::uid uid, state::value s);
+
   void attach(units::uid uid, state::value s);
 
   void detach(units::uid uid, state::value s);
 
-  struct machine_accessor {
-    machine_accessor(builder_state_interface &i_) : i{i_} {};
-
+  struct : utils::child_for<builder_state_interface> {
     void use(const auto &proto);
 
     void use(units::uid uid, const auto &proto);
@@ -188,7 +187,6 @@ struct builder_state_interface : protected virtual builder_base {
     void transition(state::value state);
 
     void transition(units::uid uid, state::value state);
-
     // TOTO : error handling
     // void transition(units::uid, iuic::state, auto err);
     // void transition(iuic::state, auto err);
@@ -196,8 +194,6 @@ struct builder_state_interface : protected virtual builder_base {
     void try_visit_shared(
         erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call);
 
-  private:
-    builder_state_interface &i;
   } machine{*this};
 };
 
@@ -213,10 +209,14 @@ struct builder final : public virtual builder_base,
   // перестроить его через kernel(module private)
   builder(environment::tmp &tenv, environment::persist &penv,
           insert_iterator it) noexcept
-      : builder_base{tenv, penv, it, *this}, builder_element_interface{*this},
-        builder_state_interface{*this}, builder_uid_interface{*this},
-        builder_policy_interface{*this}, builder_memory_interface{*this},
-        builder_event_interface{*this}, builder_style_interface{*this} {};
+      : builder_base{tenv, penv, it, *this},
+        builder_element_interface{tenv, penv, it, *this},
+        builder_state_interface{tenv, penv, it, *this},
+        builder_uid_interface{tenv, penv, it, *this},
+        builder_policy_interface{tenv, penv, it, *this},
+        builder_memory_interface{tenv, penv, it, *this},
+        builder_event_interface{tenv, penv, it, *this},
+        builder_style_interface{tenv, penv, it, *this} {};
 
   builder_element_interface &element{*this};
   builder_state_interface &state{*this};
@@ -240,18 +240,18 @@ public: // public forward decl
 namespace iuic::scheme {
 
 struct director {
-  director(environment::persist &);
+  director(environment::persist &penv_) : penv{penv_} {};
 
   sketch make(std::invocable<builder &> auto &&call) {
     environment::tmp tenv;
     utils::tree::node_type<sketch::element> tree;
 
-    builder b{tenv, penv, tree.begin()};
+    builder b{tenv, penv, {tree.root()}};
 
     call(b);
 
-    // make blueprint
-    // etc
+    return sketch{
+        tenv, utils::tree::move_iterator{tree.begin(), utils::tree::tags::bfs}};
   };
 
 private:
@@ -261,29 +261,32 @@ private:
 // ---- IMPL ----
 
 // ---- IMPL [elemnet] ----
-void builder_element_interface::frame(const style::decl &style,
+void builder_element_interface::frame(style::sid sid_,
                                       const layout::frame &layout,
                                       builder_block_cpt auto &&call) noexcept {
-  auto sid_ = tenv.style.get_or_make(&style);
   auto ait = utils::tree::access_iterator{it};
 
-  auto nit = it.at(sketch::element{
-      .layout = &layout, .uid = ait->uid, .sid = sid_, .zorder = ait->zorder});
+  auto nit = it.at(
+      sketch::element{.layout = &layout,
+                      .uid = ait ? ait->uid : 0,
+                      .sid = sid_,
+                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
 
   std::swap(nit, it);
   call(builder);
   std::swap(nit, it);
 };
 
-void builder_element_interface::frame(units::uid uid_,
-                                      const style::decl &style_,
+void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       const layout::frame &layout_,
                                       builder_block_cpt auto &&call) noexcept {
-  auto sid_ = tenv.style.get_or_make(&style_);
   auto ait = utils::tree::access_iterator{it};
 
-  auto nit = it.at(sketch::element{
-      .layout = &layout_, .uid = uid_, .sid = sid_, .zorder = ait->zorder});
+  auto nit = it.at(
+      sketch::element{.layout = &layout_,
+                      .uid = uid_,
+                      .sid = sid_,
+                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
 
   std::swap(nit, it);
   call(builder);
@@ -372,10 +375,34 @@ bool builder_state_interface::has(units::uid uid, state::value v) {
   return penv.state.has(uid, v);
 };
 
+void utils::type_of<&builder_state_interface::machine>::use(const auto &proto) {
+  // TODO : Impl unknown
+}
+
+void utils::type_of<&builder_state_interface::machine>::try_visit_shared(
+    erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&visitor) {
+  auto *machine =
+      owner.penv.machine.get(utils::tree::access_iterator{owner.it}->uid);
+  if (machine) {
+    machine->get_controller().try_visit_shared(
+        std::forward<decltype(visitor)>(visitor));
+  }
+};
+
+void utils::type_of<&builder_state_interface::machine>::transition(
+    state::value v) {
+  auto *machine =
+      owner.penv.machine.get(utils::tree::access_iterator{owner.it}->uid);
+  if (machine) {
+    // Mb no move ??
+    machine->get_controller().try_move(v);
+  }
+};
+
 // ---- IMPL [event] ----
 template <event::callback_cpt Call>
 void builder_event_interface::attach(Call &&call, units::uid object) {
-  tenv.event.push({call, utils::tree::access_iterator{it}->uid, object});
+  tenv.event.attach({call, utils::tree::access_iterator{it}->uid, object});
 };
 
 void builder_event_interface::operator()(event::callback_cpt auto &&call,
@@ -384,24 +411,41 @@ void builder_event_interface::operator()(event::callback_cpt auto &&call,
 };
 // ---- IMPL [style] ----
 
-void builder_style_interface::override(style::shape &&shape) {
-  auto ait = utils::tree::access_iterator{it};
-  ait->sid = tenv.style.override(ait->sid, std::move(shape));
+void builder_style_interface::override(style::sid sid) {
+  utils::tree::access_iterator{it}->sid = sid;
 };
 
-void builder_style_interface::override(style::transform &&transform) {
-  auto ait = utils::tree::access_iterator{it};
-  ait->sid = tenv.style.override(ait->sid, std::move(transform));
+style::sid builder_style_interface::make(style::sid sid) {
+  return tenv.style.make(sid);
 };
 
-void builder_style_interface::override(style::decoration &&decoration) {
-  auto ait = utils::tree::access_iterator{it};
-  ait->sid = tenv.style.override(ait->sid, std::move(decoration));
+style::sid builder_style_interface::make(const style::decl *s) {
+  return tenv.style.make(s);
 };
+
+style::sid builder_style_interface::make(const style::decl &s) {
+  return tenv.style.make(s);
+};
+
+style::sid builder_style_interface::make(style::sid sid, style::shape &&) {
+  // TODO : Impl unknown
+  return sid;
+};
+
+style::sid builder_style_interface::make(style::sid sid, style::transform &&) {
+  // TODO : Impl unknown
+  return sid;
+};
+
+style::sid builder_style_interface::make(style::sid sid, style::decoration &&) {
+  // TODO : Impl unknown
+  return sid;
+};
+
 // ---- IMPL [memory] ----
 template <typename T>
 void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
-  auto state = penv.object.state(uid);
+  auto state = penv.object.state<T>(uid);
 
   if (state == penv.object.non_exist || state == penv.object.deleted) {
     penv.object.reserve<T>(uid);
@@ -416,7 +460,10 @@ void builder_memory_interface::try_visit(units::uid uid,
 
 void builder_memory_interface::init_if_not(units::uid uid,
                                            std::invocable<> auto &&call) {
-  auto state = penv.object.state(uid);
+  using traits = typename erasure::func_type<decltype(call)>::traits;
+
+  auto state =
+      penv.object.state<std::remove_cvref_t<typename traits::return_t>>(uid);
 
   if (state == penv.object.reserve_this_type ||
       state == penv.object.reserve_undefined_type) {
@@ -426,4 +473,15 @@ void builder_memory_interface::init_if_not(units::uid uid,
     penv.object.update_lifetime(uid);
   }
 };
+
+// ---- IMPL [policy] ----
+
+void builder_policy_interface::hovered(policy::hovered h) {
+  tenv.policy.set(utils::tree::access_iterator{it}->uid, h);
+};
+
+void builder_policy_interface::event(policy::event e) {
+  tenv.policy.set(utils::tree::access_iterator{it}->uid, e);
+};
+
 }; // namespace iuic::scheme

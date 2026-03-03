@@ -29,7 +29,7 @@ public:
   using const_root_iterator = const_root_iterator<node_type>;
   using sibling_iterator = sibling_iterator<node_type>;
   using const_sibling_iterator = const_sibling_iterator<node_type>;
-  using insert_iterator = insert_iterator<node_type>;
+  using insert_iterator = insert_iterator<type::dfs, node_type>;
   friend base_iterator;
   friend access_iterator;
   friend const_access_iterator;
@@ -40,13 +40,16 @@ public:
   friend insert_iterator;
   // ----- ITERATORS ----- //
 
-  base_iterator begin() { return {&root}; };
+  // can be nullptr
+  base_iterator begin() { return {root_.child}; };
+
+  base_iterator root() { return {&root_}; };
 
 private:
-  node root{.parent = node::root_wall_ptr(),
-            .left = node::root_wall_ptr(),
-            .right = node::root_wall_ptr(),
-            .child = nullptr};
+  node root_{.parent = node::root_wall_ptr(),
+             .left = node::root_wall_ptr(),
+             .right = node::root_wall_ptr(),
+             .child = nullptr};
 };
 
 // --------------- ITERATORS ---------------
@@ -58,15 +61,31 @@ template <typename T> struct base_iterator<node_type<T>> {
   using rvalue_t = T &&;
   using pointer_t = T *;
 
-  bool valid() const { return self; };
+  iterator_state inspect() const {
+    if (self) {
+      return self->value ? iterator_state::valid
+             : self->parent == container_t::node::root_wall_ptr()
+                 ? iterator_state::root
+                 : iterator_state::invalid;
+    };
+    return iterator_state::invalid;
+  };
+
+  bool valid() const { return inspect() == iterator_state::valid; };
 
   operator bool() const { return valid(); };
 
-  bool operator==(const sentinel<node_type<T>> &) { return valid(); };
+  bool operator==(const sentinel<node_type<T>> &) {
+    return inspect() == iterator_state::valid;
+  };
 
   base_iterator() : self{nullptr} {}
 
   base_iterator(container_t::node *self_) : self{self_} {}
+
+  template <typename S>
+  friend tree::sibling_iterator<node_type<S>>
+  childs_of(base_iterator<node_type<S>> it);
 
 protected:
   container_t::node *self;
@@ -226,10 +245,10 @@ struct const_sibling_iterator<node_type<T>>
 };
 
 template <typename T>
-struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
+struct insert_iterator<type::dfs, node_type<T>> : base_iterator<node_type<T>> {
   using base = base_iterator<node_type<T>>;
 
-  insert_iterator(base b) : base{b} {}
+  insert_iterator(base b, tags::dfs_t = {}) : base{b} {}
 
   void operator=(T &&);
 
@@ -240,7 +259,7 @@ struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
     using ptr_t = base::pointer_t;
     using value_t = base::value_t;
 
-    if (base::valid())
+    if (base::inspect() == iterator_state::invalid)
       return base{};
 
     ptr_t ptr{nullptr};
@@ -255,6 +274,7 @@ struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
     new_node = new node{};
     // -----------------
     _.cancel();
+    new_node->value = ptr;
 
     node *insert_at{base::self->child};
 
@@ -268,6 +288,7 @@ struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
     } else {
       base::self->child = new_node;
     }
+
     return base{new_node};
   };
 
@@ -275,10 +296,99 @@ struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
 
   void to(T &&);
   void to(const T &);
+
+  // before
+  // after
 };
 
 template <typename T>
-insert_iterator(base_iterator<node_type<T>>) -> insert_iterator<node_type<T>>;
+struct copy_iterator<type::bfs, node_type<T>> : base_iterator<node_type<T>> {
+  using base = base_iterator<node_type<T>>;
+  copy_iterator(base b, tags::bfs_t = {}) : base{b} {}
+
+  void advance(insert_op<type::bfs> &op);
+
+  const T &get();
+};
+
+template <typename T>
+struct copy_iterator<type::dfs, node_type<T>> : base_iterator<node_type<T>> {
+  using base = base_iterator<node_type<T>>;
+  copy_iterator(base b, tags::dfs_t = {}) : base{b} {}
+
+  void advance(insert_op<type::dfs> &op);
+
+  const T &get();
+};
+
+template <typename T>
+struct move_iterator<type::bfs, node_type<T>> : base_iterator<node_type<T>> {
+  using base = base_iterator<node_type<T>>;
+  move_iterator(base b, tags::bfs_t = {}) : base{b} {}
+
+  void advance(insert_op<type::bfs> &op_) {
+    using op = insert_op<type::bfs>;
+    switch (op_) {
+
+    case op::ins: {
+      break;
+    };
+    case op::sep: {
+      break;
+    };
+    case op::deep: {
+      break;
+    };
+    case op::end: {
+      break;
+    };
+    };
+  };
+
+  T &&get() { return std::move(*base::self->value); };
+};
+
+template <typename T>
+struct move_iterator<type::dfs, node_type<T>> : base_iterator<node_type<T>> {
+  using base = base_iterator<node_type<T>>;
+  move_iterator(base b, tags::dfs_t = {}) : base{b} {}
+
+  insert_op<type::dfs> op();
+
+  void advance(insert_op<type::dfs> &op_) {
+    using op = insert_op<type::dfs>;
+
+    switch (op_) {
+    case op::to: {
+    }
+    case insert_op<type::dfs>::at: {
+      if (base::self->child) {
+        base::self = base::self->child;
+        op_ = op::at;
+      } else if (base::self->left) {
+        base::self = base::self->left;
+        op_ = op::to;
+      } else {
+        op_ = op::ret;
+      }
+      break;
+    }
+    case insert_op<type::dfs>::ret: {
+      // at,ret,end
+      break;
+    }
+    case insert_op<type::dfs>::end: {
+      break;
+    }
+    }
+  };
+
+  T &&get() { std::move(*base::self->value); };
+};
+
+template <typename T>
+insert_iterator(base_iterator<node_type<T>>, tags::dfs_t)
+    -> insert_iterator<type::dfs, node_type<T>>;
 
 template <typename T>
 access_iterator(base_iterator<node_type<T>>) -> access_iterator<node_type<T>>;
@@ -300,4 +410,29 @@ sibling_iterator(base_iterator<node_type<T>>) -> sibling_iterator<node_type<T>>;
 template <typename T>
 const_sibling_iterator(base_iterator<node_type<T>>)
     -> const_sibling_iterator<node_type<T>>;
+
+template <typename T>
+copy_iterator(base_iterator<node_type<T>>, tags::dfs_t)
+    -> copy_iterator<type::dfs, node_type<T>>;
+
+template <typename T>
+copy_iterator(base_iterator<node_type<T>>, tags::bfs_t)
+    -> copy_iterator<type::bfs, node_type<T>>;
+
+template <typename T>
+move_iterator(base_iterator<node_type<T>>, tags::dfs_t)
+    -> move_iterator<type::dfs, node_type<T>>;
+
+template <typename T>
+move_iterator(base_iterator<node_type<T>>, tags::bfs_t)
+    -> move_iterator<type::bfs, node_type<T>>;
+
+template <typename T>
+sibling_iterator<node_type<T>> childs_of(base_iterator<node_type<T>> it) {
+  if (it) {
+    return {it.self->child};
+  }
+  return {nullptr};
+};
+
 }; // namespace iuic::utils::tree

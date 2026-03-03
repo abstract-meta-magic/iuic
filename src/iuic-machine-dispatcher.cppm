@@ -46,7 +46,7 @@ struct dispatcher : public advance::interface {
       }
     }
 
-    if (bufs.current.at(uid)->get_spec_id() != spec::id) {
+    if (bufs.current.at(uid)->get_spec_id() != spec::runtime_id()) {
       auto instance = spec::make_instance(prototype);
       bufs.current.at(uid).swap(instance);
     }

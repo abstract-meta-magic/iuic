@@ -5,8 +5,43 @@ import :erasure;
 
 export namespace iuic::utils::tree {
 
-struct bfs_tag {};
-struct dfs_tag {};
+enum class type { dfs, bfs };
+
+namespace tags {
+struct bfs_t {
+} constexpr inline bfs{};
+struct dfs_t {
+} constexpr inline dfs{};
+}; // namespace tags
+
+enum class iterator_state { valid, invalid, root };
+
+enum class walk_op {
+  to_root,   //
+  to_parent, //
+  to_childs, //
+  r_shift,   // single right shift
+  l_shift,   // single left shift
+  re_shift,  // shift to right last
+  le_shift,  // shift to left last
+  end,
+};
+
+struct insert_traits {
+  enum class bfs_insert_op { ins, sep, deep, end };
+
+  enum class dfs_insert_op { at, to, ret, end };
+
+  template <type t> static consteval auto get_enum_type() {
+    if constexpr (t == type::bfs) {
+      return bfs_insert_op{};
+    } else {
+      return dfs_insert_op{};
+    };
+  };
+};
+
+template <type t> using insert_op = decltype(insert_traits::get_enum_type<t>());
 
 // --
 template <erasure::as_pure_type T> struct base_iterator;
@@ -16,7 +51,6 @@ template <erasure::as_pure_type T> struct root_iterator;
 template <erasure::as_pure_type T> struct const_root_iterator;
 template <erasure::as_pure_type T> struct sibling_iterator;
 template <erasure::as_pure_type T> struct const_sibling_iterator;
-template <erasure::as_pure_type T> struct insert_iterator;
 
 // --
 template <erasure::as_pure_type T> struct sentinel {
@@ -24,14 +58,11 @@ template <erasure::as_pure_type T> struct sentinel {
   sentinel(const base_iterator<T>) {}
   sentinel() {};
 };
-// --
-// using approach = bfs_tag;
-template <erasure::as_pure_type T> struct copy_iterator;
-template <erasure::as_pure_type T> struct move_iterator;
 
 // --
-template <erasure::as_pure_type T> struct bfs_iterator;
-template <erasure::as_pure_type T> struct dfs_iterator;
+template <type t, erasure::as_pure_type T> struct insert_iterator;
+template <type t, erasure::as_pure_type T> struct copy_iterator;
+template <type t, erasure::as_pure_type T> struct move_iterator;
 
 // --
 template <erasure::as_pure_type T> struct range_for;
@@ -131,11 +162,13 @@ concept has_tree_walk = requires(T iterator) {
   { siblings_of(iterator) } -> is_sibling_iterator;
 };
 
-template <typename T, typename U>
-insert_iterator<T> copy(copy_iterator<T>, sentinel<T>, insert_iterator<U>);
+template <typename T, typename U, type t>
+insert_iterator<t, T> copy(copy_iterator<t, T>, sentinel<T>,
+                           insert_iterator<t, U>);
 
-template <typename T, typename U>
-insert_iterator<T> move(move_iterator<T>, sentinel<T>, insert_iterator<U>);
+template <typename T, typename U, type t>
+insert_iterator<t, T> move(move_iterator<t, T>, sentinel<T>,
+                           insert_iterator<t, U>);
 
 template <typename T> base_iterator<T> begin(T &&);
 
@@ -144,21 +177,59 @@ template <typename T> sentinel<base_iterator<T>> end(T &&) { return {}; };
 template <typename T, typename U>
 base_iterator<T> shift(base_iterator<T>, base_iterator<U>);
 
-template <erasure::as_pure_type T>
-  requires has_tree_walk<T>
-struct copy_iterator<T> {
-  using approach = bfs_tag;
-  using base_iterator_t = typename traits<T>::base_iterator;
-  using lvalue_t = typename traits<T>::base_iterator::lvalue_t;
+template <typename Src, typename Dest>
+void move(move_iterator<type::dfs, Src> it,
+          insert_iterator<type::dfs, Dest> ins) {
+  using op = insert_op<type::dfs>;
 
-  // walk or select
-  void next_op();
+  op op_;
 
-  lvalue_t get() { return *access_iterator{it}; };
+  for (;; it.advance(op_)) {
+    switch (op_) {
+    case op::at: {
+      ins.at(it.get());
+    }
+    case op::to: {
+      ins.to(it.get());
+    }
+    case op::ret: {
+      ins = insert_iterator{++root_iterator{ins}};
+    }
+    case insert_op<type::dfs>::end: {
+      return;
+    }
+    }
+  }
+}
 
-  bool operator==(sentinel<copy_iterator>);
+template <typename Src, typename Dest>
+void move(move_iterator<type::bfs, Src> it,
+          insert_iterator<type::bfs, Dest> ins) {
+  using op = insert_op<type::bfs>;
 
-private:
-  base_iterator_t it;
-};
+  op op_;
+
+  base_iterator pa_begin{ins};
+  base_iterator pa_end{ins};
+  base_iterator ch_begin{ins};
+  base_iterator ch_end{ins};
+
+  for (;; it.advance(op_)) {
+    switch (op_) {
+    case op::ins: {
+      ins.insert(it.get());
+    }
+    case op::sep: {
+      ins.separate(it.get());
+    }
+    case op::deep: {
+      ins = insert_iterator{++root_iterator{ins}};
+    }
+    case op::end: {
+      return;
+    }
+    }
+  }
+}
+
 }; // namespace iuic::utils::tree

@@ -57,8 +57,8 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
 	"src/iuic-event-collector.cppm"
-	#"src/iuic-box-layout.cppm"
-	#"src/iuic-text-box-layout.cppm"
+	#"src/iuic-box-layout.cppm" [depricated]
+	#"src/iuic-text-box-layout.cppm" [depricated]
 	"src/iuic-layout.def.cppm"
 	"src/iuic-layout-utils.cppm"
 	# "src/iuic-kernel.cppm" [depricated]
@@ -66,9 +66,12 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-machine-dispatcher.cppm"
 	"src/iuic-base-color.cppm"
 	"src/iuic-policy.cppm"
-	"src/iuic-scheme.cppm"
-	"src/iuic-scheme-hitscan.cppm"
+	"src/iuic-scheme-base.cppm"
+	"src/iuic-scheme-compute.cppm"
+	"src/iuic-scheme-explorer.cppm"
 	"src/iuic-scheme-builder.cppm"
+	# "src/iuic-scheme-hitscan.cppm" [depricated]
+	"src/iuic-core.cppm"
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC

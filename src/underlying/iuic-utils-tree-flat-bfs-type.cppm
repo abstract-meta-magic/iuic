@@ -3,16 +3,28 @@
 export module iuic.underlying:utils.tree.bfs;
 import :utils.tree.decl;
 
-export namespace iuic::utils::tree {
+namespace iuic::utils::tree {
 
-template <erasure::as_pure_type T> struct flat_bfs_type {
+struct bfs_hierarchy_node_t {
   static constexpr auto npos = std::numeric_limits<std::size_t>::max();
   // abstract element on top hierarhy without access
   static constexpr auto root = npos - 1;
+  using index_t = std::size_t;
+  index_t parent{root};
+  index_t ch_begin{npos};
+  index_t ch_end{npos};
+};
+}; // namespace iuic::utils::tree
+
+export namespace iuic::utils::tree {
+
+template <erasure::as_pure_type T> struct flat_bfs_type {
   using value_t = T;
   using ref_t = T &;
   using cref_t = const T &;
-  using index_t = std::size_t;
+  using index_t = bfs_hierarchy_node_t::index_t;
+  static constexpr auto npos = bfs_hierarchy_node_t::npos;
+  static constexpr auto root = bfs_hierarchy_node_t::root;
 
   // ---------- ITERATORS ----------
   using base_iterator = tree::base_iterator<flat_bfs_type>;
@@ -22,7 +34,6 @@ template <erasure::as_pure_type T> struct flat_bfs_type {
   using sibling_iterator = tree::sibling_iterator<flat_bfs_type>;
   using const_root_iterator = tree::const_root_iterator<flat_bfs_type>;
   using const_sibling_iterator = tree::const_sibling_iterator<flat_bfs_type>;
-  using insert_iterator = tree::insert_iterator<flat_bfs_type>;
   friend base_iterator;
   friend access_iterator;
   friend const_access_iterator;
@@ -30,14 +41,7 @@ template <erasure::as_pure_type T> struct flat_bfs_type {
   friend const_root_iterator;
   friend sibling_iterator;
   friend const_sibling_iterator;
-  friend insert_iterator;
   // ---------- ITERATORS ----------
-
-  struct hierarchy_node_t {
-    index_t parent{root};
-    index_t ch_begin{npos};
-    index_t ch_end{npos};
-  };
 
   std::span<T> flat();
 
@@ -59,9 +63,68 @@ template <erasure::as_pure_type T> struct flat_bfs_type {
     }
   };
 
+  auto reflect(std::invocable<const T &> auto &&mapper) const {
+    using ftraits = typename decltype(erasure::func_type{mapper})::traits;
+
+    if constexpr (std::same_as<typename ftraits::return_t, void>) {
+      return flat_bfs_type{*this};
+    } else {
+      using type = typename std::remove_cvref_t<typename ftraits::return_t>;
+      flat_bfs_type<type> tree;
+
+      tree.hierarchy__ = hierarchy__;
+
+      tree.data__.reserve(data__.size());
+      auto begin = data__.begin();
+      auto end = data__.end();
+      auto insert = tree.data__.begin();
+
+      for (auto &element : data__) {
+        tree.data__.push_back(mapper(element));
+      }
+
+      return tree;
+    }
+  };
+
+  flat_bfs_type() {};
+
+  template <typename Other>
+  flat_bfs_type(tree::copy_iterator<type::bfs, Other> it){};
+
+  template <typename Other>
+  flat_bfs_type(tree::move_iterator<type::bfs, Other> it) {
+    using op = insert_op<type::bfs>;
+
+    op op_{op::ins};
+
+    // 4 base_iterators
+    tree::base_iterator parents_begin{it};
+    tree::base_iterator childs_begin{it};
+
+    for (; it; it.advance(op_)) {
+      switch (op_) {
+      case op::ins: {
+        break;
+      }
+      case op::sep: {
+        break;
+      }
+      case op::deep: {
+        break;
+      }
+      case op::end: {
+        return;
+      }
+      }
+    };
+  };
+
 private:
+  template <erasure::as_pure_type S> friend struct flat_bfs_type;
+
   std::vector<T> data__;
-  std::vector<hierarchy_node_t> hierarchy__;
+  std::vector<bfs_hierarchy_node_t> hierarchy__;
 };
 
 /// ---------- ITERATORS ---------- ///
@@ -74,7 +137,9 @@ template <typename T> struct base_iterator<flat_bfs_type<T>> {
   using pointer_t = T *;
   using index_t = container_t::index_t;
 
-  bool valid() const { return owner && self < owner->data__.size(); };
+  bool valid() const {
+    return owner && self < owner->data__.size() && not owner->data__.empty();
+  };
 
   operator bool() const { return valid(); }
 
@@ -327,16 +392,6 @@ const_sibling_iterator(base_iterator<flat_bfs_type<T>> it)
 template <typename T>
 const_root_iterator(base_iterator<flat_bfs_type<T>> it)
     -> const_root_iterator<flat_bfs_type<T>>;
-
-void uu(is_sibling_iterator auto it) {}
-
-template <typename T> void hehe(base_iterator<T> it) {}
-
-void eue(base_iterator<flat_bfs_type<int>> it) {
-  sibling_iterator sit{it};
-  hehe(sit);
-  uu(sit);
-}
 
 template <typename T> auto childs_of(base_iterator<flat_bfs_type<T>> it) {
 

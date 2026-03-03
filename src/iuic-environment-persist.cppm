@@ -1,57 +1,212 @@
-
+// Copyright (c) 2026 abstract-meta-magic and contributors
+// SPDX-License-Identifier: Apache-2.0
 
 export module iuic.core:environment.persist;
 import std;
 import iuic.underlying;
 import iuic.state;
 import :style;
+import :machine.dispatcher;
 
 namespace iuic::environment {
+
+struct object {
+  void *data;
+  const erasure::type *type;
+  enum state_e {
+    non_exist,
+    deleted,
+    outdated_this_type,
+    outdated_other_type,
+    alive_this_type,
+    alive_other_type,
+    reserve_this_type,
+    reserve_other_type,
+    reserve_undefined_type,
+  };
+};
 
 struct persist {
   struct : private iuic::advance::interface {
     friend persist;
-    enum object_state {
-      non_exist,
-      deleted,
-      outdated_this_type,
-      outdated_other_type,
-      alive_this_type,
-      alive_other_type,
-      reserve_this_type,
-      reserve_other_type,
-      reserve_undefined_type,
+    using buff_t =
+        utils::swap_buffers<std::unordered_map<units::uid, object>, 3>;
+
+    using enum object::state_e;
+
+    erasure::visited::as_mutable get(units::uid uid) {
+      auto [old, cur] = objects.get_buffers();
+      if (cur.contains(uid)) {
+        return erasure::visited::as_mutable{&cur.at(uid)};
+      } else if (old.contains(uid)) {
+        return erasure::visited::as_mutable{&old.at(uid)};
+      }
+      return {nullptr};
     };
 
-    erasure::visited::as_mutable get(units::uid);
+    void reserve(units::uid uid) {};
 
-    void reserve(units::uid);
+    template <typename T> void reserve(units::uid uid) {};
 
-    template <typename T> void reserve(units::uid);
+    void construct(units::uid uid, auto &&call) {
+      auto [old, cur] = objects.get_buffers();
+      if (not cur.contains(uid) && not old.contains(uid)) {
+        using ftaits = typename erasure::func_type<decltype(call)>::traits;
 
-    void construct(units::uid, auto &&call);
+        if constexpr (not std::same_as<typename ftaits::return_t, void>) {
+          using type = std::remove_cvref_t<typename ftaits::return_t>;
 
-    void destruct(units::uid);
+          auto *otype = erasure::type::from<type>();
 
-    void update_lifetime(units::uid);
+          auto *ptr = new type{call()};
 
-    object_state state(units::uid);
+          cur.insert(uid, {ptr, otype});
+        }
+      }
+    };
+
+    void destruct(units::uid uid) {
+      auto [old, cur] = objects.get_buffers();
+
+      if (cur.contains(uid)) {
+        auto ex = cur.extract(uid);
+        auto &obj = ex.mapped();
+        obj.type->dctor(obj.data);
+      } else if (old.contains(uid)) {
+        auto ex = old.extract(uid);
+        auto &obj = ex.mapped();
+        obj.type->dctor(obj.data);
+      }
+    };
+
+    void update_lifetime(units::uid uid) { objects.move_forward(uid); };
+
+    object::state_e state(units::uid uid, const erasure::type *otype) {
+      auto [old, cur] = objects.get_buffers();
+
+      if (cur.contains(uid)) {
+        if (cur.at(uid).type == otype) {
+          return object::alive_this_type;
+        } else {
+          return object::alive_other_type;
+        }
+      } else if (old.contains(uid)) {
+        if (old.at(uid).type == otype) {
+          return object::outdated_this_type;
+        } else {
+          return object::outdated_other_type;
+        }
+      }
+
+      return object::non_exist;
+    };
+
+    template <erasure::as_pure_type T> object::state_e state(units::uid uid) {
+      return state(uid, erasure::type::from<T>());
+    }
+
+  private:
+    void advance() override { objects.swap(); };
+
+  private:
+    buff_t objects;
   } object;
 
   struct : private iuic::advance::interface {
+    using buff_t = utils::swap_buffers<
+        std::unordered_map<units::uid, std::unordered_set<state::value>>, 3>;
     friend persist;
-    void attach(units::uid, iuic::state::value);
+    void attach(units::uid uid, iuic::state::value value) {
+      auto [old, cur] = data.get_buffers();
 
-    void detach(units::uid, iuic::state::value);
+      data.move_forward(uid); // auto check old value
 
-    bool has(units::uid, iuic::state::value);
+      cur.at(uid).insert(value);
+    };
+
+    void detach(units::uid uid, iuic::state::value value) {
+      auto [old, cur] = data.get_buffers();
+      cur.at(uid).erase(value);
+      old.at(uid).erase(value);
+    };
+
+    bool has(units::uid uid, iuic::state::value value) {
+      auto [old, cur] = data.get_buffers();
+      if (cur.contains(uid)) {
+        return cur.at(uid).contains(value);
+      } else if (old.contains(uid)) {
+        return old.at(uid).contains(value); // outdated, but OK
+      } else {
+        return false;
+      };
+    };
+
+    void update_lifetime(units::uid uid) {
+      auto [old, cur] = data.get_buffers();
+      data.move_forward(uid);
+    };
+
+  protected:
+    void advance() override { data.swap(); };
 
   private:
-    // map
+    buff_t data;
   } state;
 
   struct : private iuic::advance::interface {
+    using buff_t = utils::swap_buffers<
+        std::unordered_map<units::uid,
+                           std::unique_ptr<state::machine::instance>>,
+        3>;
     friend persist;
+    state::machine::instance *get(units::uid uid) {
+      auto [old, cur] = data.get_buffers();
+
+      if (cur.contains(uid)) {
+        return cur.at(uid).get();
+      } else if (old.contains(uid)) {
+        return old.at(uid).get(); // outdated, but OK
+      } else {
+        return nullptr;
+      };
+    };
+
+    void construct(units::uid uid,
+                   const state::machine::is_prototype auto &proto) {
+      using spec = std::remove_cvref_t<decltype(proto)>::spec;
+      auto [old, cur] = data.get_buffers();
+
+      if (old.contains(uid) && old.at(uid) &&
+          old.at(uid)->get_spec_id() == spec::runtime_id()) {
+        data.move_forward(uid);
+      } else if (not cur.contains(uid)) {
+        cur.insert({uid, spec::make_instance(proto)});
+      } else if (auto &instance = cur.at(uid);
+                 instance && instance->get_spec_id() != spec::runtime_id()) {
+        instance.swap(spec::make_instance(proto));
+      };
+    };
+
+    void destruct(units::uid uid) {
+      auto [old, cur] = data.get_buffers();
+
+      if (cur.contains(uid)) {
+        cur.extract(uid);
+      } else if (old.contains(uid)) {
+        old.extract(uid);
+      }
+    };
+
+    void update_lifetime(units::uid uid) {
+      auto [old, cur] = data.get_buffers();
+      data.move_forward(uid);
+    };
+
+  protected:
+    void advance() override { data.swap(); };
+
+  private:
+    buff_t data;
   } machine;
 
   struct : private iuic::advance::interface {
@@ -62,7 +217,9 @@ struct persist {
 
     units::ui::position get_pointer_position() { return pointer_position; };
 
-    // TODO : mb? get_old_pointer_position();
+    units::ui::position get_old_pointer_position() {
+      return old_pointer_position;
+    };
 
     void set_pointer_position(units::ui::position ppos) {
       old_pointer_position = std::exchange(pointer_position, ppos);
@@ -80,12 +237,6 @@ struct persist {
     machine.rebind(pool);
     external.rebind(pool);
   };
-};
-
-void heh(persist &env, units::uid uid) {
-  env.object.get(uid);
-  env.state.has(uid, iuic::state::base::hovered);
-  env.external.get_pointer_position();
 };
 
 }; // namespace iuic::environment

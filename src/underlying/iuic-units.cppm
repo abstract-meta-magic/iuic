@@ -125,11 +125,21 @@ struct size {
 };
 
 struct rect {
-  position position;
-  size size;
-  std::tuple<pixel, pixel, upixel, upixel> xywh() const {
-    return {position.x, position.y, size.w, size.h};
+  union {
+    struct {
+      upixel x, y;
+      pixel w, h;
+    };
+    struct {
+      position position;
+      size size;
+    };
   };
+
+  std::tuple<pixel, pixel, upixel, upixel> xywh() const {
+    return {x, y, w, h};
+  };
+
   constexpr auto operator<=>(const rect &) const = default;
 };
 

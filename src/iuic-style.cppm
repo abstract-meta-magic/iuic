@@ -8,7 +8,37 @@ import :text.font;
 
 export namespace iuic::style {
 
-enum class sid : std::uint64_t;
+enum class sid : std::uint64_t {};
+
+constexpr sid &operator++(sid &value) noexcept {
+  ++reinterpret_cast<std::uint64_t &>(value);
+  return value;
+};
+
+constexpr sid operator++(sid &value, int) noexcept {
+  auto res = value;
+  ++reinterpret_cast<std::uint64_t &>(value);
+  return res;
+};
+
+constexpr sid &operator--(sid &value) noexcept {
+  --reinterpret_cast<std::uint64_t &>(value);
+  return value;
+};
+
+constexpr sid operator--(sid &value, int) noexcept {
+  auto res = value;
+  --reinterpret_cast<std::uint64_t &>(value);
+  return res;
+};
+
+constexpr sid operator+(sid lhs, sid rhs) noexcept {
+  return sid{std::to_underlying(lhs) + std::to_underlying(rhs)};
+};
+
+constexpr sid operator-(sid lhs, sid rhs) noexcept {
+  return sid{std::to_underlying(lhs) - std::to_underlying(rhs)};
+};
 
 namespace font {
 
@@ -140,7 +170,7 @@ struct text {
 };
 
 // static - unlimited
-struct advance {
+struct advence {
   float grow{0}; // static
 
   float shrink{0}; // static
@@ -157,89 +187,51 @@ struct decl {
 
   transform transform;
 
-  advance advence;
+  advence advence;
 };
 
-// Невладеющий объект.
-// Может быть провисшей.
-// for relement\calculation
-struct cref {
-public: // get's
-  const shape &get_shape() const {
-    if (shape_override_ptr) {
-      return *shape_override_ptr;
-    } else {
-      return base_ptr->shape;
-    };
-  };
+} // namespace iuic::style
+namespace iuic::style {
+struct sheet {
+  std::vector<shape> shape;
+  std::vector<decoration> decoration;
+  std::vector<transform> transform;
+  std::vector<advence> advence;
+};
+
+struct index {
+  using index_t = std::int16_t;
+  index_t shape;
+  index_t decoration;
+  index_t transform;
+  index_t advance;
+};
+
+export struct value {
+  const shape &get_shape() const { return table->shape[index.shape]; };
 
   const decoration &get_decoration() const {
-    if (decoration_override_ptr) {
-      return *decoration_override_ptr;
-    } else {
-      return base_ptr->decoration;
-    };
+    return table->decoration[index.decoration];
   };
 
-  const transform &get_transphorm() const {
-    if (transform_override_ptr) {
-      return *transform_override_ptr;
-    } else {
-      return base_ptr->transform;
-    };
+  const transform &get_transform() const {
+    return table->transform[index.transform];
   };
 
-  const advance &get_advance() const { return base_ptr->advence; };
+  const advence &get_advence() const { return table->advence[index.advance]; };
 
-  cref(const decl *decl) : base_ptr{decl} {};
+  value(index index_, const sheet *sheet_) : index{index_}, table{sheet_} {};
 
-  cref(const decl &decl) : base_ptr{std::addressof(decl)} {};
+  value() : index{0}, table{nullptr} {}
 
-protected: //
-  const decl *base_ptr;
+  value(std::nullptr_t) : index{0}, table{nullptr} {}
 
-  const shape *shape_override_ptr{nullptr}; // null
+  bool valid() const { return table; };
 
-  const decoration *decoration_override_ptr{nullptr}; // null
+  operator bool() const { return valid(); };
 
-  const transform *transform_override_ptr{nullptr}; // null
-};
-
-// decl -> decl * transform
-
-struct ref : public cref {
-  ref(const decl *decl) : cref{decl} {};
-
-  ref(const decl &decl) : cref{std::addressof(decl)} {};
-
-  void override(const shape *shape) { shape_override_ptr = shape; };
-
-  void override(const decoration *decoration) {
-    decoration_override_ptr = decoration;
-  };
-
-  void override(const transform *transform) {
-    transform_override_ptr = transform;
-  };
-};
-
-struct sheet {
-  ref get(sid id);
-
-  cref get(sid id) const;
-
-  sid get_default();
-
-  void set_default(const decl *);
-
-  sid make();
-
-  sid make(sid id);
-
-  sid override(sid, ...);
-
-  sid get_or_make(const decl *);
-
-  // decl -> ovveride list
+private:
+  index index;
+  const sheet *table;
 };
 }; // namespace iuic::style
