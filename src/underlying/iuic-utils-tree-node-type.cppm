@@ -4,21 +4,25 @@ export module iuic.underlying:utils.tree.node;
 import :utils;
 import :utils.tree.decl;
 
+namespace iuic::utils::tree {
+template <typename T> struct tree_node {
+  tree_node *parent{nullptr};
+  tree_node *left{nullptr};
+  tree_node *right{nullptr};
+  tree_node *child{nullptr};
+  T *value{nullptr};
+  static constexpr tree_node *root_wall_ptr() {
+    static tree_node _;
+    return &_;
+  };
+};
+}; // namespace iuic::utils::tree
+
 export namespace iuic::utils::tree {
 
 template <erasure::as_pure_type T> struct node_type {
 private:
-  struct node {
-    node *parent{nullptr};
-    node *left{nullptr};
-    node *right{nullptr};
-    node *child{nullptr};
-    T *value{nullptr};
-    static constexpr node *root_wall_ptr() {
-      static node _;
-      return &_;
-    };
-  };
+  using node = tree_node<T>;
 
 public:
   // ----- ITERATORS ----- //
@@ -44,6 +48,39 @@ public:
   base_iterator begin() { return {root_.child}; };
 
   base_iterator root() { return {&root_}; };
+
+  // delete in other thread
+  ~node_type() {
+    //
+    std::vector<node *> cur;
+    std::vector<node *> next;
+
+    for (auto *ch = root_.child; ch;) {
+      cur.push_back(ch);
+      ch = ch->right;
+    }
+
+    for (;;) {
+      for (node *c : cur) {
+
+        for (node *ch = c->child; ch;) {
+          next.push_back(ch);
+          ch = ch->right;
+        }
+
+        delete c->value;
+        delete c;
+      }
+
+      std::swap(cur, next);
+
+      if (cur.empty()) {
+        return;
+      }
+
+      next.clear();
+    }
+  };
 
 private:
   node root_{.parent = node::root_wall_ptr(),
@@ -324,21 +361,66 @@ struct copy_iterator<type::dfs, node_type<T>> : base_iterator<node_type<T>> {
 template <typename T>
 struct move_iterator<type::bfs, node_type<T>> : base_iterator<node_type<T>> {
   using base = base_iterator<node_type<T>>;
-  move_iterator(base b, tags::bfs_t = {}) : base{b} {}
+  move_iterator(base b, tags::bfs_t = {}) : base{b} {
+    if (base::valid()) {
+      for (auto *c = base::self; c;) {
+        cur.push_back(c);
+        c = c->right;
+      }
+
+      for (auto *ch = base::self->child; ch;) {
+        next.push_back(ch);
+        ch = ch->right;
+      }
+    }
+  }
 
   void advance(insert_op<type::bfs> &op_) {
     using op = insert_op<type::bfs>;
     switch (op_) {
 
     case op::ins: {
-      break;
+      if (cur.size() != ++index) {
+        // check sep
+        auto *r = cur[index - 1]->right;
+        if (r == nullptr) {
+          op_ = op::sep;
+          break;
+        }
+      } else {
+        // check
+        cur = std::move(next);
+        next.clear();
+        index = 0;
+        if (cur.empty()) {
+          op_ = op::sep;
+        } else {
+          op_ = op::deep;
+        }
+        break;
+      }
     };
     case op::sep: {
-      break;
+      if (cur.empty()) {
+        op_ = op::end;
+        return;
+      }
     };
     case op::deep: {
-      break;
     };
+    default: {
+      auto *n = cur[index];
+
+      int chc{0};
+      for (auto *ch = n->child; ch;) {
+        next.push_back(ch);
+        ch = ch->right;
+        ++chc;
+      }
+
+      std::println("childs count : {}", chc);
+      op_ = op::ins;
+    }
     case op::end: {
       break;
     };
@@ -346,6 +428,11 @@ struct move_iterator<type::bfs, node_type<T>> : base_iterator<node_type<T>> {
   };
 
   T &&get() { return std::move(*base::self->value); };
+
+private:
+  std::size_t index{0};
+  std::vector<tree_node<typename base::value_t> *> cur;
+  std::vector<tree_node<typename base::value_t> *> next;
 };
 
 template <typename T>

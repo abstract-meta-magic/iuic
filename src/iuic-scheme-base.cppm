@@ -22,7 +22,7 @@ struct sketch {
     style::sid sid;
     units::ui::zorder zorder;
   };
-  environment::tmp env;
+  environment::tmp tenv;
   utils::tree::flat_bfs_type<element> tree;
 };
 
@@ -33,7 +33,7 @@ struct blueprint {
     style::sid sid;
     units::ui::zorder zorder;
     struct {
-      enum flag { discarted = 0, text, measure, applyed, arrange };
+      enum flag { discarded = 0, text, measure, applied, arrange };
 
       void set(flag f, bool value_ = true) { value.set(f, value_); };
 

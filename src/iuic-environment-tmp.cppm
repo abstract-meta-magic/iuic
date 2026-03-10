@@ -57,6 +57,12 @@ struct tmp {
         nindex.advance = sheet.advence.size() - 1;
         // stage 2
         index.insert({++free_index, {nindex}});
+
+        if (not index.contains(free_index)) {
+          std::println("wrond set index");
+        } else {
+          std::println("seccess set index");
+        };
         indexed_decl.insert({decl, free_index});
       }
       return indexed_decl.at(decl);

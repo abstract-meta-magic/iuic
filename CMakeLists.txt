@@ -75,6 +75,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 )
 
 target_sources(${PROJECT_NAME}_core PUBLIC
+	"src/iuic-scheme-compute.cpp"
 	"src/iuic-ctx.cpp"
 	"src/iuic-text-present.cpp"
 	"src/iuic-layout-utils.cpp"

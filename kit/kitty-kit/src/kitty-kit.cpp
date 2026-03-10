@@ -3,54 +3,67 @@ import std;
 import iuic.core;
 
 namespace kitty_kit::layout {
-iuic::layout::measure::result
-simple_box::measure(iuic::layout::measure::frame_utils utils) noexcept {
+
+std::optional<iuic::layout::measure::result>
+simple_box::measure(iuic::layout::measure::frame_utils utils) const noexcept {
   auto self_style = utils.style_of(utils.self());
-  auto &self_shape = self_style.get_shape();
 
-  std::print("Hi");
+  if (self_style) {
+    auto &self_shape = self_style.get_shape();
 
-  for (auto &&ch : utils.childs_range()) {
-    std::visit(
-        [](auto &value) {
-          using type = std::remove_cvref_t<decltype(value)>;
+    for (auto &&ch : utils.childs_range()) {
+      std::visit(
+          [](auto &value) {
+            using type = std::remove_cvref_t<decltype(value)>;
 
-          if constexpr (std::same_as<type, units::upixel>) {
+            if constexpr (std::same_as<type, units::upixel>) {
 
-          } else if constexpr (std::same_as<type, units::vw>) {
+            } else if constexpr (std::same_as<type, units::vw>) {
 
-          } else if constexpr (std::same_as<type, units::vh>) {
-          }
-        },
-        ch.measure.height);
+            } else if constexpr (std::same_as<type, units::vh>) {
+            }
+          },
+          ch.measure.height);
+    }
   }
-  return {0, 0};
+
+  return iuic::layout::measure::result{units::upixel{200}, units::upixel{120}};
 };
 
-bool simple_box::arrange(iuic::layout::arrange::frame_utils utils) noexcept {
+bool simple_box::arrange(
+    iuic::layout::arrange::frame_utils utils) const noexcept {
+
+  std::println("in arrange");
+
+  auto range = utils.childs_range();
+
+  for (; range.b != range.e; ++range.b) {
+    utils.apply_element(range.b, {});
+  };
+
+  return true;
+};
+
+std::optional<iuic::layout::measure::result>
+text_button::measure(iuic::layout::measure::frame_utils utils) const noexcept {
+
+  return iuic::layout::measure::result{0, 0};
+};
+
+bool text_button::arrange(
+    iuic::layout::arrange::frame_utils utils) const noexcept {
 
   return false;
 };
 
-iuic::layout::measure::result
-text_button::measure(iuic::layout::measure::frame_utils utils) noexcept {
+std::optional<iuic::layout::measure::result>
+short_text::measure(iuic::layout::measure::text_utils utils) const noexcept {
 
-  return {0, 0};
-};
-
-bool text_button::arrange(iuic::layout::arrange::frame_utils utils) noexcept {
-
-  return false;
-};
-
-iuic::layout::measure::result
-short_text::measure(iuic::layout::measure::text_utils utils) noexcept {
-
-  return {0, 0};
+  return iuic::layout::measure::result{0, 0};
 };
 
 iuic::text::glyph::sequence
-short_text::arrange(iuic::layout::arrange::text_utils utils) noexcept {
+short_text::arrange(iuic::layout::arrange::text_utils utils) const noexcept {
 
   return {};
 };

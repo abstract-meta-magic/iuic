@@ -51,11 +51,19 @@ struct unit {
 using tree = utils::tree::flat_bfs_type<unit>;
 
 struct frame_utils : public utils_base {
+  frame_utils(environment::tmp &tenv, scheme::blueprint::iterator it,
+              measure::tree::sibling_iterator ch_)
+      : utils_base{tenv, it}, ch{ch_} {};
+
+  // TODO : нужно врапнуть итераторы
+  // чтобы они могли пропускать discarded элементы.
   struct childs_proxy {
-    const measure::tree::const_sibling_iterator b;
-    const utils::tree::sentinel<measure::tree> e;
+    measure::tree::const_sibling_iterator b;
+    utils::tree::sentinel<measure::tree::const_sibling_iterator> e;
     measure::tree::const_sibling_iterator begin() { return b; };
-    utils::tree::sentinel<measure::tree> end() { return e; };
+    utils::tree::sentinel<measure::tree::const_sibling_iterator> end() {
+      return e;
+    };
   };
 
   childs_proxy childs_range() { return {ch, {}}; };
@@ -63,16 +71,23 @@ struct frame_utils : public utils_base {
 private:
   measure::tree::sibling_iterator ch;
 };
+
 struct text_utils : public utils_base {};
 }; // namespace measure
 
 namespace arrange {
 struct frame_utils : public utils_base {
+  frame_utils(environment::tmp &tenv, scheme::blueprint::iterator it,
+              measure::tree::sibling_iterator ch_)
+      : utils_base{tenv, it}, ch{ch_} {};
+
   struct childs_proxy {
     measure::tree::const_sibling_iterator b;
-    utils::tree::sentinel<measure::tree> e;
+    utils::tree::sentinel<measure::tree::const_sibling_iterator> e;
     measure::tree::const_sibling_iterator begin() { return b; };
-    utils::tree::sentinel<measure::tree> end() { return e; };
+    utils::tree::sentinel<measure::tree::const_sibling_iterator> end() {
+      return e;
+    };
   };
 
   childs_proxy childs_range() { return {ch, {}}; };
@@ -83,7 +98,7 @@ struct frame_utils : public utils_base {
 
     if (ait) {
       ait->area = a;
-      ait->meta.set(ait->meta.applyed);
+      ait->meta.set(ait->meta.applied);
     }
   };
 
@@ -96,14 +111,19 @@ struct text_utils : public utils_base {};
 
 struct frame {
   virtual ~frame() {};
-  virtual measure::result measure(measure::frame_utils utils) = 0;
-  virtual bool arrange(arrange::frame_utils utils) = 0;
+
+  virtual std::optional<measure::result>
+  measure(measure::frame_utils utils) const = 0;
+
+  virtual bool arrange(arrange::frame_utils utils) const = 0;
 };
 
 struct text {
   virtual ~text() {};
-  virtual measure::result measure(measure::text_utils utils) = 0;
-  virtual iuic::text::glyph::sequence arrange(arrange::text_utils utils) = 0;
+  virtual std::optional<measure::result>
+  measure(measure::text_utils utils) const = 0;
+  virtual iuic::text::glyph::sequence
+  arrange(arrange::text_utils utils) const = 0;
 };
 } // namespace layout
 } // namespace iuic

@@ -51,7 +51,7 @@ void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
 
   auto row_scheme = d.make(std::forward<decltype(call)>(call));
 
-  auto comp_scheme = scheme::compute(row_scheme, penv, tenv);
+  auto comp_scheme = scheme::compute(row_scheme, penv);
 };
 
 } // namespace iuic

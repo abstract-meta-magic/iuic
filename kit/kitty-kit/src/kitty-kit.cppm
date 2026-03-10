@@ -579,23 +579,25 @@ export namespace kitty_kit::layout {
 using namespace iuic;
 
 struct text_button : public iuic::layout::frame {
-  iuic::layout::measure::result
-  measure(iuic::layout::measure::frame_utils utils) noexcept override;
-  bool arrange(iuic::layout::arrange::frame_utils utils) noexcept override;
+  std::optional<iuic::layout::measure::result>
+  measure(iuic::layout::measure::frame_utils utils) const noexcept override;
+  bool
+  arrange(iuic::layout::arrange::frame_utils utils) const noexcept override;
 };
 
 struct simple_box : public iuic::layout::frame {
-  iuic::layout::measure::result
-  measure(iuic::layout::measure::frame_utils utils) noexcept override;
-  bool arrange(iuic::layout::arrange::frame_utils utils) noexcept override;
+  std::optional<iuic::layout::measure::result>
+  measure(iuic::layout::measure::frame_utils utils) const noexcept override;
+  bool
+  arrange(iuic::layout::arrange::frame_utils utils) const noexcept override;
 };
 
 struct short_text : public iuic::layout::text {
-  iuic::layout::measure::result
-  measure(iuic::layout::measure::text_utils utils) noexcept override;
+  std::optional<iuic::layout::measure::result>
+  measure(iuic::layout::measure::text_utils utils) const noexcept override;
 
   iuic::text::glyph::sequence
-  arrange(iuic::layout::arrange::text_utils utils) noexcept override;
+  arrange(iuic::layout::arrange::text_utils utils) const noexcept override;
 };
 }; // namespace kitty_kit::layout
 
@@ -679,6 +681,9 @@ void button(builder &b, std::invocable<> auto &&callback,
           });
         },
         uid);
+    b.element.frame(uid, sid, layout_, [](auto &) {});
+    b.element.frame(uid, sid, layout_, [](auto &) {});
+    b.element.frame(uid, sid, layout_, [](auto &) {});
   });
 };
 
@@ -725,6 +730,10 @@ void text_button(builder &b, std::string_view text,
         uid);
 
     //       b.element.text(text::token{text}, style::base, text_layout);
+
+    b.element.frame(uid, sid, button_layout, [](auto &) {});
+    b.element.frame(uid, sid, button_layout, [](auto &) {});
+    b.element.frame(uid, sid, button_layout, [](auto &) {});
   });
 }
 }; // namespace kitty_kit

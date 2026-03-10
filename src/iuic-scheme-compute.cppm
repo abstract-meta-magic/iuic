@@ -5,18 +5,10 @@ export module iuic.core:scheme.compute;
 import :scheme.base;
 import :environment.persist;
 import :environment.tmp;
+import :layout.utils;
 
 namespace iuic::scheme {
-blueprint compute(const sketch &sketch, environment::persist &penv,
-                  environment::tmp &tenv) {
-  //
 
-  blueprint b{
-      &tenv, &penv,
-      sketch.tree.reflect([](const sketch::element &el) -> blueprint::element {
-        return {.uid = el.uid, .sid = el.sid, .zorder = el.zorder};
-      })};
+blueprint compute(sketch &sketch, environment::persist &penv);
 
-  return b;
-};
 }; // namespace iuic::scheme

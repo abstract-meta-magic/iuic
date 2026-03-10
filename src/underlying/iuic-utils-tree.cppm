@@ -68,6 +68,7 @@ template <type t, erasure::as_pure_type T> struct move_iterator;
 template <erasure::as_pure_type T> struct range_for;
 template <erasure::as_pure_type T> struct dfs_range_for;
 template <erasure::as_pure_type T> struct bfs_range_for;
+template <erasure::as_pure_type T> struct reverse_bfs_range_for;
 
 struct invalide_iterator_type {};
 

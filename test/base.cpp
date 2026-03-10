@@ -20,17 +20,8 @@ struct app {
 
 void main_window(iuic::scheme::builder &b, app &app) {
   kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
-  for (auto &d : app.data) {
-    kitty_kit::button(
-        b, [&]() { std::println("val : {}", d); }, iuic::utils::anchor{d});
-  }
-  kitty_kit::button(b, [&]() {
-    if (not app.data.empty())
-      app.data.pop_front();
-  });
-
-  kitty_kit::text_button(b, "ok", []() { std::println("ok"); });
-  kitty_kit::text_button(b, "exit", [&]() { app.quit = true; });
+  kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
+  kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
 };
 
 constexpr iuic::style::font::decl base{};
@@ -54,17 +45,26 @@ int main() {
 
   using namespace iuic;
 
-  // SDL BASE
+  // IUIC
+
+  context ctx;
+#if 1
+  ctx.make({400, 800}, [](auto &b) {
+    kitty_kit::button(b, []() {});
+    kitty_kit::button(b, []() {});
+    kitty_kit::button(b, []() {});
+  });
+#endif
+
+#if 0
+  // RAYLIB BASE
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   InitWindow(600, 800, "iuic-test");
   SetWindowMinSize(400, 300);
   SetTargetFPS(140);
   // END
 
-  // IUIC
-
-  context ctx;
-
+  
   // ctx font init
   struct d : text::glyph::decoder {
     // test
@@ -138,5 +138,8 @@ int main() {
   }
 
   CloseWindow();
+
+#endif
+
   return 0;
 }
