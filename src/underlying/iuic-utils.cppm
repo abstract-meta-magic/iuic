@@ -223,11 +223,11 @@ concept buffer_value_mover_cpt =
     std::same_as<Container, typename T::container_type> &&
     std::is_default_constructible_v<T>;
 
-template <typename T> struct buffer_value_mover_trait;
+template <typename T> struct swap_buffer_traits;
 
 template <typename T, std::size_t N,
           buffer_value_mover_cpt<T> Mover =
-              typename buffer_value_mover_trait<T>::mover_type>
+              typename swap_buffer_traits<T>::mover_type>
   requires(N > 1)
 struct swap_buffers {
   auto get_buffers() {
@@ -251,6 +251,8 @@ struct swap_buffers {
   void swap() {
     prev = (prev + 1) % N;
     current = (current + 1) % N;
+
+    swap_buffer_traits<T>::clear(buffers_[current]);
   };
 
   void move_forward(typename Mover::key_type key) const {
@@ -285,8 +287,12 @@ template <typename Map> struct forward_for_map {
 };
 
 template <typename T, typename Key>
-struct buffer_value_mover_trait<std::unordered_map<T, Key>> {
+struct swap_buffer_traits<std::unordered_map<T, Key>> {
   using mover_type = forward_for_map<std::unordered_map<T, Key>>;
+
+  static constexpr void clear(std::unordered_map<T, Key> &buff) {
+    buff.clear();
+  };
 };
 
 namespace ct {

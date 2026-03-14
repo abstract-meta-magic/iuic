@@ -9,6 +9,7 @@ import :layout.utils;
 
 namespace iuic::scheme {
 
-blueprint compute(sketch &sketch, environment::persist &penv);
+blueprint compute(sketch &sketch, environment::tmp &tenv,
+                  environment::persist &penv);
 
 }; // namespace iuic::scheme

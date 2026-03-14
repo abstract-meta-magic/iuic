@@ -27,13 +27,13 @@ simple_box::measure(iuic::layout::measure::frame_utils utils) const noexcept {
     }
   }
 
-  return iuic::layout::measure::result{units::upixel{200}, units::upixel{120}};
+  return iuic::layout::measure::result{units::upixel{200}, units::percent{20}};
 };
 
 bool simple_box::arrange(
     iuic::layout::arrange::frame_utils utils) const noexcept {
 
-  std::println("in arrange");
+  auto area = utils.self_size();
 
   auto range = utils.childs_range();
 

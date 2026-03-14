@@ -19,9 +19,12 @@ struct app {
 };
 
 void main_window(iuic::scheme::builder &b, app &app) {
-  kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
-  kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
-  kitty_kit::button(b, [&]() { app.data.push_back(app.counter++); });
+  for (std::size_t i{0}; i < 120; ++i) {
+    kitty_kit::button(b, [&]() {
+      //
+      std::println("heheheh");
+    });
+  }
 };
 
 constexpr iuic::style::font::decl base{};
@@ -48,15 +51,31 @@ int main() {
   // IUIC
 
   context ctx;
-#if 1
+#if 0
   ctx.make({400, 800}, [](auto &b) {
-    kitty_kit::button(b, []() {});
+    kitty_kit::button(b, []() { std::println("triggered");});
     kitty_kit::button(b, []() {});
     kitty_kit::button(b, []() {});
   });
+
+  std::vector<units::uid> sl;
+
+  ctx.scheme.explore(
+      [&](scheme::eval::context &ctx) {
+        // hovered
+        auto area = ctx.self_area();
+      },
+      [&](scheme::geval::context &ctx) {
+        for (auto uid : sl) {
+          ctx.attach_state(uid, state::base::hovered);
+        }
+      },
+      [&](scheme::eval::context &ctx) {
+        // for events
+      });
 #endif
 
-#if 0
+#if 1
   // RAYLIB BASE
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   InitWindow(600, 800, "iuic-test");
@@ -64,7 +83,6 @@ int main() {
   SetTargetFPS(140);
   // END
 
-  
   // ctx font init
   struct d : text::glyph::decoder {
     // test
@@ -111,22 +129,70 @@ int main() {
     static constexpr auto in = [](units::ui::position,
                                   units::ui::rect) -> bool { return true; };
 
-    ctx.scheme.explore([](iuic::scheme::eval::context &ctx) {
-      auto el = ctx.self();
-      ctx.parent_of(el);
-      ctx.childs_of(el);
+    std::set<units::uid> sel;
+    std::set<units::uid> ev;
 
-      ctx.style_of(el);
-      ctx.area_of(el);
-      ctx.hovered_policy_of(el);
-      ctx.event_policy_of(el);
+    ctx.scheme.explore(
+        [&](scheme::eval::context &ctx) {
+          auto inner = [](const units::ui::area &area,
+                          units::ui::position pointer) -> bool {
+            return pointer.x >= area.bordered.x &&
+                   pointer.x <= area.bordered.x + area.bordered.w &&
+                   pointer.y >= area.bordered.y &&
+                   pointer.y <= area.bordered.y + area.bordered.h;
+          };
 
-      ctx.select(el);
+          auto area = ctx.self_area();
 
-      if (in(ctx.get_pointer_position(), ctx.area_of(el).bordered)) {
-        ctx.attach_state(el, state::base::hovered);
-      }
-    });
+          if (inner(area, {GetMouseX(), GetMouseY()})) {
+
+            sel.insert(ctx.self_uid());
+          }
+
+          if (ctx.has_state(state::base::hovered)) {
+            ev.insert(ctx.self_uid());
+          };
+        },
+        [&](iuic::scheme::geval::context &ctx) {
+          if (IsMouseButtonDown(0)) {
+            ctx.set_key(key_map::mouse("left"));
+            std::println("-------------------");
+          } else {
+            ctx.set_key({});
+          }
+
+          for (auto uid : sel) {
+            ctx.attach_state(uid, state::base::hovered);
+          }
+
+          std::size_t c{0};
+          for (auto uid : ev) {
+
+            for (auto e : ctx.events_of(uid)) {
+              ctx.event_trigger(e);
+            }
+
+            if (++c >= 120) {
+            }
+          }
+
+          // std::println("counter {}", c);
+        },
+        [](iuic::scheme::eval::context &ctx) {
+          auto area = ctx.self_area();
+
+          auto style = ctx.self_style();
+
+          std::visit(
+              [&]<typename type>(const type &obj) {
+                if constexpr (std::same_as<type, units::color>) {
+                  Color color{obj.r, obj.g, obj.b, obj.a};
+                  DrawRectangle(area.borderless.x, area.borderless.y,
+                                area.borderless.w, area.borderless.h, color);
+                }
+              },
+              style.get_decoration().background);
+        });
 
     // std::cout << "GO" << std::endl;
     BeginDrawing();

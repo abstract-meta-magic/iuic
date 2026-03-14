@@ -5,7 +5,8 @@ import :erasure;
 
 export namespace iuic::utils::tree {
 
-enum class type { dfs, bfs };
+// TODO : normal name to enum
+enum class order_type { dfs, bfs };
 
 namespace tags {
 struct bfs_t {
@@ -32,8 +33,8 @@ struct insert_traits {
 
   enum class dfs_insert_op { at, to, ret, end };
 
-  template <type t> static consteval auto get_enum_type() {
-    if constexpr (t == type::bfs) {
+  template <order_type t> static consteval auto get_enum_type() {
+    if constexpr (t == order_type::bfs) {
       return bfs_insert_op{};
     } else {
       return dfs_insert_op{};
@@ -41,7 +42,8 @@ struct insert_traits {
   };
 };
 
-template <type t> using insert_op = decltype(insert_traits::get_enum_type<t>());
+template <order_type t>
+using insert_op = decltype(insert_traits::get_enum_type<t>());
 
 // --
 template <erasure::as_pure_type T> struct base_iterator;
@@ -60,14 +62,33 @@ template <erasure::as_pure_type T> struct sentinel {
 };
 
 // --
-template <type t, erasure::as_pure_type T> struct insert_iterator;
-template <type t, erasure::as_pure_type T> struct copy_iterator;
-template <type t, erasure::as_pure_type T> struct move_iterator;
+template <order_type t, erasure::as_pure_type T> struct insert_iterator;
+template <order_type t, erasure::as_pure_type T> struct copy_iterator;
+template <order_type t, erasure::as_pure_type T> struct move_iterator;
+
+template <template <typename> typename T> struct iterator_type {
+  static_assert(false, "Invalid iterator type");
+};
+
+template <> struct iterator_type<base_iterator> {};
+template <> struct iterator_type<access_iterator> {};
+template <> struct iterator_type<const_access_iterator> {};
+template <> struct iterator_type<root_iterator> {};
+template <> struct iterator_type<const_root_iterator> {};
+template <> struct iterator_type<sibling_iterator> {};
+template <> struct iterator_type<const_sibling_iterator> {};
 
 // --
-template <erasure::as_pure_type T> struct range_for;
+template <erasure::as_pure_type T> struct iterator_range_for;
 template <erasure::as_pure_type T> struct dfs_range_for;
+template <erasure::as_pure_type T> struct iterator_dfs_range_for;
 template <erasure::as_pure_type T> struct bfs_range_for;
+
+template <erasure::as_pure_type T,
+          template <typename> typename Iterator = base_iterator>
+  requires std::is_base_of_v<base_iterator<T>, Iterator<T>>
+struct bfs_iterator_range_for;
+
 template <erasure::as_pure_type T> struct reverse_bfs_range_for;
 
 struct invalide_iterator_type {};
@@ -163,11 +184,11 @@ concept has_tree_walk = requires(T iterator) {
   { siblings_of(iterator) } -> is_sibling_iterator;
 };
 
-template <typename T, typename U, type t>
+template <typename T, typename U, order_type t>
 insert_iterator<t, T> copy(copy_iterator<t, T>, sentinel<T>,
                            insert_iterator<t, U>);
 
-template <typename T, typename U, type t>
+template <typename T, typename U, order_type t>
 insert_iterator<t, T> move(move_iterator<t, T>, sentinel<T>,
                            insert_iterator<t, U>);
 
@@ -179,9 +200,9 @@ template <typename T, typename U>
 base_iterator<T> shift(base_iterator<T>, base_iterator<U>);
 
 template <typename Src, typename Dest>
-void move(move_iterator<type::dfs, Src> it,
-          insert_iterator<type::dfs, Dest> ins) {
-  using op = insert_op<type::dfs>;
+void move(move_iterator<order_type::dfs, Src> it,
+          insert_iterator<order_type::dfs, Dest> ins) {
+  using op = insert_op<order_type::dfs>;
 
   op op_;
 
@@ -196,7 +217,7 @@ void move(move_iterator<type::dfs, Src> it,
     case op::ret: {
       ins = insert_iterator{++root_iterator{ins}};
     }
-    case insert_op<type::dfs>::end: {
+    case insert_op<order_type::dfs>::end: {
       return;
     }
     }
@@ -204,9 +225,9 @@ void move(move_iterator<type::dfs, Src> it,
 }
 
 template <typename Src, typename Dest>
-void move(move_iterator<type::bfs, Src> it,
-          insert_iterator<type::bfs, Dest> ins) {
-  using op = insert_op<type::bfs>;
+void move(move_iterator<order_type::bfs, Src> it,
+          insert_iterator<order_type::bfs, Dest> ins) {
+  using op = insert_op<order_type::bfs>;
 
   op op_;
 

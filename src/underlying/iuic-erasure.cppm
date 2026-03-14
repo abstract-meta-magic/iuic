@@ -283,10 +283,13 @@ struct visited::as_const : private visited {
     using arg_t = traits::func_args::template arg_t<0>;
     using arg_ptr = std::remove_reference_t<arg_t> *;
 
-    if (type::from<pure_t<arg_t>>() == type) {
+    const erasure::type *otype = type::from<std::remove_cvref_t<arg_t>>();
+
+    if (otype == type) {
       call(*static_cast<arg_ptr>(data));
       return true;
     }
+
     return false;
   };
 
@@ -311,7 +314,9 @@ struct visited::as_mutable : private visited {
     using arg_t = traits::func_args::template arg_t<0>;
     using arg_ptr = std::remove_reference_t<arg_t> *;
 
-    if (type::from<pure_t<arg_t>>() == type) {
+    const erasure::type *otype = type::from<std::remove_cvref_t<arg_t>>();
+
+    if (otype == type) {
       call(*static_cast<arg_ptr>(data));
       return true;
     }

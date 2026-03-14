@@ -20,23 +20,22 @@ private:
     penv.external.set_viewport_size(sz);
   };
 
-  void reset() {};
-
 private:
+  // sync
   advance::pool adp;
 
+  // explore
+  scheme::blueprint blueprint;
   environment::tmp tenv{};
   environment::persist penv{adp};
 
 public:
-  scheme::explorer scheme{};
+  scheme::explorer scheme{blueprint, tenv, penv};
 };
 
 // Contex Template Impl
 void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
 
-  // step 1
-  reset();
   // <<-----------------------<< advance
   adp.advance();
 
@@ -49,9 +48,11 @@ void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
 
   scheme::director d{penv};
 
-  auto row_scheme = d.make(std::forward<decltype(call)>(call));
+  auto [sketch, tenv_] = d.make(std::forward<decltype(call)>(call));
 
-  auto comp_scheme = scheme::compute(row_scheme, penv);
+  blueprint = scheme::compute(sketch, tenv_, penv);
+
+  std::swap(tenv_, tenv);
 };
 
 } // namespace iuic

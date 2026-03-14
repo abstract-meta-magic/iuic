@@ -25,7 +25,8 @@ struct utils : utils_base {
     bool try_visit(units::uid uid,
                    erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto
                        &&visitor) {
-      return true;
+      return env.object.get(uid).try_visit(
+          std::forward<decltype(visitor)>(visitor));
     };
   } memory{*this};
 
@@ -53,7 +54,10 @@ struct pointer : event_base {
 }; // namespace global
 
 namespace local {
-struct key : event_base {
+struct key {
+  utils utils;
+  units::uid object; // can be null
+  units::uid uid;
   key_code code;
   units::ui::position current_mouse_position{};
   units::ui::rect rect;
@@ -147,12 +151,15 @@ namespace iuic::event {
 void trigger(value &e, environment::persist &penv) {
   switch (e.meta.to_ulong()) {
   case 1 << value::key | 1 << value::local: {
-    e.lk({penv});
+    e.lk({.utils = utils{penv},
+          .object = units::uid{e.object},
+          .uid = units::uid{e.uid},
+          .code = penv.external.key_code});
     e.meta.set(value::triggered);
     break;
   }
   case 1 << value::key: {
-    e.gk({penv});
+    e.gk({penv, .code = penv.external.key_code});
     e.meta.set(value::triggered);
     break;
   }

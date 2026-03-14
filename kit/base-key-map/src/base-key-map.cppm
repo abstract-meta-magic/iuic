@@ -10,7 +10,7 @@ import iuic.core;
 
 export namespace iuic::key_map {
 
-constexpr key_code mouse(std::string_view code) {
+consteval key_code mouse(std::string_view code) {
   if (code == "left") {
     return key_code{std::uint8_t{1}};
   } else if (code == "right") {

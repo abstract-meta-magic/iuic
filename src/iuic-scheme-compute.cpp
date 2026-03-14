@@ -13,7 +13,7 @@ static constexpr inline units::upixel
 adapt_to_pixel(const units::ui::adaptive::unit &value, units::upixel psize,
                units::ui::size viewport) {
   return std::visit(
-      [&]<typename type>(type &obj) -> units::pixel {
+      [&]<typename type>(const type &obj) -> units::pixel {
         if constexpr (std::same_as<type, units::percent>) {
           return static_cast<units::upixel>(psize * obj);
         } else if constexpr (std::same_as<type, units::vh>) {
@@ -31,9 +31,10 @@ adapt_to_pixel(const units::ui::adaptive::unit &value, units::upixel psize,
 static constexpr inline units::ui::area
 calc_root_child_area(const layout::measure::result &m, style::value style,
                      units::ui::size viewport) {
+  units::ui::area res{};
 
-  auto width = adapt_to_pixel(m.width, viewport.w, viewport);
-  auto height = adapt_to_pixel(m.width, viewport.h, viewport);
+  res.borderless.w = adapt_to_pixel(m.width, viewport.w, viewport);
+  res.borderless.h = adapt_to_pixel(m.height, viewport.h, viewport);
 
   // border
   auto &shape = style.get_shape();
@@ -44,43 +45,40 @@ calc_root_child_area(const layout::measure::result &m, style::value style,
   auto border_bottom =
       adapt_to_pixel(shape.border.bottom, viewport.h, viewport);
 
-  // margin
-  auto margin_left = adapt_to_pixel(shape.margin.left, viewport.w, viewport);
-  auto margin_right = adapt_to_pixel(shape.margin.right, viewport.w, viewport);
-  auto margin_top = adapt_to_pixel(shape.margin.top, viewport.h, viewport);
-  auto margin_bottom =
-      adapt_to_pixel(shape.margin.bottom, viewport.h, viewport);
+  res.bordered.w = res.borderless.w + border_left + border_left;
+  res.bordered.h = res.borderless.h + border_top + border_bottom;
+  res.borderless.x += border_left;
+  res.borderless.y += border_top;
 
-  return {};
+  return res;
 };
 }; // namespace
 
 namespace iuic::scheme {
-blueprint compute(sketch &sketch, environment::persist &penv) {
-  //
 
-  blueprint b{
-      &sketch.tenv, &penv,
-      sketch.tree.reflect([](const sketch::element &el) -> blueprint::element {
+blueprint compute(sketch &sketch, environment::tmp &tenv,
+                  environment::persist &penv) {
+
+  blueprint blueprint{
+      sketch.reflect([](const sketch::value_t &el) -> blueprint::value_t {
         return {.uid = el.uid, .sid = el.sid, .zorder = el.zorder};
       })};
 
-  layout::measure::tree m{sketch.tree.reflect(
-      [](const sketch::element &el) -> layout::measure::unit {
+  layout::measure::tree m{
+      sketch.reflect([](const sketch::value_t &el) -> layout::measure::unit {
         return {.sid = el.sid};
       })};
 
-  std::println("---beg");
   // need :
   // - reverse bfs
   // - call layout::measure
   {
-    auto range = utils::tree::reverse_bfs_range_for{sketch.tree};
+    auto range = utils::tree::reverse_bfs_range_for{sketch};
 
     for (auto [cur, end] = range.range(); cur != end; ++cur) {
       //
       utils::tree::access_iterator ait{cur};
-      auto bit = utils::tree::shift(b.tree.begin(), cur);
+      auto bit = utils::tree::shift(blueprint.begin(), cur);
       auto chit = utils::tree::childs_of(utils::tree::shift(m.begin(), cur));
 
       std::visit(
@@ -88,8 +86,8 @@ blueprint compute(sketch &sketch, environment::persist &penv) {
             using type = std::remove_cvref_t<decltype(obj)>;
 
             if constexpr (std::same_as<type, const layout::frame *>) {
-              auto res = obj->measure(
-                  layout::measure::frame_utils{sketch.tenv, bit, chit});
+              auto res =
+                  obj->measure(layout::measure::frame_utils{tenv, bit, chit});
 
               auto mit = utils::tree::shift(m.begin(), cur);
 
@@ -99,8 +97,8 @@ blueprint compute(sketch &sketch, environment::persist &penv) {
               } else {
                 utils::tree::access_iterator ait{bit};
 
-                // make all ch discarted
                 ait->meta.set(ait->meta.discarded);
+
                 return;
               }
 
@@ -120,13 +118,13 @@ blueprint compute(sketch &sketch, environment::persist &penv) {
   // - call layout::arrange
   {
 
-    auto root_ch = utils::tree::childs_of(sketch.tree.root());
+    auto root_ch = utils::tree::childs_of(sketch.root());
 
+    units::ui::position pos{0, 0};
     // apply root childs
     for (utils::tree::sentinel end{root_ch}; root_ch != end; ++root_ch) {
-      units::ui::position pos{0, 0};
 
-      auto bit = utils::tree::shift(b.tree.begin(), root_ch);
+      auto bit = utils::tree::shift(blueprint.begin(), root_ch);
       utils::tree::access_iterator ait{bit};
 
       utils::tree::access_iterator mesure_acc{
@@ -135,22 +133,34 @@ blueprint compute(sketch &sketch, environment::persist &penv) {
       auto viewport = penv.external.get_viewport_size();
 
       // make area
-      auto area = calc_root_child_area(mesure_acc->measure,
-                                       sketch.tenv.style.get(mesure_acc->sid),
-                                       viewport);
+      auto area = calc_root_child_area(
+          mesure_acc->measure, tenv.style.get(mesure_acc->sid), viewport);
       // set position
+      auto &shape = tenv.style.get(ait->sid).get_shape();
 
+      pos.y += adapt_to_pixel(shape.margin.top, viewport.h, viewport);
+
+      area.bordered.x += adapt_to_pixel(shape.margin.top, viewport.w, viewport);
+      area.borderless.x +=
+          adapt_to_pixel(shape.margin.top, viewport.w, viewport);
+      area.bordered.y += pos.y;
+      area.borderless.y += pos.y;
+
+      pos.y += area.bordered.h;
+
+      ait->area = area;
       ait->meta.set(ait->meta.applied);
     }
 
-    auto range = utils::tree::bfs_range_for{sketch.tree};
+    auto range = utils::tree::bfs_range_for{sketch};
 
     for (auto [cur, end] = range.range(); cur != end; ++cur) {
 
-      utils::tree::access_iterator ait{cur};
-      auto bit = utils::tree::shift(b.tree.begin(), cur);
+      utils::tree::access_iterator cur_acc{cur};
+      auto bp_acc = utils::tree::access_iterator{
+          utils::tree::shift(blueprint.begin(), cur)};
 
-      if (auto ait = utils::tree::access_iterator{bit};
+      if (auto ait = utils::tree::access_iterator{bp_acc};
           ait->meta.has(ait->meta.discarded)) {
         continue;
       } else if (auto pait =
@@ -161,30 +171,31 @@ blueprint compute(sketch &sketch, environment::persist &penv) {
         continue;
       }
 
-      auto chit = utils::tree::childs_of(utils::tree::shift(m.begin(), cur));
-
       std::visit(
           [&](auto obj) {
             using type = std::remove_cvref_t<decltype(obj)>;
 
             if constexpr (std::same_as<type, const layout::frame *>) {
-              if (not obj->arrange(
-                      layout::arrange::frame_utils{sketch.tenv, bit, chit})) {
-                utils::tree::access_iterator ait{bit};
-                // discard all childs
+              layout::arrange::frame_utils utils{
+                  tenv, bp_acc,
+                  utils::tree::childs_of(
+                      utils::tree::shift(m.begin(), bp_acc))};
+
+              if (not obj->arrange(utils)) {
+                utils::tree::access_iterator ait{bp_acc};
                 ait->meta.set(ait->meta.discarded);
               };
             } else if constexpr (std::same_as<type, const layout::text *>) {
               // obj->arrange(layout::arrange::text_utils{});
             };
 
-            utils::tree::access_iterator ait{bit};
+            utils::tree::access_iterator ait{bp_acc};
             ait->meta.set(ait->meta.arrange);
           },
-          ait->layout);
+          cur_acc->layout);
     }
   }
 
-  return b;
+  return blueprint;
 };
 }; // namespace iuic::scheme

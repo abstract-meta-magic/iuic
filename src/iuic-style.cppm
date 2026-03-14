@@ -132,14 +132,14 @@ struct decoration {
       units::ui::border_radius left;
       units::ui::border_radius right;
     } bottom;
-    units::color_t color;
+    units::color color;
   } border_radius; // decorations
 
   // TOTO : replace to external::bind
   units::ui::background background{units::ui::none{}};
 
-  units::color_t foreground{units::color_t{0, 0, 0, 0}};
-  units::color_t border{units::color_t{0, 0, 0, 0}};
+  units::color foreground{units::color{0, 0, 0, 0}};
+  units::color border{units::color{0, 0, 0, 0}};
 };
 
 enum class position { STATIC, RELATIVE, FIXED, ABSOLUTE, STICKY };

@@ -95,10 +95,8 @@ struct rem {
 };
 // need px,%,rem,vh,vw
 
-struct color_t {
-  static constexpr color_t get_white() noexcept {
-    return {255, 255, 255, 255};
-  };
+struct color {
+  static constexpr color get_white() noexcept { return {255, 255, 255, 255}; };
 
 public:
   std::uint8_t r{0}, g{0}, b{0}, a = {255};
@@ -158,7 +156,7 @@ struct adapt {};
 
 struct [[deprecated("use external::binding")]] image {};
 
-using background = std::variant<none, color_t, image>;
+using background = std::variant<none, color, image>;
 
 struct border_radius {
   // TODO : body

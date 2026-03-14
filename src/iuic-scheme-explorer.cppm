@@ -14,35 +14,52 @@ namespace iuic {
 namespace scheme {
 
 struct base_context {
-  style::value style_of(units::uid);
+  // style::value style_of(units::uid);
 
-  policy::hovered hovered_policy_of(units::uid);
+  // policy::hovered hovered_policy_of(units::uid);
 
-  policy::event event_policy_of(units::uid);
+  // policy::event event_policy_of(units::uid);
 
-  const units::ui::area &area_of(units::uid);
+  // bool has_state(units::uid, state::value);
 
-  bool has_state(units::uid, state::value);
+  units::uid self_uid() const {
+    return (utils::tree::access_iterator{it__})->uid;
+  };
 
-  units::uid self();
+  const units::ui::area &self_area() const {
+    return (utils::tree::access_iterator{it__})->area;
+  };
 
-  units::uid parent_of(units::uid);
+  bool has_state(state::value value) {
+    return penv.state.has(utils::tree::access_iterator{it__}->uid, value);
+  };
 
-  std::vector<units::uid> childs_of(units::uid);
+  style::value self_style() {
+    return tenv.style.get(utils::tree::access_iterator{it__}->sid);
+  };
 
-  std::span<const units::uid> get_selected();
+  // units::uid parent_of(units::uid);
 
-  void reset_selected();
+  // std::vector<units::uid> childs_of(units::uid);
 
-  void select(units::uid);
+  // std::span<const units::uid> get_selected();
 
-  units::ui::position get_pointer_position();
+  // void reset_selected();
 
-  key_code get_key_code();
+  // void select(units::uid);
 
-private:
-  std::vector<units::uid> selected__;
-  // element_tree::base_iterator it;
+  // units::ui::position get_pointer_position();
+
+  // key_code get_key_code();
+
+  base_context(blueprint::base_iterator it, environment::tmp &tenv_,
+               environment::persist &penv_)
+      : it__{it}, tenv{tenv_}, penv{penv_} {};
+
+protected:
+  blueprint::base_iterator it__;
+  environment::tmp &tenv;
+  environment::persist &penv;
 };
 
 export struct frame {
@@ -59,7 +76,9 @@ export struct text {
 namespace eval {
 
 export struct context : base_context {
-
+  context(blueprint::base_iterator it, environment::tmp &tenv_,
+          environment::persist &penv_)
+      : base_context{it, tenv_, penv_} {};
   void attach_state(units::uid uid, state::value);
 };
 
@@ -77,11 +96,26 @@ concept visitor = requires(T obj, context &ctx) { obj(ctx); };
 
 // global scheme eval
 namespace geval {
-export struct context {
+export struct context : base_context {
+  context(blueprint::base_iterator it, environment::tmp &tenv,
+          environment::persist &penv)
+      : base_context{it, tenv, penv} {}
 
-  void set_pointer_position(units::ui::position);
+  void set_key(key_code code) { penv.external.key_code = code; };
 
-  void set_key_code(key_code);
+  void attach_state(units::uid uid, state::value value) {
+    penv.state.attach(uid, value);
+  };
+
+  void detach_state(units::uid uid, state::value value) {
+    penv.state.detach(uid, value);
+  };
+
+  std::span<event::value> events_of(units::uid uid) {
+    return tenv.event.list_of(uid);
+  };
+
+  void event_trigger(event::value value) { event::trigger(value, penv); };
 };
 template <typename T>
 concept visitor = requires(T obj, context &ctx) { obj(ctx); };
@@ -137,24 +171,43 @@ concept visitor = geval::visitor<T> || eval::visitor<T> || reval::visitor<T> ||
 
 export struct explorer {
 
-  void explore(explore::visitor auto &&...visitors) {};
+  void explore(explore::visitor auto &&...visitors) {
 
-  explorer(blueprint &&data_) : data{std::move(data_)} {}
-  explorer(const blueprint &data_) : data{data_} {}
+    auto itrange = utils::tree::bfs_iterator_range_for{
+        data, utils::tree::iterator_type<utils::tree::access_iterator>{}};
 
-  explorer() {};
+    for (auto ait : itrange) {
+      if (not ait->meta.has(ait->meta.discarded)) {
+        (visit(ait, visitors), ...);
+      }
+    }
 
-  explorer &operator=(const blueprint &data_) {
-    data = data_;
-    return *this;
+    (
+        [&]<typename type>(const type &obj) {
+          if constexpr (geval::visitor<type>) {
+            geval::context ctx{{}, tenv, penv};
+            obj(ctx);
+          }
+        }(visitors),
+        ...);
   };
-  explorer &operator=(blueprint &&data_) {
-    std::swap(data, data_);
-    return *this;
+
+  explorer(blueprint &data_, environment::tmp &tenv_,
+           environment::persist &penv_)
+      : data{data_}, tenv{tenv_}, penv{penv_} {}
+
+private:
+  void visit(blueprint::base_iterator it, explore::visitor auto &&visitor) {
+    if constexpr (eval::visitor<decltype(visitor)>) {
+      eval::context ctx{it, tenv, penv};
+      visitor(ctx);
+    }
   };
 
 private:
-  blueprint data;
+  blueprint &data;
+  environment::tmp &tenv;
+  environment::persist &penv;
 };
 
 } // namespace scheme

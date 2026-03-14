@@ -7,6 +7,7 @@ import iuic.underlying;
 import iuic.state;
 import :style;
 import :machine.dispatcher;
+import :key_code;
 
 namespace iuic::environment {
 
@@ -36,31 +37,46 @@ struct persist {
 
     erasure::visited::as_mutable get(units::uid uid) {
       auto [old, cur] = objects.get_buffers();
-      if (cur.contains(uid)) {
-        return erasure::visited::as_mutable{&cur.at(uid)};
-      } else if (old.contains(uid)) {
-        return erasure::visited::as_mutable{&old.at(uid)};
+      if (auto it = cur.find(uid); it != cur.end()) {
+        auto &obj = it->second;
+        return erasure::visited::as_mutable{
+            erasure::visited{obj.data, obj.type}};
+      } else if (auto it = old.find(uid); it != old.end()) {
+        auto &obj = it->second;
+        return erasure::visited::as_mutable{
+            erasure::visited{obj.data, obj.type}};
       }
       return {nullptr};
     };
 
-    void reserve(units::uid uid) {};
+    void reserve(units::uid uid, const erasure::type *type) {
+      auto [old, cur] = objects.get_buffers();
 
-    template <typename T> void reserve(units::uid uid) {};
+      if (not cur.contains(uid)) {
+        cur.insert({uid, {nullptr, type}});
+      }
+    };
+
+    template <typename T> void reserve(units::uid uid) {
+      reserve(uid, erasure::type::from<T>());
+    };
 
     void construct(units::uid uid, auto &&call) {
       auto [old, cur] = objects.get_buffers();
-      if (not cur.contains(uid) && not old.contains(uid)) {
-        using ftaits = typename erasure::func_type<decltype(call)>::traits;
+      if (cur.contains(uid) && cur.at(uid).data == nullptr) {
+        using ftaits =
+            typename decltype(iuic::erasure::func_type{call})::traits;
 
         if constexpr (not std::same_as<typename ftaits::return_t, void>) {
           using type = std::remove_cvref_t<typename ftaits::return_t>;
 
           auto *otype = erasure::type::from<type>();
 
-          auto *ptr = new type{call()};
+          auto &obj = cur.at(uid);
 
-          cur.insert(uid, {ptr, otype});
+          if (obj.type == otype) {
+            obj.data = new type{call()};
+          }
         }
       }
     };
@@ -85,10 +101,11 @@ struct persist {
       auto [old, cur] = objects.get_buffers();
 
       if (cur.contains(uid)) {
-        if (cur.at(uid).type == otype) {
-          return object::alive_this_type;
+        if (auto &obj = cur.at(uid); obj.type == otype) {
+          return obj.data ? object::alive_this_type : object::reserve_this_type;
         } else {
-          return object::alive_other_type;
+          return obj.data ? object::alive_other_type
+                          : object::reserve_other_type;
         }
       } else if (old.contains(uid)) {
         if (old.at(uid).type == otype) {
@@ -120,6 +137,10 @@ struct persist {
       auto [old, cur] = data.get_buffers();
 
       data.move_forward(uid); // auto check old value
+
+      if (not cur.contains(uid)) {
+        cur.insert({uid, {}});
+      }
 
       cur.at(uid).insert(value);
     };
@@ -224,6 +245,8 @@ struct persist {
     void set_pointer_position(units::ui::position ppos) {
       old_pointer_position = std::exchange(pointer_position, ppos);
     };
+
+    key_code key_code;
 
   private:
     units::ui::position old_pointer_position;

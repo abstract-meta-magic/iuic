@@ -23,12 +23,8 @@ concept builder_block_cpt = std::invocable<T, builder &>;
 struct builder_base {
 protected:
   using insert_iterator =
-      utils::tree::insert_iterator<utils::tree::type::dfs,
-                                   utils::tree::node_type<sketch::element>>;
-  using root_iterator =
-      utils::tree::root_iterator<utils::tree::node_type<sketch::element>>;
-  using sibling_iterator =
-      utils::tree::root_iterator<utils::tree::node_type<sketch::element>>;
+      utils::tree::insert_iterator<utils::tree::order_type::dfs,
+                                   utils::tree::node_type<sketch::value_t>>;
 
 public:
   struct unit_t {
@@ -242,16 +238,18 @@ namespace iuic::scheme {
 struct director {
   director(environment::persist &penv_) : penv{penv_} {};
 
-  sketch make(std::invocable<builder &> auto &&call) {
+  std::pair<sketch, environment::tmp>
+  make(std::invocable<builder &> auto &&call) {
     environment::tmp tenv;
-    utils::tree::node_type<sketch::element> tree;
+    utils::tree::node_type<sketch::value_t> tree;
 
     builder b{tenv, penv, {tree.root()}};
 
     call(b);
 
-    return sketch{
-        tenv, utils::tree::move_iterator{tree.begin(), utils::tree::tags::bfs}};
+    return {sketch{utils::tree::move_iterator{tree.begin(),
+                                              utils::tree::tags::bfs}},
+            std::move(tenv)};
   };
 
 private:
@@ -267,7 +265,7 @@ void builder_element_interface::frame(style::sid sid_,
   auto ait = utils::tree::access_iterator{it};
 
   auto nit = it.at(
-      sketch::element{.layout = &layout,
+      sketch::value_t{.layout = &layout,
                       .uid = ait ? ait->uid : 0,
                       .sid = sid_,
                       .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
@@ -283,7 +281,7 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
   auto ait = utils::tree::access_iterator{it};
 
   auto nit = it.at(
-      sketch::element{.layout = &layout_,
+      sketch::value_t{.layout = &layout_,
                       .uid = uid_,
                       .sid = sid_,
                       .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
@@ -437,9 +435,9 @@ style::sid builder_style_interface::make(style::sid sid, style::transform &&) {
   return sid;
 };
 
-style::sid builder_style_interface::make(style::sid sid, style::decoration &&) {
-  // TODO : Impl unknown
-  return sid;
+style::sid builder_style_interface::make(style::sid sid,
+                                         style::decoration &&decoration) {
+  return tenv.style.override(sid, std::move(decoration));
 };
 
 // ---- IMPL [memory] ----
@@ -460,14 +458,14 @@ void builder_memory_interface::try_visit(units::uid uid,
 
 void builder_memory_interface::init_if_not(units::uid uid,
                                            std::invocable<> auto &&call) {
-  using traits = typename erasure::func_type<decltype(call)>::traits;
+  using traits = typename decltype(erasure::func_type{call})::traits;
 
   auto state =
       penv.object.state<std::remove_cvref_t<typename traits::return_t>>(uid);
 
   if (state == penv.object.reserve_this_type ||
       state == penv.object.reserve_undefined_type) {
-    penv.object.construct(std::forward<decltype(call)>(call));
+    penv.object.construct(uid, std::forward<decltype(call)>(call));
   } else if (state == penv.object.alive_this_type ||
              state == penv.object.outdated_this_type) {
     penv.object.update_lifetime(uid);

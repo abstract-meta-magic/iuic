@@ -13,7 +13,7 @@ namespace iuic {
 
 export namespace layout {
 struct utils_base {
-  utils_base(environment::tmp &tenv_, scheme::blueprint::iterator it_)
+  utils_base(environment::tmp &tenv_, scheme::blueprint::base_iterator it_)
       : tenv{tenv_}, it{it_} {}
 
   style::sid self() { return utils::tree::access_iterator{it}->sid; };
@@ -32,7 +32,7 @@ struct utils_base {
 
 protected:
   environment::tmp &tenv;
-  scheme::blueprint::iterator it;
+  scheme::blueprint::base_iterator it;
 };
 
 namespace measure {
@@ -51,7 +51,7 @@ struct unit {
 using tree = utils::tree::flat_bfs_type<unit>;
 
 struct frame_utils : public utils_base {
-  frame_utils(environment::tmp &tenv, scheme::blueprint::iterator it,
+  frame_utils(environment::tmp &tenv, scheme::blueprint::base_iterator it,
               measure::tree::sibling_iterator ch_)
       : utils_base{tenv, it}, ch{ch_} {};
 
@@ -77,7 +77,7 @@ struct text_utils : public utils_base {};
 
 namespace arrange {
 struct frame_utils : public utils_base {
-  frame_utils(environment::tmp &tenv, scheme::blueprint::iterator it,
+  frame_utils(environment::tmp &tenv, scheme::blueprint::base_iterator it,
               measure::tree::sibling_iterator ch_)
       : utils_base{tenv, it}, ch{ch_} {};
 
@@ -100,6 +100,10 @@ struct frame_utils : public utils_base {
       ait->area = a;
       ait->meta.set(ait->meta.applied);
     }
+  };
+
+  const units::ui::area &self_size() const {
+    return (utils::tree::access_iterator{it})->area;
   };
 
 private:

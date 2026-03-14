@@ -97,11 +97,11 @@ template <erasure::as_pure_type T> struct flat_bfs_type {
   flat_bfs_type() {};
 
   template <typename Other>
-  flat_bfs_type(tree::copy_iterator<type::bfs, Other> it){};
+  flat_bfs_type(tree::copy_iterator<order_type::bfs, Other> it){};
 
   template <typename Other>
-  flat_bfs_type(tree::move_iterator<type::bfs, Other> it) {
-    using op = insert_op<type::bfs>;
+  flat_bfs_type(tree::move_iterator<order_type::bfs, Other> it) {
+    using op = insert_op<order_type::bfs>;
 
     op op_{op::ins};
 
@@ -132,10 +132,6 @@ template <erasure::as_pure_type T> struct flat_bfs_type {
         break;
       }
       case op::end: {
-        for (auto &hnode : hierarchy__) {
-          std::println("p:{} , chb :{} , che :{}", hnode.parent, hnode.ch_begin,
-                       hnode.ch_end);
-        }
         return;
       }
       }
@@ -368,40 +364,39 @@ struct const_sibling_iterator<flat_bfs_type<T>>
 
   const_sibling_iterator &operator++() {
     if (base::valid()) {
-      auto pnode =
-          base::owner->hierarchy__[base::owner->hierarchy__[base::self].parent];
-
-      if (pnode.ch_end < base::self) {
+      if (base::owner->hierarchy__[base::self + 1].parent ==
+          base::owner->hierarchy__[base::self].parent) {
         ++base::self;
       } else {
-        base::self = base::base::container_t::npos;
-      }
+        base::self = base::container_t::npos;
+      };
     }
+
     return *this;
   }
 
   const_sibling_iterator &operator--() {
     if (base::valid()) {
-      base::self = base::owner->hierarchy__[base::self].left;
+      if (base::owner->hierarchy__[base::self - 1].parent ==
+          base::owner->hierarchy__[base::self].parent) {
+        --base::self;
+      } else {
+        base::self = base::container_t::npos;
+      };
     }
+
     return *this;
   }
 
   const_sibling_iterator operator++(int) {
-    if (base::valid()) {
-      return {base::ownel->hierarchy__[base::self].right, base::oner};
-    } else {
-      return {};
-    }
-    return *this;
+
+    // IMPL
+    return {};
   }
 
   const_sibling_iterator operator--(int) {
-    if (this->valid()) {
-      return {base::ownel->hierarchy__[base::self].left, base::oner};
-    } else {
-      return {};
-    }
+    // IMPL
+    return {};
   }
 };
 
@@ -459,13 +454,13 @@ base_iterator<flat_bfs_type<T>> shift(base_iterator<flat_bfs_type<T>> lhs,
                                       base_iterator<flat_bfs_type<U>> rhs) {
   // UNSAFE
   // NEED TO CHECK HIERARCHY
-  struct shift_iterator : decltype(lhs), decltype(rhs) {
-    operator decltype(lhs)() {
+  struct : decltype(lhs), decltype(rhs) {
+    decltype(lhs) value() {
       return decltype(lhs){decltype(rhs)::self, decltype(lhs)::owner};
     };
   } shift{lhs, rhs};
 
-  return shift;
+  return shift.value();
 };
 
 template <typename T>
@@ -484,6 +479,8 @@ template <typename T> struct reverse_bfs_range_for<flat_bfs_type<T>> {
         : base{i, owner} {}
 
     iterator &operator++() { return --base::self, *this; };
+
+    T &operator*() { return base::owner->data__[base::self]; };
   };
 
   reverse_bfs_range_for(const flat_bfs_type<T> &container)
@@ -511,6 +508,8 @@ template <typename T> struct bfs_range_for<flat_bfs_type<T>> {
         : base{i, owner} {}
 
     iterator &operator++() { return ++base::self, *this; };
+
+    T &operator*() { return base::owner->data__[base::self]; };
   };
 
   bfs_range_for(const flat_bfs_type<T> &container)
@@ -527,8 +526,51 @@ private:
   iterator begin_;
 };
 
+template <typename T, template <typename> typename Iterator>
+struct bfs_iterator_range_for<flat_bfs_type<T>, Iterator> {
+  struct iterator : base_iterator<flat_bfs_type<T>> {
+    using base = base_iterator<flat_bfs_type<T>>;
+    using iterator_t = Iterator<flat_bfs_type<T>>;
+
+    iterator(base b) : base{b} {};
+
+    iterator(base::index_t i, typename base::container_t *owner)
+        : base{i, owner} {}
+
+    iterator &operator++() { return ++base::self, *this; };
+
+    iterator_t operator*() { return base{*this}; };
+  };
+
+  bfs_iterator_range_for(const flat_bfs_type<T> &container)
+      : begin_{0, const_cast<typename iterator::base::container_t *>(
+                      std::addressof(container))} {}
+
+  bfs_iterator_range_for(const flat_bfs_type<T> &container,
+                         iterator_type<Iterator>)
+      : begin_{0, const_cast<typename iterator::base::container_t *>(
+                      std::addressof(container))} {}
+
+  iterator begin() { return begin_; };
+
+  sentinel<iterator> end() { return {}; };
+
+  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
+
+private:
+  iterator begin_;
+};
+
 template <typename T>
 bfs_range_for(const flat_bfs_type<T> &) -> bfs_range_for<flat_bfs_type<T>>;
+
+template <typename T>
+bfs_iterator_range_for(const flat_bfs_type<T> &)
+    -> bfs_iterator_range_for<flat_bfs_type<T>>;
+
+template <typename T, template <typename> typename Iterator>
+bfs_iterator_range_for(const flat_bfs_type<T> &, iterator_type<Iterator>)
+    -> bfs_iterator_range_for<flat_bfs_type<T>, Iterator>;
 
 template <typename T>
 reverse_bfs_range_for(const flat_bfs_type<T> &)

@@ -47,530 +47,530 @@ using namespace iuic;
 
 namespace latte {
 
-struct rosewater : public units::color_t {
+struct rosewater : public units::color {
   explicit constexpr rosewater(std::uint8_t alpha = 255)
-      : units::color_t{220, 138, 120, alpha} {}
+      : units::color{220, 138, 120, alpha} {}
 };
 
-struct flamingo : public units::color_t {
+struct flamingo : public units::color {
   explicit constexpr flamingo(std::uint8_t alpha = 255)
-      : units::color_t{221, 120, 120, alpha} {}
+      : units::color{221, 120, 120, alpha} {}
 };
 
-struct pink : public units::color_t {
+struct pink : public units::color {
   explicit constexpr pink(std::uint8_t alpha = 255)
-      : units::color_t{234, 118, 203, alpha} {}
+      : units::color{234, 118, 203, alpha} {}
 };
 
-struct mauve : public units::color_t {
+struct mauve : public units::color {
   explicit constexpr mauve(std::uint8_t alpha = 255)
-      : units::color_t{136, 57, 239, alpha} {}
+      : units::color{136, 57, 239, alpha} {}
 };
 
-struct red : public units::color_t {
+struct red : public units::color {
   explicit constexpr red(std::uint8_t alpha = 255)
-      : units::color_t{210, 15, 57, alpha} {}
+      : units::color{210, 15, 57, alpha} {}
 };
 
-struct maroon : public units::color_t {
+struct maroon : public units::color {
   explicit constexpr maroon(std::uint8_t alpha = 255)
-      : units::color_t{230, 69, 83, alpha} {}
+      : units::color{230, 69, 83, alpha} {}
 };
 
-struct peach : public units::color_t {
+struct peach : public units::color {
   explicit constexpr peach(std::uint8_t alpha = 255)
-      : units::color_t{254, 100, 11, alpha} {}
+      : units::color{254, 100, 11, alpha} {}
 };
 
-struct yellow : public units::color_t {
+struct yellow : public units::color {
   explicit constexpr yellow(std::uint8_t alpha = 255)
-      : units::color_t{223, 142, 29, alpha} {}
+      : units::color{223, 142, 29, alpha} {}
 };
 
-struct green : public units::color_t {
+struct green : public units::color {
   explicit constexpr green(std::uint8_t alpha = 255)
-      : units::color_t{64, 160, 43, alpha} {}
+      : units::color{64, 160, 43, alpha} {}
 };
 
-struct teal : public units::color_t {
+struct teal : public units::color {
   explicit constexpr teal(std::uint8_t alpha = 255)
-      : units::color_t{23, 146, 153, alpha} {}
+      : units::color{23, 146, 153, alpha} {}
 };
 
-struct sky : public units::color_t {
+struct sky : public units::color {
   explicit constexpr sky(std::uint8_t alpha = 255)
-      : units::color_t{4, 165, 229, alpha} {}
+      : units::color{4, 165, 229, alpha} {}
 };
 
-struct sapphire : public units::color_t {
+struct sapphire : public units::color {
   explicit constexpr sapphire(std::uint8_t alpha = 255)
-      : units::color_t{32, 159, 181, alpha} {}
+      : units::color{32, 159, 181, alpha} {}
 };
 
-struct blue : public units::color_t {
+struct blue : public units::color {
   explicit constexpr blue(std::uint8_t alpha = 255)
-      : units::color_t{30, 102, 245, alpha} {}
+      : units::color{30, 102, 245, alpha} {}
 };
 
-struct lavender : public units::color_t {
+struct lavender : public units::color {
   explicit constexpr lavender(std::uint8_t alpha = 255)
-      : units::color_t{114, 135, 253, alpha} {}
+      : units::color{114, 135, 253, alpha} {}
 };
 
-struct text : public units::color_t {
+struct text : public units::color {
   explicit constexpr text(std::uint8_t alpha = 255)
-      : units::color_t{76, 79, 105, alpha} {}
+      : units::color{76, 79, 105, alpha} {}
 };
 
-struct sub_text_0 : public units::color_t {
+struct sub_text_0 : public units::color {
   explicit constexpr sub_text_0(std::uint8_t alpha = 255)
-      : units::color_t{108, 111, 133, alpha} {}
+      : units::color{108, 111, 133, alpha} {}
 };
 
-struct sub_text_1 : public units::color_t {
+struct sub_text_1 : public units::color {
   explicit constexpr sub_text_1(std::uint8_t alpha = 255)
-      : units::color_t{92, 95, 119, alpha} {}
+      : units::color{92, 95, 119, alpha} {}
 };
 
-struct overlay_0 : public units::color_t {
+struct overlay_0 : public units::color {
   explicit constexpr overlay_0(std::uint8_t alpha = 255)
-      : units::color_t{156, 160, 176, alpha} {}
+      : units::color{156, 160, 176, alpha} {}
 };
 
-struct overlay_1 : public units::color_t {
+struct overlay_1 : public units::color {
   explicit constexpr overlay_1(std::uint8_t alpha = 255)
-      : units::color_t{140, 143, 161, alpha} {}
+      : units::color{140, 143, 161, alpha} {}
 };
 
-struct overlay_2 : public units::color_t {
+struct overlay_2 : public units::color {
   explicit constexpr overlay_2(std::uint8_t alpha = 255)
-      : units::color_t{124, 127, 147, alpha} {}
+      : units::color{124, 127, 147, alpha} {}
 };
 
-struct surface_0 : public units::color_t {
+struct surface_0 : public units::color {
   explicit constexpr surface_0(std::uint8_t alpha = 255)
-      : units::color_t{204, 208, 218, alpha} {}
+      : units::color{204, 208, 218, alpha} {}
 };
 
-struct surface_1 : public units::color_t {
+struct surface_1 : public units::color {
   explicit constexpr surface_1(std::uint8_t alpha = 255)
-      : units::color_t{188, 192, 204, alpha} {}
+      : units::color{188, 192, 204, alpha} {}
 };
 
-struct surface_2 : public units::color_t {
+struct surface_2 : public units::color {
   explicit constexpr surface_2(std::uint8_t alpha = 255)
-      : units::color_t{172, 176, 190, alpha} {}
+      : units::color{172, 176, 190, alpha} {}
 };
 
-struct base : public units::color_t {
+struct base : public units::color {
   explicit constexpr base(std::uint8_t alpha = 255)
-      : units::color_t{239, 241, 245, alpha} {}
+      : units::color{239, 241, 245, alpha} {}
 };
 
-struct mantle : public units::color_t {
+struct mantle : public units::color {
   explicit constexpr mantle(std::uint8_t alpha = 255)
-      : units::color_t{230, 233, 239, alpha} {}
+      : units::color{230, 233, 239, alpha} {}
 };
 
-struct crust : public units::color_t {
+struct crust : public units::color {
   explicit constexpr crust(std::uint8_t alpha = 255)
-      : units::color_t{220, 224, 232, alpha} {}
+      : units::color{220, 224, 232, alpha} {}
 };
 }; // namespace latte
 namespace frappe {
 
-struct rosewater : public units::color_t {
+struct rosewater : public units::color {
   explicit constexpr rosewater(std::uint8_t alpha = 255)
-      : units::color_t{242, 213, 207, alpha} {}
+      : units::color{242, 213, 207, alpha} {}
 };
 
-struct flamingo : public units::color_t {
+struct flamingo : public units::color {
   explicit constexpr flamingo(std::uint8_t alpha = 255)
-      : units::color_t{238, 190, 190, alpha} {}
+      : units::color{238, 190, 190, alpha} {}
 };
 
-struct pink : public units::color_t {
+struct pink : public units::color {
   explicit constexpr pink(std::uint8_t alpha = 255)
-      : units::color_t{244, 184, 228, alpha} {}
+      : units::color{244, 184, 228, alpha} {}
 };
 
-struct mauve : public units::color_t {
+struct mauve : public units::color {
   explicit constexpr mauve(std::uint8_t alpha = 255)
-      : units::color_t{202, 158, 230, alpha} {}
+      : units::color{202, 158, 230, alpha} {}
 };
 
-struct red : public units::color_t {
+struct red : public units::color {
   explicit constexpr red(std::uint8_t alpha = 255)
-      : units::color_t{231, 130, 132, alpha} {}
+      : units::color{231, 130, 132, alpha} {}
 };
 
-struct maroon : public units::color_t {
+struct maroon : public units::color {
   explicit constexpr maroon(std::uint8_t alpha = 255)
-      : units::color_t{234, 153, 156, alpha} {}
+      : units::color{234, 153, 156, alpha} {}
 };
 
-struct peach : public units::color_t {
+struct peach : public units::color {
   explicit constexpr peach(std::uint8_t alpha = 255)
-      : units::color_t{239, 159, 118, alpha} {}
+      : units::color{239, 159, 118, alpha} {}
 };
 
-struct yellow : public units::color_t {
+struct yellow : public units::color {
   explicit constexpr yellow(std::uint8_t alpha = 255)
-      : units::color_t{229, 200, 144, alpha} {}
+      : units::color{229, 200, 144, alpha} {}
 };
 
-struct green : public units::color_t {
+struct green : public units::color {
   explicit constexpr green(std::uint8_t alpha = 255)
-      : units::color_t{166, 209, 137, alpha} {}
+      : units::color{166, 209, 137, alpha} {}
 };
 
-struct teal : public units::color_t {
+struct teal : public units::color {
   explicit constexpr teal(std::uint8_t alpha = 255)
-      : units::color_t{129, 200, 190, alpha} {}
+      : units::color{129, 200, 190, alpha} {}
 };
 
-struct sky : public units::color_t {
+struct sky : public units::color {
   explicit constexpr sky(std::uint8_t alpha = 255)
-      : units::color_t{153, 209, 219, alpha} {}
+      : units::color{153, 209, 219, alpha} {}
 };
 
-struct sapphire : public units::color_t {
+struct sapphire : public units::color {
   explicit constexpr sapphire(std::uint8_t alpha = 255)
-      : units::color_t{133, 193, 220, alpha} {}
+      : units::color{133, 193, 220, alpha} {}
 };
 
-struct blue : public units::color_t {
+struct blue : public units::color {
   explicit constexpr blue(std::uint8_t alpha = 255)
-      : units::color_t{140, 170, 238, alpha} {}
+      : units::color{140, 170, 238, alpha} {}
 };
 
-struct lavender : public units::color_t {
+struct lavender : public units::color {
   explicit constexpr lavender(std::uint8_t alpha = 255)
-      : units::color_t{186, 187, 241, alpha} {}
+      : units::color{186, 187, 241, alpha} {}
 };
 
-struct text : public units::color_t {
+struct text : public units::color {
   explicit constexpr text(std::uint8_t alpha = 255)
-      : units::color_t{198, 208, 245, alpha} {}
+      : units::color{198, 208, 245, alpha} {}
 };
 
-struct sub_text_0 : public units::color_t {
+struct sub_text_0 : public units::color {
   explicit constexpr sub_text_0(std::uint8_t alpha = 255)
-      : units::color_t{165, 173, 206, alpha} {}
+      : units::color{165, 173, 206, alpha} {}
 };
 
-struct sub_text_1 : public units::color_t {
+struct sub_text_1 : public units::color {
   explicit constexpr sub_text_1(std::uint8_t alpha = 255)
-      : units::color_t{181, 191, 226, alpha} {}
+      : units::color{181, 191, 226, alpha} {}
 };
 
-struct overlay_0 : public units::color_t {
+struct overlay_0 : public units::color {
   explicit constexpr overlay_0(std::uint8_t alpha = 255)
-      : units::color_t{115, 121, 148, alpha} {}
+      : units::color{115, 121, 148, alpha} {}
 };
 
-struct overlay_1 : public units::color_t {
+struct overlay_1 : public units::color {
   explicit constexpr overlay_1(std::uint8_t alpha = 255)
-      : units::color_t{131, 139, 167, alpha} {}
+      : units::color{131, 139, 167, alpha} {}
 };
 
-struct overlay_2 : public units::color_t {
+struct overlay_2 : public units::color {
   explicit constexpr overlay_2(std::uint8_t alpha = 255)
-      : units::color_t{148, 156, 187, alpha} {}
+      : units::color{148, 156, 187, alpha} {}
 };
 
-struct surface_0 : public units::color_t {
+struct surface_0 : public units::color {
   explicit constexpr surface_0(std::uint8_t alpha = 255)
-      : units::color_t{65, 69, 89, alpha} {}
+      : units::color{65, 69, 89, alpha} {}
 };
 
-struct surface_1 : public units::color_t {
+struct surface_1 : public units::color {
   explicit constexpr surface_1(std::uint8_t alpha = 255)
-      : units::color_t{81, 87, 109, alpha} {}
+      : units::color{81, 87, 109, alpha} {}
 };
 
-struct surface_2 : public units::color_t {
+struct surface_2 : public units::color {
   explicit constexpr surface_2(std::uint8_t alpha = 255)
-      : units::color_t{98, 104, 128, alpha} {}
+      : units::color{98, 104, 128, alpha} {}
 };
 
-struct base : public units::color_t {
+struct base : public units::color {
   explicit constexpr base(std::uint8_t alpha = 255)
-      : units::color_t{48, 52, 70, alpha} {}
+      : units::color{48, 52, 70, alpha} {}
 };
 
-struct mantle : public units::color_t {
+struct mantle : public units::color {
   explicit constexpr mantle(std::uint8_t alpha = 255)
-      : units::color_t{41, 44, 60, alpha} {}
+      : units::color{41, 44, 60, alpha} {}
 };
 
-struct crust : public units::color_t {
+struct crust : public units::color {
   explicit constexpr crust(std::uint8_t alpha = 255)
-      : units::color_t{35, 38, 52, alpha} {}
+      : units::color{35, 38, 52, alpha} {}
 };
 }; // namespace frappe
 namespace macchiato {
 
-struct rosewater : public units::color_t {
+struct rosewater : public units::color {
   explicit constexpr rosewater(std::uint8_t alpha = 255)
-      : units::color_t{244, 219, 214, alpha} {}
+      : units::color{244, 219, 214, alpha} {}
 };
 
-struct flamingo : public units::color_t {
+struct flamingo : public units::color {
   explicit constexpr flamingo(std::uint8_t alpha = 255)
-      : units::color_t{240, 198, 198, alpha} {}
+      : units::color{240, 198, 198, alpha} {}
 };
 
-struct pink : public units::color_t {
+struct pink : public units::color {
   explicit constexpr pink(std::uint8_t alpha = 255)
-      : units::color_t{245, 189, 230, alpha} {}
+      : units::color{245, 189, 230, alpha} {}
 };
 
-struct mauve : public units::color_t {
+struct mauve : public units::color {
   explicit constexpr mauve(std::uint8_t alpha = 255)
-      : units::color_t{198, 160, 246, alpha} {}
+      : units::color{198, 160, 246, alpha} {}
 };
 
-struct red : public units::color_t {
+struct red : public units::color {
   explicit constexpr red(std::uint8_t alpha = 255)
-      : units::color_t{237, 135, 150, alpha} {}
+      : units::color{237, 135, 150, alpha} {}
 };
 
-struct maroon : public units::color_t {
+struct maroon : public units::color {
   explicit constexpr maroon(std::uint8_t alpha = 255)
-      : units::color_t{238, 153, 160, alpha} {}
+      : units::color{238, 153, 160, alpha} {}
 };
 
-struct peach : public units::color_t {
+struct peach : public units::color {
   explicit constexpr peach(std::uint8_t alpha = 255)
-      : units::color_t{245, 169, 127, alpha} {}
+      : units::color{245, 169, 127, alpha} {}
 };
 
-struct yellow : public units::color_t {
+struct yellow : public units::color {
   explicit constexpr yellow(std::uint8_t alpha = 255)
-      : units::color_t{238, 212, 159, alpha} {}
+      : units::color{238, 212, 159, alpha} {}
 };
 
-struct green : public units::color_t {
+struct green : public units::color {
   explicit constexpr green(std::uint8_t alpha = 255)
-      : units::color_t{166, 218, 149, alpha} {}
+      : units::color{166, 218, 149, alpha} {}
 };
 
-struct teal : public units::color_t {
+struct teal : public units::color {
   explicit constexpr teal(std::uint8_t alpha = 255)
-      : units::color_t{139, 213, 202, alpha} {}
+      : units::color{139, 213, 202, alpha} {}
 };
 
-struct sky : public units::color_t {
+struct sky : public units::color {
   explicit constexpr sky(std::uint8_t alpha = 255)
-      : units::color_t{145, 215, 227, alpha} {}
+      : units::color{145, 215, 227, alpha} {}
 };
 
-struct sapphire : public units::color_t {
+struct sapphire : public units::color {
   explicit constexpr sapphire(std::uint8_t alpha = 255)
-      : units::color_t{125, 196, 228, alpha} {}
+      : units::color{125, 196, 228, alpha} {}
 };
 
-struct blue : public units::color_t {
+struct blue : public units::color {
   explicit constexpr blue(std::uint8_t alpha = 255)
-      : units::color_t{138, 173, 244, alpha} {}
+      : units::color{138, 173, 244, alpha} {}
 };
 
-struct lavender : public units::color_t {
+struct lavender : public units::color {
   explicit constexpr lavender(std::uint8_t alpha = 255)
-      : units::color_t{183, 189, 248, alpha} {}
+      : units::color{183, 189, 248, alpha} {}
 };
 
-struct text : public units::color_t {
+struct text : public units::color {
   explicit constexpr text(std::uint8_t alpha = 255)
-      : units::color_t{202, 211, 245, alpha} {}
+      : units::color{202, 211, 245, alpha} {}
 };
 
-struct sub_text_0 : public units::color_t {
+struct sub_text_0 : public units::color {
   explicit constexpr sub_text_0(std::uint8_t alpha = 255)
-      : units::color_t{165, 173, 203, alpha} {}
+      : units::color{165, 173, 203, alpha} {}
 };
 
-struct sub_text_1 : public units::color_t {
+struct sub_text_1 : public units::color {
   explicit constexpr sub_text_1(std::uint8_t alpha = 255)
-      : units::color_t{184, 192, 224, alpha} {}
+      : units::color{184, 192, 224, alpha} {}
 };
 
-struct overlay_0 : public units::color_t {
+struct overlay_0 : public units::color {
   explicit constexpr overlay_0(std::uint8_t alpha = 255)
-      : units::color_t{110, 115, 141, alpha} {}
+      : units::color{110, 115, 141, alpha} {}
 };
 
-struct overlay_1 : public units::color_t {
+struct overlay_1 : public units::color {
   explicit constexpr overlay_1(std::uint8_t alpha = 255)
-      : units::color_t{128, 135, 162, alpha} {}
+      : units::color{128, 135, 162, alpha} {}
 };
 
-struct overlay_2 : public units::color_t {
+struct overlay_2 : public units::color {
   explicit constexpr overlay_2(std::uint8_t alpha = 255)
-      : units::color_t{147, 154, 183, alpha} {}
+      : units::color{147, 154, 183, alpha} {}
 };
 
-struct surface_0 : public units::color_t {
+struct surface_0 : public units::color {
   explicit constexpr surface_0(std::uint8_t alpha = 255)
-      : units::color_t{54, 58, 79, alpha} {}
+      : units::color{54, 58, 79, alpha} {}
 };
 
-struct surface_1 : public units::color_t {
+struct surface_1 : public units::color {
   explicit constexpr surface_1(std::uint8_t alpha = 255)
-      : units::color_t{73, 77, 100, alpha} {}
+      : units::color{73, 77, 100, alpha} {}
 };
 
-struct surface_2 : public units::color_t {
+struct surface_2 : public units::color {
   explicit constexpr surface_2(std::uint8_t alpha = 255)
-      : units::color_t{91, 96, 120, alpha} {}
+      : units::color{91, 96, 120, alpha} {}
 };
 
-struct base : public units::color_t {
+struct base : public units::color {
   explicit constexpr base(std::uint8_t alpha = 255)
-      : units::color_t{36, 39, 58, alpha} {}
+      : units::color{36, 39, 58, alpha} {}
 };
 
-struct mantle : public units::color_t {
+struct mantle : public units::color {
   explicit constexpr mantle(std::uint8_t alpha = 255)
-      : units::color_t{30, 32, 48, alpha} {}
+      : units::color{30, 32, 48, alpha} {}
 };
 
-struct crust : public units::color_t {
+struct crust : public units::color {
   explicit constexpr crust(std::uint8_t alpha = 255)
-      : units::color_t{24, 25, 38, alpha} {}
+      : units::color{24, 25, 38, alpha} {}
 };
 }; // namespace macchiato
 namespace mocha {
 
-struct rosewater : public units::color_t {
+struct rosewater : public units::color {
   explicit constexpr rosewater(std::uint8_t alpha = 255)
-      : units::color_t{245, 224, 220, alpha} {}
+      : units::color{245, 224, 220, alpha} {}
 };
 
-struct flamingo : public units::color_t {
+struct flamingo : public units::color {
   explicit constexpr flamingo(std::uint8_t alpha = 255)
-      : units::color_t{242, 205, 205, alpha} {}
+      : units::color{242, 205, 205, alpha} {}
 };
 
-struct pink : public units::color_t {
+struct pink : public units::color {
   explicit constexpr pink(std::uint8_t alpha = 255)
-      : units::color_t{245, 194, 231, alpha} {}
+      : units::color{245, 194, 231, alpha} {}
 };
 
-struct mauve : public units::color_t {
+struct mauve : public units::color {
   explicit constexpr mauve(std::uint8_t alpha = 255)
-      : units::color_t{203, 166, 247, alpha} {}
+      : units::color{203, 166, 247, alpha} {}
 };
 
-struct red : public units::color_t {
+struct red : public units::color {
   explicit constexpr red(std::uint8_t alpha = 255)
-      : units::color_t{243, 139, 168, alpha} {}
+      : units::color{243, 139, 168, alpha} {}
 };
 
-struct maroon : public units::color_t {
+struct maroon : public units::color {
   explicit constexpr maroon(std::uint8_t alpha = 255)
-      : units::color_t{235, 160, 172, alpha} {}
+      : units::color{235, 160, 172, alpha} {}
 };
 
-struct peach : public units::color_t {
+struct peach : public units::color {
   explicit constexpr peach(std::uint8_t alpha = 255)
-      : units::color_t{250, 179, 135, alpha} {}
+      : units::color{250, 179, 135, alpha} {}
 };
 
-struct yellow : public units::color_t {
+struct yellow : public units::color {
   explicit constexpr yellow(std::uint8_t alpha = 255)
-      : units::color_t{249, 226, 175, alpha} {}
+      : units::color{249, 226, 175, alpha} {}
 };
 
-struct green : public units::color_t {
+struct green : public units::color {
   explicit constexpr green(std::uint8_t alpha = 255)
-      : units::color_t{166, 227, 175, alpha} {}
+      : units::color{166, 227, 175, alpha} {}
 };
 
-struct teal : public units::color_t {
+struct teal : public units::color {
   explicit constexpr teal(std::uint8_t alpha = 255)
-      : units::color_t{116, 226, 213, alpha} {}
+      : units::color{116, 226, 213, alpha} {}
 };
 
-struct sky : public units::color_t {
+struct sky : public units::color {
   explicit constexpr sky(std::uint8_t alpha = 255)
-      : units::color_t{137, 220, 235, alpha} {}
+      : units::color{137, 220, 235, alpha} {}
 };
 
-struct sapphire : public units::color_t {
+struct sapphire : public units::color {
   explicit constexpr sapphire(std::uint8_t alpha = 255)
-      : units::color_t{116, 199, 236, alpha} {}
+      : units::color{116, 199, 236, alpha} {}
 };
 
-struct blue : public units::color_t {
+struct blue : public units::color {
   explicit constexpr blue(std::uint8_t alpha = 255)
-      : units::color_t{137, 180, 250, alpha} {}
+      : units::color{137, 180, 250, alpha} {}
 };
 
-struct lavender : public units::color_t {
+struct lavender : public units::color {
   explicit constexpr lavender(std::uint8_t alpha = 255)
-      : units::color_t{180, 190, 254, alpha} {}
+      : units::color{180, 190, 254, alpha} {}
 };
 
-struct text : public units::color_t {
+struct text : public units::color {
   explicit constexpr text(std::uint8_t alpha = 255)
-      : units::color_t{205, 214, 244, alpha} {}
+      : units::color{205, 214, 244, alpha} {}
 };
 
-struct sub_text_0 : public units::color_t {
+struct sub_text_0 : public units::color {
   explicit constexpr sub_text_0(std::uint8_t alpha = 255)
-      : units::color_t{166, 173, 200, alpha} {}
+      : units::color{166, 173, 200, alpha} {}
 };
 
-struct sub_text_1 : public units::color_t {
+struct sub_text_1 : public units::color {
   explicit constexpr sub_text_1(std::uint8_t alpha = 255)
-      : units::color_t{186, 194, 222, alpha} {}
+      : units::color{186, 194, 222, alpha} {}
 };
 
-struct overlay_0 : public units::color_t {
+struct overlay_0 : public units::color {
   explicit constexpr overlay_0(std::uint8_t alpha = 255)
-      : units::color_t{108, 112, 134, alpha} {}
+      : units::color{108, 112, 134, alpha} {}
 };
 
-struct overlay_1 : public units::color_t {
+struct overlay_1 : public units::color {
   explicit constexpr overlay_1(std::uint8_t alpha = 255)
-      : units::color_t{127, 132, 156, alpha} {}
+      : units::color{127, 132, 156, alpha} {}
 };
 
-struct overlay_2 : public units::color_t {
+struct overlay_2 : public units::color {
   explicit constexpr overlay_2(std::uint8_t alpha = 255)
-      : units::color_t{147, 153, 178, alpha} {}
+      : units::color{147, 153, 178, alpha} {}
 };
 
-struct surface_0 : public units::color_t {
+struct surface_0 : public units::color {
   explicit constexpr surface_0(std::uint8_t alpha = 255)
-      : units::color_t{49, 50, 68, alpha} {}
+      : units::color{49, 50, 68, alpha} {}
 };
 
-struct surface_1 : public units::color_t {
+struct surface_1 : public units::color {
   explicit constexpr surface_1(std::uint8_t alpha = 255)
-      : units::color_t{69, 71, 90, alpha} {}
+      : units::color{69, 71, 90, alpha} {}
 };
 
-struct surface_2 : public units::color_t {
+struct surface_2 : public units::color {
   explicit constexpr surface_2(std::uint8_t alpha = 255)
-      : units::color_t{88, 91, 112, alpha} {}
+      : units::color{88, 91, 112, alpha} {}
 };
 
-struct base : public units::color_t {
+struct base : public units::color {
   explicit constexpr base(std::uint8_t alpha = 255)
-      : units::color_t{30, 30, 46, alpha} {}
+      : units::color{30, 30, 46, alpha} {}
 };
 
-struct mantle : public units::color_t {
+struct mantle : public units::color {
   explicit constexpr mantle(std::uint8_t alpha = 255)
-      : units::color_t{24, 24, 37, alpha} {}
+      : units::color{24, 24, 37, alpha} {}
 };
 
-struct crust : public units::color_t {
+struct crust : public units::color {
   explicit constexpr crust(std::uint8_t alpha = 255)
-      : units::color_t{17, 17, 27, alpha} {}
+      : units::color{17, 17, 27, alpha} {}
 };
 } // namespace mocha
 }; // namespace kitty_kit::color::catppuccin
@@ -658,18 +658,20 @@ void button(builder &b, std::invocable<> auto &&callback,
   auto uid = b.uid.make(policy::unique{}, "kitty-kit-button", anchor);
   auto sid = b.style.make(style::button);
 
-  b.frame(uid, sid, layout_, [&](auto &b) {
+  b.frame(uid, sid, layout_, [&](scheme::builder &b) {
     using callback_type = std::remove_cvref_t<decltype(callback)>;
 
-    // b.memory.persist(uid);
+    b.memory.persist(uid, std::type_identity<callback_type>{});
 
-    // b.memory.init_if_not(
-    //    uid, [&]() { return std::forward<decltype(callback)>(callback); });
+    b.memory.init_if_not(
+        uid, [&]() { return std::forward<decltype(callback)>(callback); });
 
     b.policy.hovered(policy::hovered::propagate);
 
     if (b.state.has(uid, iuic::state::base::hovered)) {
-      // b.style.override(b.style.make(style));
+      b.style.override(
+          b.style.make(sid, iuic::style::decoration{.background{units::color{
+                                color::catppuccin::macchiato::surface_1{}}}}));
     }
 
     b.event(
@@ -681,9 +683,6 @@ void button(builder &b, std::invocable<> auto &&callback,
           });
         },
         uid);
-    b.element.frame(uid, sid, layout_, [](auto &) {});
-    b.element.frame(uid, sid, layout_, [](auto &) {});
-    b.element.frame(uid, sid, layout_, [](auto &) {});
   });
 };
 
@@ -703,9 +702,8 @@ void text_button(builder &b, std::string_view text,
 
     b.memory.persist<callback_type>(uid);
 
-    // b.memory.init_if_not(
-    //    uid, [&]() { return std::forward<decltype(callback)>(callback);
-    //    });
+    b.memory.init_if_not(
+        uid, [&]() { return std::forward<decltype(callback)>(callback); });
 
     b.policy.hovered(policy::hovered::propagate);
 
