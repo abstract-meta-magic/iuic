@@ -149,7 +149,9 @@ struct builder_style_interface : protected virtual builder_base {
                           insert_iterator it_, struct builder &builder_)
       : builder_base{tenv_, penv_, it_, builder_} {}
 
-  void override(style::sid sid);
+  style::sid self();
+
+  style::sid override(style::sid sid);
 
   style::sid make(style::sid sid);
 
@@ -329,32 +331,32 @@ units::uid builder_uid_interface::make(policy::unique, const std::string &str,
   ss << anchor.value;
   ss << "unique--";
   ss << str;
-  utils::tree::sibling_iterator sit{it};
+  utils::tree::sibling_iterator sit{utils::tree::childs_of(it)};
   utils::tree::root_iterator rit{it};
 
   if (++rit) {
     ss << rit->uid;
-  }
+  } else {
+    // set root uid ?
+  };
 
-  if (auto inner = sit--) {
+  if (auto inner = sit; --inner) {
     ss << inner->uid;
   }
 
   std::size_t counter{0};
 
-  for (; sit.valid(); --sit) {
+  for (; sit.valid(); ++sit) {
     ++counter;
   }
 
   ss << counter;
 
-  for (; rit.valid(); ++rit) {
-    ++counter;
-  }
+  std::size_t hash = std::hash<std::string>{}(ss.str());
 
-  ss << counter;
+  // std::println("hash : {}", hash);
 
-  return std::hash<std::string>{}(ss.str());
+  return hash;
 };
 
 units::uid builder_uid_interface::self() const noexcept {
@@ -409,8 +411,12 @@ void builder_event_interface::operator()(event::callback_cpt auto &&call,
 };
 // ---- IMPL [style] ----
 
-void builder_style_interface::override(style::sid sid) {
-  utils::tree::access_iterator{it}->sid = sid;
+style::sid builder_style_interface::self() {
+  return utils::tree::access_iterator{it}->sid;
+};
+
+style::sid builder_style_interface::override(style::sid sid) {
+  return utils::tree::access_iterator{it}->sid = sid;
 };
 
 style::sid builder_style_interface::make(style::sid sid) {
@@ -425,14 +431,13 @@ style::sid builder_style_interface::make(const style::decl &s) {
   return tenv.style.make(s);
 };
 
-style::sid builder_style_interface::make(style::sid sid, style::shape &&) {
-  // TODO : Impl unknown
-  return sid;
+style::sid builder_style_interface::make(style::sid sid, style::shape &&shape) {
+  return tenv.style.override(sid, std::move(shape));
 };
 
-style::sid builder_style_interface::make(style::sid sid, style::transform &&) {
-  // TODO : Impl unknown
-  return sid;
+style::sid builder_style_interface::make(style::sid sid,
+                                         style::transform &&transform) {
+  return tenv.style.override(sid, std::move(transform));
 };
 
 style::sid builder_style_interface::make(style::sid sid,

@@ -135,11 +135,9 @@ struct decoration {
     units::color color;
   } border_radius; // decorations
 
-  // TOTO : replace to external::bind
-  units::ui::background background{units::ui::none{}};
-
-  units::color foreground{units::color{0, 0, 0, 0}};
-  units::color border{units::color{0, 0, 0, 0}};
+  units::ui::fill background{units::ui::none{}};
+  units::ui::fill foreground{units::ui::none{}};
+  units::ui::fill border{units::ui::none{}};
 };
 
 enum class position { STATIC, RELATIVE, FIXED, ABSOLUTE, STICKY };
@@ -161,23 +159,20 @@ struct transform {
   float scale;
 };
 
-struct text {
-  units::pixel height;
-
-  font::cref font;
-
-  // other ...
-};
-
 // static - unlimited
 struct advence {
-  float grow{0}; // static
+  struct {
+    float grow{0};
 
-  float shrink{0}; // static
+    float shrink{0};
+  } flex;
 
-  units::upixel ephemeral_value{14};
+  struct {
+    units::pixel height;
 
-  text text;
+    font::cref font;
+
+  } text;
 };
 
 struct decl {

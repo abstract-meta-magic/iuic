@@ -18,13 +18,56 @@ struct app {
   int counter{0};
 };
 
+struct index_range {
+  struct iterator_base {
+
+    iterator_base(std::size_t index_) : index{index_} {}
+
+    friend bool operator==(const index_range::iterator_base &lhs,
+                           const index_range::iterator_base &rhs);
+
+  protected:
+    std::size_t index{0};
+  };
+  struct sentinel : iterator_base {
+    sentinel(std::size_t index) : iterator_base{index} {}
+  };
+
+  struct iterator : iterator_base {
+
+    iterator &operator++() { return ++index, *this; }
+
+    std::size_t operator*() { return index; }
+
+    iterator(std::size_t index) : iterator_base{index} {}
+  };
+
+  iterator begin() { return {begin_}; };
+
+  sentinel end() { return {end_}; };
+
+  index_range(std::size_t end) : begin_{0}, end_{end} {}
+  index_range(std::size_t begin, std::size_t end) : begin_{begin}, end_{end} {}
+
+private:
+  std::size_t begin_{0};
+  std::size_t end_{0};
+};
+
+bool operator==(const index_range::iterator_base &lhs,
+                const index_range::iterator_base &rhs) {
+  return lhs.index >= rhs.index;
+}
+
 void main_window(iuic::scheme::builder &b, app &app) {
-  for (std::size_t i{0}; i < 120; ++i) {
-    kitty_kit::button(b, [&]() {
-      //
-      std::println("heheheh");
-    });
-  }
+  using namespace kitty_kit;
+
+  containers::boxes::left_top(b, [&](auto &b) {
+    for (auto i : index_range{3}) {
+      buttons::box(b, [&]() { std::println("hah"); });
+    }
+    buttons::box(b, [&]() { app.quit = true; });
+  });
 };
 
 constexpr iuic::style::font::decl base{};
@@ -76,6 +119,10 @@ int main() {
 #endif
 
 #if 1
+
+  Image image = LoadImage("test/res/image.png");
+
+  std::println("failure image load");
   // RAYLIB BASE
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   InitWindow(600, 800, "iuic-test");
@@ -145,8 +192,8 @@ int main() {
           auto area = ctx.self_area();
 
           if (inner(area, {GetMouseX(), GetMouseY()})) {
-
-            sel.insert(ctx.self_uid());
+            std::size_t uid = ctx.self_uid();
+            sel.insert(uid);
           }
 
           if (ctx.has_state(state::base::hovered)) {
@@ -154,7 +201,7 @@ int main() {
           };
         },
         [&](iuic::scheme::geval::context &ctx) {
-          if (IsMouseButtonDown(0)) {
+          if (IsMouseButtonPressed(0)) {
             ctx.set_key(key_map::mouse("left"));
             std::println("-------------------");
           } else {
@@ -165,20 +212,14 @@ int main() {
             ctx.attach_state(uid, state::base::hovered);
           }
 
-          std::size_t c{0};
           for (auto uid : ev) {
 
             for (auto e : ctx.events_of(uid)) {
               ctx.event_trigger(e);
             }
-
-            if (++c >= 120) {
-            }
           }
-
-          // std::println("counter {}", c);
         },
-        [](iuic::scheme::eval::context &ctx) {
+        [&](iuic::scheme::eval::context &ctx) {
           auto area = ctx.self_area();
 
           auto style = ctx.self_style();
@@ -187,8 +228,22 @@ int main() {
               [&]<typename type>(const type &obj) {
                 if constexpr (std::same_as<type, units::color>) {
                   Color color{obj.r, obj.g, obj.b, obj.a};
+                  DrawRectangle(area.bordered.x, area.bordered.y,
+                                area.bordered.w, area.bordered.h, color);
+                }
+              },
+              style.get_decoration().border);
+
+          std::visit(
+              [&]<typename type>(const type &obj) {
+                if constexpr (std::same_as<type, units::color>) {
+                  Color color{obj.r, obj.g, obj.b, obj.a};
                   DrawRectangle(area.borderless.x, area.borderless.y,
                                 area.borderless.w, area.borderless.h, color);
+                  Rectangle rect{.x = (float)area.borderless.x,
+                                 .y = (float)area.borderless.y,
+                                 .width = (float)area.borderless.w,
+                                 .height = (float)area.borderless.h};
                 }
               },
               style.get_decoration().background);
@@ -203,6 +258,7 @@ int main() {
     EndDrawing();
   }
 
+  UnloadImage(image);
   CloseWindow();
 
 #endif

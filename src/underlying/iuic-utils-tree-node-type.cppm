@@ -98,23 +98,11 @@ template <typename T> struct base_iterator<node_type<T>> {
   using rvalue_t = T &&;
   using pointer_t = T *;
 
-  iterator_state inspect() const {
-    if (self) {
-      return self->value ? iterator_state::valid
-             : self->parent == container_t::node::root_wall_ptr()
-                 ? iterator_state::root
-                 : iterator_state::invalid;
-    };
-    return iterator_state::invalid;
-  };
-
-  bool valid() const { return inspect() == iterator_state::valid; };
+  bool valid() const { return self ? self->value != nullptr : false; };
 
   operator bool() const { return valid(); };
 
-  bool operator==(const sentinel<node_type<T>> &) {
-    return inspect() == iterator_state::valid;
-  };
+  bool operator==(const sentinel<base_iterator> &) { return valid(); };
 
   base_iterator() : self{nullptr} {}
 
@@ -297,8 +285,14 @@ struct insert_iterator<order_type::dfs, node_type<T>>
     using ptr_t = base::pointer_t;
     using value_t = base::value_t;
 
-    if (base::inspect() == iterator_state::invalid)
+    if (not base::self) {
       return base{};
+    }
+
+    if (not base::self->value &&
+        base::self->parent != tree_node<T>::root_wall_ptr()) {
+      return base{};
+    }
 
     ptr_t ptr{nullptr};
     node *new_node{nullptr};
@@ -361,6 +355,7 @@ struct copy_iterator<order_type::dfs, node_type<T>>
   const T &get();
 };
 
+// TODO : Rework this iterator
 template <typename T>
 struct move_iterator<order_type::bfs, node_type<T>>
     : base_iterator<node_type<T>> {
@@ -430,7 +425,7 @@ struct move_iterator<order_type::bfs, node_type<T>>
     };
   };
 
-  T &&get() { return std::move(*base::self->value); };
+  T &&get() { return std::move(*cur[index]->value); };
 
 private:
   std::size_t index{0};
@@ -520,7 +515,7 @@ move_iterator(base_iterator<node_type<T>>, tags::bfs_t)
 
 template <typename T>
 sibling_iterator<node_type<T>> childs_of(base_iterator<node_type<T>> it) {
-  if (it) {
+  if (it.self) {
     return {it.self->child};
   }
   return {nullptr};

@@ -23,7 +23,8 @@ struct base_context {
   // bool has_state(units::uid, state::value);
 
   units::uid self_uid() const {
-    return (utils::tree::access_iterator{it__})->uid;
+    auto &element = *(utils::tree::access_iterator{it__});
+    return element.uid;
   };
 
   const units::ui::area &self_area() const {

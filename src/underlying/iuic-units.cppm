@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 export module iuic.underlying:units;
 import std;
+import :external;
 
 export namespace iuic::units {
 
@@ -154,9 +155,7 @@ struct inherit {};
 
 struct adapt {};
 
-struct [[deprecated("use external::binding")]] image {};
-
-using background = std::variant<none, color, image>;
+using fill = std::variant<none, color, external::binding>;
 
 struct border_radius {
   // TODO : body
@@ -183,4 +182,17 @@ struct aspect_ratio {
 };
 
 }; // namespace ui
+
+namespace literals {
+consteval pixel operator""_px(unsigned long long value) {
+  return pixel{static_cast<pixel>(value)};
+}
+
+consteval upixel operator""_upx(unsigned long long value) {
+  return upixel{static_cast<upixel>(value)};
+}
+
+// NOLINTEND
+// operator ""_upx();
+}; // namespace literals
 }; // namespace iuic::units

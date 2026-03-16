@@ -627,10 +627,12 @@ constexpr iuic::style::decl button{[]() {
 
   res.shape.min_size.height = iuic::units::vh{3};
   res.shape.min_size.width = iuic::units::vh{18};
-  res.shape.margin.top = iuic::units::upixel{20};
+  res.shape.margin.top = iuic::units::percent{2};
   res.shape.margin.bottom = iuic::units::upixel{20};
-  res.shape.margin.left = iuic::units::upixel{20};
+  res.shape.margin.left = iuic::units::percent{4};
   res.shape.margin.right = iuic::units::upixel{20};
+
+  res.decoration.border = color::catppuccin::macchiato::surface_1{};
 
   res.decoration.background = color::catppuccin::macchiato::surface_2{};
 
@@ -651,14 +653,34 @@ inline std::atomic<theme_e> theme{theme_e::latte};
 using namespace iuic;
 using builder = iuic::scheme::builder;
 
-void button(builder &b, std::invocable<> auto &&callback,
-            utils::anchor anchor = {}) {
+namespace containers {
+namespace boxes {
+void right_top(builder &b, std::invocable<builder &> auto &&call) { call(b); };
+void left_top(builder &b, std::invocable<builder &> auto &&call) { call(b); };
+
+// short
+void lt(builder &b, std::invocable<builder &> auto &&call) {
+  left_top(b, std::forward<decltype(call)>(call));
+};
+void rt(builder &b, std::invocable<builder &> auto &&call) {
+  right_top(b, std::forward<decltype(call)>(call));
+};
+}; // namespace boxes
+}; // namespace containers
+
+namespace buttons {
+
+void box(builder &b, std::invocable<> auto &&callback,
+         utils::anchor anchor = {}) {
   static layout::simple_box layout_;
 
   auto uid = b.uid.make(policy::unique{}, "kitty-kit-button", anchor);
   auto sid = b.style.make(style::button);
 
+  // std::println("maked uid {}", uid);
+
   b.frame(uid, sid, layout_, [&](scheme::builder &b) {
+    // std::println("inner uid {}", uid);
     using callback_type = std::remove_cvref_t<decltype(callback)>;
 
     b.memory.persist(uid, std::type_identity<callback_type>{});
@@ -669,9 +691,21 @@ void button(builder &b, std::invocable<> auto &&callback,
     b.policy.hovered(policy::hovered::propagate);
 
     if (b.state.has(uid, iuic::state::base::hovered)) {
-      b.style.override(
-          b.style.make(sid, iuic::style::decoration{.background{units::color{
-                                color::catppuccin::macchiato::surface_1{}}}}));
+
+      b.style.override(b.style.make(
+          b.style.self(),
+          iuic::style::decoration{
+              .background = color::catppuccin::macchiato::surface_1{},
+              .border = color::catppuccin::macchiato::surface_0{}}));
+
+      auto shape = style::button.shape;
+
+      shape.border.right = iuic::units::upixel{12};
+      shape.border.left = iuic::units::upixel{12};
+      shape.border.top = iuic::units::upixel{12};
+      shape.border.bottom = iuic::units::upixel{12};
+
+      b.style.override(b.style.make(b.style.self(), std::move(shape)));
     }
 
     b.event(
@@ -688,8 +722,8 @@ void button(builder &b, std::invocable<> auto &&callback,
 
 void machine_use(builder &b);
 
-void text_button(builder &b, std::string_view text,
-                 std::invocable<> auto &&callback, utils::anchor anchor = {}) {
+void text(builder &b, std::string_view text, std::invocable<> auto &&callback,
+          utils::anchor anchor = {}) {
   static layout::short_text text_layout;
   static layout::text_button button_layout;
   struct BaseD {};
@@ -708,9 +742,10 @@ void text_button(builder &b, std::string_view text,
     b.policy.hovered(policy::hovered::propagate);
 
     if (b.state.has(uid, base::hovered)) {
-      b.style.override(
-          b.style.make(sid, iuic::style::decoration{.background{
-                                color::catppuccin::macchiato::surface_0{}}}));
+      b.style.override(b.style.make(
+          sid, iuic::style::decoration{
+                   .background{color::catppuccin::macchiato::surface_1{}},
+                   .border{color::catppuccin::macchiato::surface_0{}}}));
     }
 
     b.state.machine.use(proto);
@@ -734,4 +769,5 @@ void text_button(builder &b, std::string_view text,
     b.element.frame(uid, sid, button_layout, [](auto &) {});
   });
 }
+} // namespace buttons
 }; // namespace kitty_kit
