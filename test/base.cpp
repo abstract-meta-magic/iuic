@@ -64,7 +64,7 @@ void main_window(iuic::scheme::builder &b, app &app) {
 
   containers::boxes::left_top(b, [&](auto &b) {
     for (auto i : index_range{3}) {
-      buttons::box(b, [&]() { std::println("hah"); });
+      buttons::box(b, [&, i]() { std::println("hah {}", i); });
     }
     buttons::box(b, [&]() { app.quit = true; });
   });
@@ -153,6 +153,7 @@ int main() {
       return "Kitty kit gl binding";
     };
   };
+
   std::shared_ptr<text::fontset> base_font = text::fontset{}.bind(
       kitty_kit::style::font_base,
       text::glyph::atlas{std::unique_ptr<text::glyph::decoder>{new d{}},
@@ -176,82 +177,63 @@ int main() {
     static constexpr auto in = [](units::ui::position,
                                   units::ui::rect) -> bool { return true; };
 
-    std::set<units::uid> sel;
-    std::set<units::uid> ev;
+    units::ui::position pointer{GetMouseX(), GetMouseY()};
 
-    ctx.scheme.explore(
-        [&](scheme::eval::context &ctx) {
-          auto inner = [](const units::ui::area &area,
-                          units::ui::position pointer) -> bool {
-            return pointer.x >= area.bordered.x &&
-                   pointer.x <= area.bordered.x + area.bordered.w &&
-                   pointer.y >= area.bordered.y &&
-                   pointer.y <= area.bordered.y + area.bordered.h;
-          };
+    auto in__ = [=](const units::ui::rect area) {
+      return pointer.x >= area.x && pointer.x <= area.x + area.w &&
+             pointer.y >= area.y && pointer.y <= area.y + area.h;
+    };
 
-          auto area = ctx.self_area();
+    for (auto el : ctx.scheme.ranges.level_order()) {
+      ctx.scheme.event.list(el);
+      auto &area = ctx.scheme.props.area(el);
 
-          if (inner(area, {GetMouseX(), GetMouseY()})) {
-            std::size_t uid = ctx.self_uid();
-            sel.insert(uid);
+      if (in__(area.bordered)) {
+        ctx.scheme.state.attach(el, state::base::hovered);
+      }
+    };
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+      ctx.scheme.global.set_key_code(key_map::mouse("left"));
+      for (auto el : ctx.scheme.ranges.level_order()) {
+        if (ctx.scheme.state.has(el, state::base::hovered)) {
+          for (auto &e : ctx.scheme.event.list(el)) {
+            ctx.scheme.event.trigger(e);
           }
+        }
+      }
+    } else {
+      ctx.scheme.global.set_key_code({});
+    }
 
-          if (ctx.has_state(state::base::hovered)) {
-            ev.insert(ctx.self_uid());
-          };
-        },
-        [&](iuic::scheme::geval::context &ctx) {
-          if (IsMouseButtonPressed(0)) {
-            ctx.set_key(key_map::mouse("left"));
-            std::println("-------------------");
-          } else {
-            ctx.set_key({});
-          }
-
-          for (auto uid : sel) {
-            ctx.attach_state(uid, state::base::hovered);
-          }
-
-          for (auto uid : ev) {
-
-            for (auto e : ctx.events_of(uid)) {
-              ctx.event_trigger(e);
-            }
-          }
-        },
-        [&](iuic::scheme::eval::context &ctx) {
-          auto area = ctx.self_area();
-
-          auto style = ctx.self_style();
-
-          std::visit(
-              [&]<typename type>(const type &obj) {
-                if constexpr (std::same_as<type, units::color>) {
-                  Color color{obj.r, obj.g, obj.b, obj.a};
-                  DrawRectangle(area.bordered.x, area.bordered.y,
-                                area.bordered.w, area.bordered.h, color);
-                }
-              },
-              style.get_decoration().border);
-
-          std::visit(
-              [&]<typename type>(const type &obj) {
-                if constexpr (std::same_as<type, units::color>) {
-                  Color color{obj.r, obj.g, obj.b, obj.a};
-                  DrawRectangle(area.borderless.x, area.borderless.y,
-                                area.borderless.w, area.borderless.h, color);
-                  Rectangle rect{.x = (float)area.borderless.x,
-                                 .y = (float)area.borderless.y,
-                                 .width = (float)area.borderless.w,
-                                 .height = (float)area.borderless.h};
-                }
-              },
-              style.get_decoration().background);
-        });
-
-    // std::cout << "GO" << std::endl;
     BeginDrawing();
     ClearBackground(WHITE);
+
+    for (auto el : ctx.scheme.ranges.level_order()) {
+      auto style = ctx.scheme.props.style(el);
+      auto &area = ctx.scheme.props.area(el);
+      auto &shape = style.get_shape();
+      auto &decor = style.get_decoration();
+
+      std::visit(
+          [&]<typename type>(const type &obj) {
+            if constexpr (std::same_as<type, units::color>) {
+              DrawRectangle(area.bordered.x, area.bordered.y, area.bordered.w,
+                            area.bordered.h, {obj.r, obj.g, obj.b, obj.a});
+            }
+          },
+          decor.border);
+
+      std::visit(
+          [&]<typename type>(const type &obj) {
+            if constexpr (std::same_as<type, units::color>) {
+              DrawRectangle(area.borderless.x, area.borderless.y,
+                            area.borderless.w, area.borderless.h,
+                            {obj.r, obj.g, obj.b, obj.a});
+            }
+          },
+          decor.background);
+    }
 
     DrawFPS(0, 0);
 

@@ -20,7 +20,7 @@ template <typename T> struct tree_node {
 
 export namespace iuic::utils::tree {
 
-template <erasure::as_pure_type T> struct node_type {
+template <erasure::is_pure_type T> struct node_type {
 private:
   using node = tree_node<T>;
 
@@ -30,18 +30,17 @@ public:
   using access_iterator = access_iterator<node_type>;
   using const_access_iterator = const_access_iterator<node_type>;
   using root_iterator = root_iterator<node_type>;
-  using const_root_iterator = const_root_iterator<node_type>;
   using sibling_iterator = sibling_iterator<node_type>;
-  using const_sibling_iterator = const_sibling_iterator<node_type>;
-  using insert_iterator = insert_iterator<order_type::dfs, node_type>;
+  using insert_iterator = insert_iterator<node_type>;
+  using move_iterator = move_iterator<node_type>;
   friend base_iterator;
+  friend root_iterator;
+  friend sibling_iterator;
   friend access_iterator;
   friend const_access_iterator;
-  friend root_iterator;
-  friend const_root_iterator;
-  friend sibling_iterator;
-  friend const_sibling_iterator;
+  friend move_iterator;
   friend insert_iterator;
+
   // ----- ITERATORS ----- //
 
   // can be nullptr
@@ -102,7 +101,9 @@ template <typename T> struct base_iterator<node_type<T>> {
 
   operator bool() const { return valid(); };
 
-  bool operator==(const sentinel<base_iterator> &) { return valid(); };
+  bool operator!=(const sentinel<base_iterator> &) { return valid(); };
+
+  bool operator==(const sentinel<base_iterator> &) { return not valid(); };
 
   base_iterator() : self{nullptr} {}
 
@@ -128,17 +129,29 @@ struct access_iterator<node_type<T>> : public base_iterator<node_type<T>> {
 template <typename T>
 struct const_access_iterator<node_type<T>>
     : public base_iterator<node_type<T>> {
-
   using base = base_iterator<node_type<T>>;
 
-  const base::pointer_t operator->() { return base::self->value; };
+  const base::value_t *operator->() { return base::self->value; };
 
   const base::lvalue_t operator*() { return *base::self->value; };
 };
 
 template <typename T>
-struct root_iterator<node_type<T>> : public access_iterator<node_type<T>> {
-  using base = access_iterator<node_type<T>>;
+struct move_iterator<node_type<T>> : public base_iterator<node_type<T>> {
+  using base = base_iterator<node_type<T>>;
+
+  move_iterator(base b) : base{b} {}
+
+  move_iterator() {}
+  // TODO : need ptr to rvalue
+  base::pointer_t operator->() { return base::self->value; };
+
+  base::rvalue_t operator*() { return std::move(*base::self->value); };
+};
+
+template <typename T>
+struct root_iterator<node_type<T>> : public base_iterator<node_type<T>> {
+  using base = base_iterator<node_type<T>>;
 
   root_iterator &operator++() {
     if (base::valid()) {
@@ -160,34 +173,10 @@ struct root_iterator<node_type<T>> : public access_iterator<node_type<T>> {
 };
 
 template <typename T>
-struct const_root_iterator<node_type<T>>
-    : public const_access_iterator<node_type<T>> {
-  using base = access_iterator<node_type<T>>;
+struct sibling_iterator<node_type<T>> : base_iterator<node_type<T>> {
+  using base = base_iterator<node_type<T>>;
 
-  const_root_iterator &operator++() {
-    if (base::valid()) {
-      base::self = base::self->parent;
-    }
-
-    return *this;
-  }
-
-  const_root_iterator operator++(int) {
-    if (base::valide()) {
-      auto *ret{base::self};
-      base::self = base::self->parent;
-      return ret;
-    } else {
-      return {};
-    };
-  }
-};
-
-template <typename T>
-struct sibling_iterator<node_type<T>> : access_iterator<node_type<T>> {
-  using base = access_iterator<node_type<T>>;
-
-  sibling_iterator(base::base b) : base{b} {}
+  sibling_iterator(base b) : base{b} {}
   sibling_iterator() : base{nullptr} {}
 
   sibling_iterator &operator++() {
@@ -202,7 +191,7 @@ struct sibling_iterator<node_type<T>> : access_iterator<node_type<T>> {
     if (base::valid()) {
       auto *ret = base::self;
       base::self = base::self->right;
-      return typename base::base{ret};
+      return base{ret};
     } else {
       return {};
     }
@@ -220,7 +209,7 @@ struct sibling_iterator<node_type<T>> : access_iterator<node_type<T>> {
     if (base::valid()) {
       auto *ret = base::self;
       base::self = base::self->left;
-      return typename base::base{ret};
+      return base{ret};
     } else {
       return {};
     }
@@ -228,50 +217,7 @@ struct sibling_iterator<node_type<T>> : access_iterator<node_type<T>> {
 };
 
 template <typename T>
-struct const_sibling_iterator<node_type<T>>
-    : const_access_iterator<node_type<T>> {
-  using base = access_iterator<node_type<T>>;
-
-  const_sibling_iterator &operator++() {
-    if (base::valid()) {
-      base::self = base::self->right;
-    }
-
-    return *this;
-  }
-
-  const_sibling_iterator operator++(int) {
-    if (base::valid()) {
-      auto *ret = base::self;
-      base::self = base::self->right;
-      return ret;
-    } else {
-      return {};
-    }
-  }
-
-  const_sibling_iterator &operator--() {
-    if (base::valid()) {
-      base::self = base::self->left;
-    }
-
-    return *this;
-  }
-
-  const_sibling_iterator operator--(int) {
-    if (base::valid()) {
-      auto *ret = base::self;
-      base::self = base::self->left;
-      return ret;
-    } else {
-      return {};
-    }
-  }
-};
-
-template <typename T>
-struct insert_iterator<order_type::dfs, node_type<T>>
-    : base_iterator<node_type<T>> {
+struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
   using base = base_iterator<node_type<T>>;
 
   insert_iterator(base b, tags::dfs_t = {}) : base{b} {}
@@ -326,158 +272,22 @@ struct insert_iterator<order_type::dfs, node_type<T>>
 
   void at(const T &);
 
-  void to(T &&);
-  void to(const T &);
+  // use at
+  // insert_iterator &operator=(const T &);
 
-  // before
-  // after
-};
-
-template <typename T>
-struct copy_iterator<order_type::bfs, node_type<T>>
-    : base_iterator<node_type<T>> {
-  using base = base_iterator<node_type<T>>;
-  copy_iterator(base b, tags::bfs_t = {}) : base{b} {}
-
-  void advance(insert_op<order_type::bfs> &op);
-
-  const T &get();
-};
-
-template <typename T>
-struct copy_iterator<order_type::dfs, node_type<T>>
-    : base_iterator<node_type<T>> {
-  using base = base_iterator<node_type<T>>;
-  copy_iterator(base b, tags::dfs_t = {}) : base{b} {}
-
-  void advance(insert_op<order_type::dfs> &op);
-
-  const T &get();
-};
-
-// TODO : Rework this iterator
-template <typename T>
-struct move_iterator<order_type::bfs, node_type<T>>
-    : base_iterator<node_type<T>> {
-  using base = base_iterator<node_type<T>>;
-  move_iterator(base b, tags::bfs_t = {}) : base{b} {
-    if (base::valid()) {
-      for (auto *c = base::self; c;) {
-        cur.push_back(c);
-        c = c->right;
-      }
-
-      for (auto *ch = base::self->child; ch;) {
-        next.push_back(ch);
-        ch = ch->right;
-      }
-    }
-  }
-
-  void advance(insert_op<order_type::bfs> &op_) {
-    using op = insert_op<order_type::bfs>;
-    switch (op_) {
-
-    case op::ins: {
-      if (cur.size() != ++index) {
-        // check sep
-        auto *r = cur[index - 1]->right;
-        if (r == nullptr) {
-          op_ = op::sep;
-          break;
-        }
-      } else {
-        // check
-        cur = std::move(next);
-        next.clear();
-        index = 0;
-        if (cur.empty()) {
-          op_ = op::sep;
-        } else {
-          op_ = op::deep;
-        }
-        break;
-      }
-    };
-    case op::sep: {
-      if (cur.empty()) {
-        op_ = op::end;
-        return;
-      }
-    };
-    case op::deep: {
-    };
-    default: {
-      auto *n = cur[index];
-
-      int chc{0};
-      for (auto *ch = n->child; ch;) {
-        next.push_back(ch);
-        ch = ch->right;
-        ++chc;
-      }
-
-      op_ = op::ins;
-    }
-    case op::end: {
-      break;
-    };
-    };
-  };
-
-  T &&get() { return std::move(*cur[index]->value); };
-
-private:
-  std::size_t index{0};
-  std::vector<tree_node<typename base::value_t> *> cur;
-  std::vector<tree_node<typename base::value_t> *> next;
-};
-
-template <typename T>
-struct move_iterator<order_type::dfs, node_type<T>>
-    : base_iterator<node_type<T>> {
-  using base = base_iterator<node_type<T>>;
-  move_iterator(base b, tags::dfs_t = {}) : base{b} {}
-
-  insert_op<order_type::dfs> op();
-
-  void advance(insert_op<order_type::dfs> &op_) {
-    using op = insert_op<order_type::dfs>;
-
-    switch (op_) {
-    case op::to: {
-    }
-    case insert_op<order_type::dfs>::at: {
-      if (base::self->child) {
-        base::self = base::self->child;
-        op_ = op::at;
-      } else if (base::self->left) {
-        base::self = base::self->left;
-        op_ = op::to;
-      } else {
-        op_ = op::ret;
-      }
-      break;
-    }
-    case insert_op<order_type::dfs>::ret: {
-      // at,ret,end
-      break;
-    }
-    case insert_op<order_type::dfs>::end: {
-      break;
-    }
-    }
-  };
-
-  T &&get() { std::move(*base::self->value); };
+  // use at
+  // insert_iterator &operator=(T &&);
 };
 
 template <typename T>
 insert_iterator(base_iterator<node_type<T>>, tags::dfs_t)
-    -> insert_iterator<order_type::dfs, node_type<T>>;
+    -> insert_iterator<node_type<T>>;
 
 template <typename T>
 access_iterator(base_iterator<node_type<T>>) -> access_iterator<node_type<T>>;
+
+template <typename T>
+move_iterator(base_iterator<node_type<T>>) -> move_iterator<node_type<T>>;
 
 template <typename T>
 const_access_iterator(base_iterator<node_type<T>>)
@@ -487,31 +297,7 @@ template <typename T>
 root_iterator(base_iterator<node_type<T>>) -> root_iterator<node_type<T>>;
 
 template <typename T>
-const_root_iterator(base_iterator<node_type<T>>)
-    -> const_root_iterator<node_type<T>>;
-
-template <typename T>
 sibling_iterator(base_iterator<node_type<T>>) -> sibling_iterator<node_type<T>>;
-
-template <typename T>
-const_sibling_iterator(base_iterator<node_type<T>>)
-    -> const_sibling_iterator<node_type<T>>;
-
-template <typename T>
-copy_iterator(base_iterator<node_type<T>>, tags::dfs_t)
-    -> copy_iterator<order_type::dfs, node_type<T>>;
-
-template <typename T>
-copy_iterator(base_iterator<node_type<T>>, tags::bfs_t)
-    -> copy_iterator<order_type::bfs, node_type<T>>;
-
-template <typename T>
-move_iterator(base_iterator<node_type<T>>, tags::dfs_t)
-    -> move_iterator<order_type::dfs, node_type<T>>;
-
-template <typename T>
-move_iterator(base_iterator<node_type<T>>, tags::bfs_t)
-    -> move_iterator<order_type::bfs, node_type<T>>;
 
 template <typename T>
 sibling_iterator<node_type<T>> childs_of(base_iterator<node_type<T>> it) {

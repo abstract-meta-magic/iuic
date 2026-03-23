@@ -31,7 +31,7 @@ add_library(${PROJECT_NAME}_core STATIC)
 target_link_libraries(${PROJECT_NAME}_core iuic::underlying iuic::state)
 
 if(IUIC_TMP_CXX_STD)
-	target_link_libraries(${PROJECT_NAME}_core tmp_cxx_std)
+	#target_link_libraries(${PROJECT_NAME}_core tmp_cxx_std)
 endif()
 
 target_compile_features(${PROJECT_NAME}_core

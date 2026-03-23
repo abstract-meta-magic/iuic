@@ -15,6 +15,10 @@ class context {
 public: // api
   void make(units::ui::size viewport, scheme::builder_block_cpt auto &&call);
 
+  context() {
+    scheme = scheme::explorer_assign{blueprint.begin(), &tenv, &penv};
+  };
+
 private:
   void set_view_size(units::ui::size sz) {
     penv.external.set_viewport_size(sz);
@@ -30,7 +34,7 @@ private:
   environment::persist penv{adp};
 
 public:
-  scheme::explorer scheme{blueprint, tenv, penv};
+  scheme::explorer scheme{};
 };
 
 // Contex Template Impl
@@ -53,6 +57,8 @@ void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
   blueprint = scheme::compute(sketch, tenv_, penv);
 
   std::swap(tenv_, tenv);
+
+  scheme = {blueprint.begin(), &tenv, &penv};
 };
 
 } // namespace iuic

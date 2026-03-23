@@ -28,7 +28,7 @@ struct bp_element {
   style::sid sid;
   units::ui::zorder zorder;
   struct {
-    enum flag { discarded = 0, text, measure, applied, arrange };
+    enum flag { discarded = 0, virtualized, text, measure, applied, arrange };
 
     void set(flag f, bool value_ = true) { value.set(f, value_); };
 
@@ -42,4 +42,21 @@ struct bp_element {
 using sketch = utils::tree::flat_bfs_type<sk_element>;
 
 using blueprint = utils::tree::flat_bfs_type<bp_element>;
+
+export namespace iterators {
+
+using base = utils::tree::base_iterator<utils::tree::hierarchy<blueprint>>;
+using root = utils::tree::root_iterator<utils::tree::hierarchy<blueprint>>;
+using sibling =
+    utils::tree::sibling_iterator<utils::tree::hierarchy<blueprint>>;
+
+sibling childs_of(base it) { return utils::tree::childs_of(it); };
+
+}; // namespace iterators
+
+export namespace ranges {
+// level_order
+// post_order
+};
+
 }; // namespace iuic::scheme

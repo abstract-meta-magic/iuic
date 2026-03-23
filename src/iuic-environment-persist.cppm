@@ -118,7 +118,7 @@ struct persist {
       return object::non_exist;
     };
 
-    template <erasure::as_pure_type T> object::state_e state(units::uid uid) {
+    template <erasure::is_pure_type T> object::state_e state(units::uid uid) {
       return state(uid, erasure::type::from<T>());
     }
 

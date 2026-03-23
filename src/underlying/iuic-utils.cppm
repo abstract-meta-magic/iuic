@@ -6,11 +6,33 @@ import std;
 
 export namespace iuic::utils {
 
-template <erasure::as_pure_type Owner> struct child_for {
-  child_for(Owner &owner_) : owner{owner_} {}
+template <erasure::is_pure_type Owner> struct member_for {
+  member_for(Owner &owner_) : owner{owner_} {}
 
 protected:
+  Owner &self() { return owner; };
+
+  const Owner &self() const { return owner; };
+
+private:
   Owner &owner;
+};
+
+template <erasure::is_pure_type Owner, std::size_t offset = 0>
+struct adv_member_for {
+  adv_member_for() {}
+
+protected:
+  Owner &self() {
+    Owner *ptr =
+        reinterpret_cast<Owner *>(reinterpret_cast<char *>(this) - offset);
+    return *ptr;
+  };
+
+  const Owner &self() const {
+    return *(reinterpret_cast<const Owner *>(
+        reinterpret_cast<const char *>(this) - offset));
+  };
 };
 
 // TODO : make full
@@ -219,7 +241,7 @@ concept buffer_value_mover_cpt =
              const typename T::key_type &key, typename T::move_type value) {
       obj.move_to(c, obj.move_from(c, key));
     } &&
-    erasure::as_pure_type<Container> &&
+    erasure::is_pure_type<Container> &&
     std::same_as<Container, typename T::container_type> &&
     std::is_default_constructible_v<T>;
 

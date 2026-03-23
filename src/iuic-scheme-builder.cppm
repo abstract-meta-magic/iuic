@@ -23,8 +23,7 @@ concept builder_block_cpt = std::invocable<T, builder &>;
 struct builder_base {
 protected:
   using insert_iterator =
-      utils::tree::insert_iterator<utils::tree::order_type::dfs,
-                                   utils::tree::node_type<sketch::value_t>>;
+      utils::tree::insert_iterator<utils::tree::node_type<sketch::value_t>>;
 
 public:
   struct unit_t {
@@ -177,7 +176,7 @@ struct builder_state_interface : protected virtual builder_base {
 
   void detach(units::uid uid, state::value s);
 
-  struct : utils::child_for<builder_state_interface> {
+  struct : utils::member_for<builder_state_interface> {
     void use(const auto &proto);
 
     void use(units::uid uid, const auto &proto);
@@ -249,9 +248,7 @@ struct director {
 
     call(b);
 
-    return {sketch{utils::tree::move_iterator{tree.begin(),
-                                              utils::tree::tags::bfs}},
-            std::move(tenv)};
+    return {sketch{utils::tree::move_iterator{tree.begin()}}, std::move(tenv)};
   };
 
 private:
@@ -315,7 +312,7 @@ units::uid builder_uid_interface::make(policy::shared sh,
   utils::tree::root_iterator rit{it};
 
   if (++rit) {
-    ss << ++rit->uid;
+    ss << utils::tree::access_iterator{++rit}->uid;
   } else {
     ss << "--root-of";
   }
@@ -335,13 +332,13 @@ units::uid builder_uid_interface::make(policy::unique, const std::string &str,
   utils::tree::root_iterator rit{it};
 
   if (++rit) {
-    ss << rit->uid;
+    ss << utils::tree::access_iterator{rit}->uid;
   } else {
     // set root uid ?
   };
 
   if (auto inner = sit; --inner) {
-    ss << inner->uid;
+    ss << utils::tree::access_iterator{inner}->uid;
   }
 
   std::size_t counter{0};
@@ -382,7 +379,7 @@ void utils::type_of<&builder_state_interface::machine>::use(const auto &proto) {
 void utils::type_of<&builder_state_interface::machine>::try_visit_shared(
     erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&visitor) {
   auto *machine =
-      owner.penv.machine.get(utils::tree::access_iterator{owner.it}->uid);
+      self().penv.machine.get(utils::tree::access_iterator{self().it}->uid);
   if (machine) {
     machine->get_controller().try_visit_shared(
         std::forward<decltype(visitor)>(visitor));
@@ -392,7 +389,7 @@ void utils::type_of<&builder_state_interface::machine>::try_visit_shared(
 void utils::type_of<&builder_state_interface::machine>::transition(
     state::value v) {
   auto *machine =
-      owner.penv.machine.get(utils::tree::access_iterator{owner.it}->uid);
+      self().penv.machine.get(utils::tree::access_iterator{self().it}->uid);
   if (machine) {
     // Mb no move ??
     machine->get_controller().try_move(v);

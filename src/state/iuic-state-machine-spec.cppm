@@ -29,7 +29,7 @@ concept is_prototype = requires(T &obj, state::value value) {
   obj.get_terminate_handler()->T::transition_ctor_t;
 };
 
-template <transition_graph graph, iuic::erasure::as_pure_type SharedData>
+template <transition_graph graph, iuic::erasure::is_pure_type SharedData>
 struct spec {
   using shared_type = SharedData;
 

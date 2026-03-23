@@ -1,4 +1,5 @@
-
+// Copyright (c) 2026 abstract-meta-magic and contributors
+// SPDX-License-Identifier: Apache-2.0
 
 export module iuic.underlying:utils.tree.decl;
 import :erasure;
@@ -14,6 +15,8 @@ struct bfs_t {
 struct dfs_t {
 } constexpr inline dfs{};
 }; // namespace tags
+
+template <typename T> struct hierarchy;
 
 enum class iterator_state { valid, invalid, root };
 
@@ -46,25 +49,25 @@ template <order_type t>
 using insert_op = decltype(insert_traits::get_enum_type<t>());
 
 // --
-template <erasure::as_pure_type T> struct base_iterator;
-template <erasure::as_pure_type T> struct access_iterator;
-template <erasure::as_pure_type T> struct const_access_iterator;
-template <erasure::as_pure_type T> struct root_iterator;
-template <erasure::as_pure_type T> struct const_root_iterator;
-template <erasure::as_pure_type T> struct sibling_iterator;
-template <erasure::as_pure_type T> struct const_sibling_iterator;
+template <erasure::is_pure_type T> struct base_iterator;
+// acc
+template <erasure::is_pure_type T> struct access_iterator;
+template <erasure::is_pure_type T> struct const_access_iterator;
+template <erasure::is_pure_type T> struct move_iterator;
+// move
+template <erasure::is_pure_type T> struct root_iterator;
+template <erasure::is_pure_type T> struct sibling_iterator;
+// ins
+template <erasure::is_pure_type T> struct insert_iterator;
 
 // --
-template <erasure::as_pure_type T> struct sentinel {
+template <erasure::is_pure_type T> struct sentinel {
   sentinel(const T &) {}
   sentinel(const base_iterator<T>) {}
   sentinel() {};
 };
 
 // --
-template <order_type t, erasure::as_pure_type T> struct insert_iterator;
-template <order_type t, erasure::as_pure_type T> struct copy_iterator;
-template <order_type t, erasure::as_pure_type T> struct move_iterator;
 
 template <template <typename> typename T> struct iterator_type {
   static_assert(false, "Invalid iterator type");
@@ -74,22 +77,23 @@ template <> struct iterator_type<base_iterator> {};
 template <> struct iterator_type<access_iterator> {};
 template <> struct iterator_type<const_access_iterator> {};
 template <> struct iterator_type<root_iterator> {};
-template <> struct iterator_type<const_root_iterator> {};
 template <> struct iterator_type<sibling_iterator> {};
-template <> struct iterator_type<const_sibling_iterator> {};
 
 // --
-template <erasure::as_pure_type T> struct iterator_range_for;
-template <erasure::as_pure_type T> struct dfs_range_for;
-template <erasure::as_pure_type T> struct iterator_dfs_range_for;
-template <erasure::as_pure_type T> struct bfs_range_for;
+template <erasure::is_pure_type T,
+          template <typename> typename Iterator = base_iterator>
+  requires std::is_base_of_v<base_iterator<T>, Iterator<T>>
+struct iterator_range_for;
+template <erasure::is_pure_type T> struct dfs_range_for;
+template <erasure::is_pure_type T> struct iterator_dfs_range_for;
+template <erasure::is_pure_type T> struct bfs_range_for;
 
-template <erasure::as_pure_type T,
+template <erasure::is_pure_type T,
           template <typename> typename Iterator = base_iterator>
   requires std::is_base_of_v<base_iterator<T>, Iterator<T>>
 struct bfs_iterator_range_for;
 
-template <erasure::as_pure_type T> struct reverse_bfs_range_for;
+template <erasure::is_pure_type T> struct reverse_bfs_range_for;
 
 struct invalide_iterator_type {};
 
@@ -184,14 +188,6 @@ concept has_tree_walk = requires(T iterator) {
   { siblings_of(iterator) } -> is_sibling_iterator;
 };
 
-template <typename T, typename U, order_type t>
-insert_iterator<t, T> copy(copy_iterator<t, T>, sentinel<T>,
-                           insert_iterator<t, U>);
-
-template <typename T, typename U, order_type t>
-insert_iterator<t, T> move(move_iterator<t, T>, sentinel<T>,
-                           insert_iterator<t, U>);
-
 template <typename T> base_iterator<T> begin(T &&);
 
 template <typename T> sentinel<base_iterator<T>> end(T &&) { return {}; };
@@ -199,59 +195,52 @@ template <typename T> sentinel<base_iterator<T>> end(T &&) { return {}; };
 template <typename T, typename U>
 base_iterator<T> shift(base_iterator<T>, base_iterator<U>);
 
-template <typename Src, typename Dest>
-void move(move_iterator<order_type::dfs, Src> it,
-          insert_iterator<order_type::dfs, Dest> ins) {
-  using op = insert_op<order_type::dfs>;
+template <typename T, template <typename> typename Iterator>
+struct iterator_range_for<root_iterator<T>, Iterator> {
+  struct iterator : root_iterator<T> {
+    using base = base_iterator<T>;
+    using target = Iterator<T>;
 
-  op op_;
+    target operator*() { return target{base{*this}}; };
+  };
 
-  for (;; it.advance(op_)) {
-    switch (op_) {
-    case op::at: {
-      ins.at(it.get());
-    }
-    case op::to: {
-      ins.to(it.get());
-    }
-    case op::ret: {
-      ins = insert_iterator{++root_iterator{ins}};
-    }
-    case insert_op<order_type::dfs>::end: {
-      return;
-    }
-    }
-  }
-}
+  iterator begin() { return begin_; };
 
-template <typename Src, typename Dest>
-void move(move_iterator<order_type::bfs, Src> it,
-          insert_iterator<order_type::bfs, Dest> ins) {
-  using op = insert_op<order_type::bfs>;
+  sentinel<typename iterator::base> end() { return {}; };
 
-  op op_;
+  iterator_range_for(root_iterator<T> it, iterator_type<Iterator> = {})
+      : begin_{it} {}
 
-  base_iterator pa_begin{ins};
-  base_iterator pa_end{ins};
-  base_iterator ch_begin{ins};
-  base_iterator ch_end{ins};
+private:
+  iterator begin_;
+};
 
-  for (;; it.advance(op_)) {
-    switch (op_) {
-    case op::ins: {
-      ins.insert(it.get());
-    }
-    case op::sep: {
-      ins.separate(it.get());
-    }
-    case op::deep: {
-      ins = insert_iterator{++root_iterator{ins}};
-    }
-    case op::end: {
-      return;
-    }
-    }
-  }
-}
+template <typename T, template <typename> typename Iterator>
+struct iterator_range_for<sibling_iterator<T>, Iterator> {
+  struct iterator : sibling_iterator<T> {
+    using base = base_iterator<T>;
+    using target = Iterator<T>;
+
+    target operator*() { return target{base{*this}}; };
+  };
+
+  iterator begin() { return begin_; };
+
+  sentinel<typename iterator::target> end() { return {}; };
+
+  iterator_range_for(sibling_iterator<T> it, iterator_type<Iterator> = {})
+      : begin_{it} {}
+
+private:
+  iterator begin_;
+};
+
+template <typename T, template <typename> typename Iterator = base_iterator>
+iterator_range_for(root_iterator<T>, iterator_type<Iterator> = {})
+    -> iterator_range_for<root_iterator<T>, Iterator>;
+
+template <typename T, template <typename> typename Iterator = base_iterator>
+iterator_range_for(sibling_iterator<T>, iterator_type<Iterator> = {})
+    -> iterator_range_for<sibling_iterator<T>, Iterator>;
 
 }; // namespace iuic::utils::tree

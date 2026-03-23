@@ -717,6 +717,10 @@ void box(builder &b, std::invocable<> auto &&callback,
           });
         },
         uid);
+
+    b.element.frame(uid, sid, layout_, [](auto &) {});
+    b.element.frame(uid, sid, layout_, [](auto &) {});
+    b.element.frame(uid, sid, layout_, [](auto &) {});
   });
 };
 

@@ -58,12 +58,13 @@ struct frame_utils : public utils_base {
   // TODO : нужно врапнуть итераторы
   // чтобы они могли пропускать discarded элементы.
   struct childs_proxy {
-    measure::tree::const_sibling_iterator b;
-    utils::tree::sentinel<measure::tree::const_sibling_iterator> e;
-    measure::tree::const_sibling_iterator begin() { return b; };
-    utils::tree::sentinel<measure::tree::const_sibling_iterator> end() {
-      return e;
+    struct iterator : measure::tree::sibling_iterator {
+      auto operator*() { return *utils::tree::access_iterator{*this}; }
     };
+    measure::tree::sibling_iterator b;
+    utils::tree::sentinel<measure::tree::sibling_iterator> e;
+    iterator begin() { return {b}; };
+    utils::tree::sentinel<iterator> end() { return {}; };
   };
 
   childs_proxy childs_range() { return {ch, {}}; };
@@ -82,18 +83,18 @@ struct frame_utils : public utils_base {
       : utils_base{tenv, it}, ch{ch_} {};
 
   struct childs_proxy {
-    measure::tree::const_sibling_iterator b;
-    utils::tree::sentinel<measure::tree::const_sibling_iterator> e;
-    measure::tree::const_sibling_iterator begin() { return b; };
-    utils::tree::sentinel<measure::tree::const_sibling_iterator> end() {
-      return e;
+    struct iterator : measure::tree::sibling_iterator {
+      auto operator*() { return *utils::tree::access_iterator{*this}; }
     };
+    measure::tree::sibling_iterator b;
+    utils::tree::sentinel<measure::tree::sibling_iterator> e;
+    iterator begin() { return {b}; };
+    utils::tree::sentinel<iterator> end() { return {}; };
   };
 
   childs_proxy childs_range() { return {ch, {}}; };
 
-  void apply_element(measure::tree::const_sibling_iterator it_,
-                     units::ui::area a) {
+  void apply_element(measure::tree::sibling_iterator it_, units::ui::area a) {
     utils::tree::access_iterator ait{utils::tree::shift(it, it_)};
 
     if (ait) {

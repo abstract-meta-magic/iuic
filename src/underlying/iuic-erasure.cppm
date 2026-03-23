@@ -21,7 +21,7 @@ using pure_t =
     std::remove_cvref_t<typename decltype(remove_all_pointer<T>())::type>;
 
 template <typename T>
-concept as_pure_type =
+concept is_pure_type =
     std::same_as<std::remove_cvref_t<T>, T> && not std::is_pointer_v<T>;
 
 // advanced tech
@@ -62,7 +62,7 @@ template <typename T> copy_ctor_fptr_t move_assign_for() {
 // using args_ctor_fptr_t = void(void*memory,/* args ? */);
 
 struct type {
-  template <as_pure_type T> static const type *from() {
+  template <is_pure_type T> static const type *from() {
 
     if constexpr (requires() {
                     { T::livetime } -> std::convertible_to<std::size_t>;
@@ -176,8 +176,8 @@ template <typename T, typename D> struct like {
   static constexpr bool value =
       ((std::is_lvalue_reference_v<T> && std::is_lvalue_reference_v<D>) ||
        (std::is_rvalue_reference_v<T> && std::is_rvalue_reference_v<D>) ||
-       (as_pure_type<std::remove_const_t<std::remove_volatile_t<T>>> &&
-        as_pure_type<std::remove_const_t<std::remove_volatile_t<D>>>) ||
+       (is_pure_type<std::remove_const_t<std::remove_volatile_t<T>>> &&
+        is_pure_type<std::remove_const_t<std::remove_volatile_t<D>>>) ||
        (std::is_pointer_v<T> && std::is_pointer_v<D>)) &&
       (std::is_const_v<std::remove_volatile_t<std::remove_reference_t<T>>> ==
        std::is_const_v<std::remove_volatile_t<std::remove_reference_t<D>>>) &&

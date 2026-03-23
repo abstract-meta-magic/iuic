@@ -5,12 +5,11 @@ find_package(Raylib REQUIRED)
 
 add_executable(te base.cpp)
 
-set(CMAKE_CXX_MODULE_STD 1)
 
 target_link_libraries(te iuic::core kitty_kit raylib)
 
 if(IUIC_TMP_CXX_STD)
-	target_link_libraries(te tmp_cxx_std)
+	#	target_link_libraries(te tmp_cxx_std)
 endif()
 ## xxHash - END
 
