@@ -4,6 +4,10 @@
 export module iuic.underlying:utils.tree.bfs;
 import :utils.tree.decl;
 
+//////////////////////////////////////////////////////////////
+/// DECL//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
 namespace iuic::utils::tree {
 
 struct bfs_hierarchy_node_t {
@@ -154,13 +158,6 @@ public:
 
   base_iterator() : self{bfs_hierarchy_node_t::npos}, owner{nullptr} {};
 
-  template <typename U>
-  friend auto
-  tree::childs_of(tree::base_iterator<hierarchy<flat_bfs_type<U>>> it);
-
-  template <typename U>
-  friend auto parent_of(tree::base_iterator<hierarchy<flat_bfs_type<U>>> it);
-
 protected:
   std::size_t self;
   owner_t *owner;
@@ -173,25 +170,24 @@ struct root_iterator<hierarchy<flat_bfs_type<T>>>
 
   root_iterator() : base{} {};
 
-  root_iterator(base::base b) : base{b} {}
-
   root_iterator(base b) : base{b} {}
 
-  root_iterator(base::index_t self, base::owner_t *owner) : base{self, owner} {}
+  root_iterator(bfs_hierarchy_node_t::index_t self, base::owner_t *owner)
+      : base{self, owner} {}
 
   root_iterator &operator++() {
-    if (base::valid()) {
-      auto &hnode = base::owner->hierarchy__[base::self];
+    if (this->valid()) {
+      auto &hnode = this->owner->hierarchy__[this->self];
 
-      base::self = hnode.parent;
+      this->self = hnode.parent;
     }
 
     return *this;
   }
 
   root_iterator operator++(int) {
-    if (base::valid()) {
-      return {base::owner->hierarchy__[base::self].parent, base::owner};
+    if (this->valid()) {
+      return {this->owner->hierarchy__[this->self].parent, this->owner};
     } else {
       return {};
     }
@@ -212,41 +208,46 @@ struct sibling_iterator<hierarchy<flat_bfs_type<T>>>
 
   sibling_iterator(base b) : base{b} {}
 
-  sibling_iterator(base::index_t self, base::owner_t *owner)
+  sibling_iterator(bfs_hierarchy_node_t::index_t self, base::owner_t *owner)
       : base{self, owner} {}
 
   sibling_iterator &operator++() {
-    if (base::valid()) {
-      if (base::owner->hierarchy__[base::self + 1].parent ==
-          base::owner->hierarchy__[base::self].parent) {
-        ++base::self;
+    if (this->valid()) {
+      auto next = this->self + 1;
+      auto &hierarchy = this->owner->hierarchy__;
+      if (hierarchy.size() > next &&
+          hierarchy[this->self].parent == hierarchy[next].parent) {
+        ++this->self;
       } else {
-        base::self = base::container_t::npos;
+        this->self = bfs_hierarchy_node_t::npos;
       };
     }
     return *this;
   }
 
   sibling_iterator &operator--() {
-    if (base::valid()) {
-      if (base::owner->hierarchy__[base::self - 1].parent ==
-          base::owner->hierarchy__[base::self].parent) {
-        --base::self;
+    if (this->valid()) {
+      auto &hierarchy = this->owner->hierarchy__;
+      if (this->self != 0 &&
+          hierarchy[this->self].parent == hierarchy[this->self - 1]) {
+        --this->self;
       } else {
-        base::self = base::container_t::npos;
+        this->self = bfs_hierarchy_node_t::npos;
       };
     }
     return *this;
   }
 
   sibling_iterator operator++(int) {
-    // IMPL
-    return {};
+    auto res = this;
+    ++*this;
+    return res;
   }
 
   sibling_iterator operator--(int) {
-    // IMPL
-    return {};
+    auto res = this;
+    --*this;
+    return res;
   }
 };
 
@@ -256,16 +257,19 @@ sibling_iterator(base_iterator<hierarchy<flat_bfs_type<T>>>)
 
 template <typename T>
 auto childs_of(base_iterator<hierarchy<flat_bfs_type<T>>> it) {
-
-  if (it) {
-    return sibling_iterator<hierarchy<flat_bfs_type<T>>>{
-        it.owner->hierarchy__[it.self].ch_begin, it.owner};
-  } else if (it.self == bfs_hierarchy_node_t::root) {
-    return sibling_iterator<hierarchy<flat_bfs_type<T>>>{0, it.owner};
-  } else {
-    return sibling_iterator<hierarchy<flat_bfs_type<T>>>{
-        bfs_hierarchy_node_t::npos, it.owner};
-  }
+  struct : base_iterator<hierarchy<flat_bfs_type<T>>> {
+    using base = decltype(it);
+    sibling_iterator<hierarchy<flat_bfs_type<T>>> find() {
+      if (this->valid()) {
+        return base{this->owner->hierarchy__[this->self].ch_begin, this->owner};
+      } else if (this->self == bfs_hierarchy_node_t::root) {
+        return base{0, this->owner};
+      } else {
+        return base{bfs_hierarchy_node_t::npos, this->owner};
+      }
+    }
+  } child_search{it};
+  return child_search.find();
 }
 
 }; // namespace iuic::utils::tree
@@ -280,12 +284,6 @@ struct flat_bfs_type_base : hierarchy_base<flat_bfs_type<T>> {
 template <erasure::is_pure_type T>
 struct flat_bfs_type : protected flat_bfs_type_base<T> {
   using value_t = T;
-  using ref_t = T &;
-  using cref_t = const T &;
-  using index_t = bfs_hierarchy_node_t::index_t;
-  static constexpr auto npos = bfs_hierarchy_node_t::npos;
-  static constexpr auto root_index = bfs_hierarchy_node_t::root;
-
   // ---------- ITERATORS ----------
   using base_iterator = tree::base_iterator<flat_bfs_type>;
   using access_iterator = tree::access_iterator<flat_bfs_type>;
@@ -294,12 +292,14 @@ struct flat_bfs_type : protected flat_bfs_type_base<T> {
   using sibling_iterator = tree::sibling_iterator<flat_bfs_type>;
   // ---------- ITERATORS ----------
 
+  using hierarchy = hierarchy<flat_bfs_type>;
+
   std::span<T> flat();
 
   std::span<const T> flat() const;
 
   base_iterator root() const {
-    return {root_index, const_cast<flat_bfs_type *>(this)};
+    return {bfs_hierarchy_node_t::root, const_cast<flat_bfs_type *>(this)};
   };
 
   base_iterator begin() const {
@@ -318,7 +318,7 @@ struct flat_bfs_type : protected flat_bfs_type_base<T> {
     }
   };
 
-  base_iterator at(index_t i) {
+  base_iterator at(bfs_hierarchy_node_t::index_t i) {
     if (i < this->data__.size()) {
       return {i, this};
     } else {
@@ -352,8 +352,7 @@ struct flat_bfs_type : protected flat_bfs_type_base<T> {
 
   flat_bfs_type() {};
 
-  template <typename Other>
-  flat_bfs_type(tree::const_access_iterator<Other> it) {
+  template <typename Other> flat_bfs_type(tree::copy_iterator<Other> it) {
     using op = insert_op<order_type::bfs>;
     using base_iterator = decltype(it)::base;
     using const_access_iterator = decltype(it);
@@ -492,7 +491,6 @@ public:
   using lvalue_t = T &;
   using rvalue_t = T &&;
   using pointer_t = T *;
-  using index_t = container_t::index_t;
 
   bool valid() const {
     return owner && self < owner->data__.size() && not owner->data__.empty();
@@ -514,7 +512,8 @@ public:
     return valid();
   }
 
-  base_iterator(index_t self_, owner_t *owner_) : self{self_}, owner{owner_} {}
+  base_iterator(bfs_hierarchy_node_t::index_t self_, owner_t *owner_)
+      : self{self_}, owner{owner_} {}
 
   base_iterator() : self{bfs_hierarchy_node_t::npos}, owner{nullptr} {};
 
@@ -525,7 +524,7 @@ public:
   friend auto parent_of(tree::base_iterator<flat_bfs_type<U>> it);
 
 protected:
-  index_t self{container_t::npos};
+  bfs_hierarchy_node_t::index_t self{container_t::npos};
   flat_bfs_type_base<T> *owner{nullptr};
 };
 
@@ -533,7 +532,7 @@ template <typename T>
 struct access_iterator<flat_bfs_type<T>> : base_iterator<flat_bfs_type<T>> {
   using base = base_iterator<flat_bfs_type<T>>;
 
-  access_iterator(base::index_t self, base::owner_t *owner)
+  access_iterator(bfs_hierarchy_node_t::index_t self, base::owner_t *owner)
       : base{self, owner} {}
 
   access_iterator() : base{} {};
@@ -550,12 +549,11 @@ struct const_access_iterator<flat_bfs_type<T>>
     : base_iterator<flat_bfs_type<T>> {
   using base = base_iterator<flat_bfs_type<T>>;
 
-  const_access_iterator(base::index_t self, base::owner_t *owner)
+  const_access_iterator(bfs_hierarchy_node_t::index_t self,
+                        base::owner_t *owner)
       : base{self, owner} {}
 
   const_access_iterator() : base{} {};
-
-  const_access_iterator(access_iterator<T> b) : base{b} {};
 
   const_access_iterator(base b) : base{b} {};
 
@@ -565,30 +563,61 @@ struct const_access_iterator<flat_bfs_type<T>>
 };
 
 template <typename T>
-struct root_iterator<flat_bfs_type<T>> : access_iterator<flat_bfs_type<T>> {
-  using base = access_iterator<flat_bfs_type<T>>;
+struct move_iterator<flat_bfs_type<T>> : base_iterator<flat_bfs_type<T>> {
+  using base = base_iterator<flat_bfs_type<T>>;
+
+  move_iterator() : base{} {};
+
+  move_iterator(base b) : base{b} {}
+
+  move_iterator(bfs_hierarchy_node_t::index_t self, base::owner_t *owner)
+      : base{self, owner} {}
+
+  base::rvalue_t operator*() {
+    return std::move(this->owner->data__[this->self]);
+  }
+};
+
+template <typename T>
+struct copy_iterator<flat_bfs_type<T>> : base_iterator<flat_bfs_type<T>> {
+  using base = base_iterator<flat_bfs_type<T>>;
+
+  copy_iterator() : base{} {};
+
+  copy_iterator(base b) : base{b} {}
+
+  copy_iterator(bfs_hierarchy_node_t::index_t self, base::owner_t *owner)
+      : base{self, owner} {}
+
+  const base::lvalue_t operator*() {
+    return std::move(this->owner->data__[this->self]);
+  }
+};
+
+template <typename T>
+struct root_iterator<flat_bfs_type<T>> : base_iterator<flat_bfs_type<T>> {
+  using base = base_iterator<flat_bfs_type<T>>;
 
   root_iterator() : base{} {};
 
-  root_iterator(base::base b) : base{b} {}
-
   root_iterator(base b) : base{b} {}
 
-  root_iterator(base::index_t self, base::owner_t *owner) : base{self, owner} {}
+  root_iterator(bfs_hierarchy_node_t::index_t self, base::owner_t *owner)
+      : base{self, owner} {}
 
   root_iterator &operator++() {
-    if (base::valid()) {
+    if (this->valid()) {
       auto &hnode = base::owner->hierarchy__[base::self];
 
-      base::self = hnode.parent;
+      this->self = hnode.parent;
     }
 
     return *this;
   }
 
   root_iterator operator++(int) {
-    if (base::valid()) {
-      return {base::owner->hierarchy__[base::self].parent, base::owner};
+    if (this->valid()) {
+      return {this->owner->hierarchy__[this->self].parent, this->owner};
     } else {
       return {};
     }
@@ -605,41 +634,46 @@ struct sibling_iterator<flat_bfs_type<T>> : base_iterator<flat_bfs_type<T>> {
 
   sibling_iterator(base b) : base{b} {}
 
-  sibling_iterator(base::index_t self, base::owner_t *owner)
+  sibling_iterator(bfs_hierarchy_node_t::index_t self, base::owner_t *owner)
       : base{self, owner} {}
 
   sibling_iterator &operator++() {
-    if (base::valid()) {
-      if (base::owner->hierarchy__[base::self + 1].parent ==
-          base::owner->hierarchy__[base::self].parent) {
-        ++base::self;
+    if (this->valid()) {
+      auto next = this->self + 1;
+      auto &hierarchy = this->owner->hierarchy__;
+      if (hierarchy.size() > next &&
+          hierarchy[this->self].parent == hierarchy[next].parent) {
+        ++this->self;
       } else {
-        base::self = base::container_t::npos;
+        this->self = bfs_hierarchy_node_t::npos;
       };
     }
     return *this;
   }
 
   sibling_iterator &operator--() {
-    if (base::valid()) {
-      if (base::owner->hierarchy__[base::self - 1].parent ==
-          base::owner->hierarchy__[base::self].parent) {
-        --base::self;
+    if (this->valid()) {
+      auto &hierarchy = this->owner->hierarchy__;
+      if (this->self != 0 &&
+          hierarchy[this->self].parent == hierarchy[this->self - 1]) {
+        --this->self;
       } else {
-        base::self = base::container_t::npos;
+        this->self = bfs_hierarchy_node_t::npos;
       };
     }
     return *this;
   }
 
   sibling_iterator operator++(int) {
-    // IMPL
-    return {};
+    auto res = this;
+    ++*this;
+    return res;
   }
 
   sibling_iterator operator--(int) {
-    // IMPL
-    return {};
+    auto res = this;
+    --*this;
+    return res;
   }
 };
 
@@ -660,24 +694,35 @@ root_iterator(base_iterator<flat_bfs_type<T>> it)
     -> root_iterator<flat_bfs_type<T>>;
 
 template <typename T> auto childs_of(base_iterator<flat_bfs_type<T>> it) {
+  struct : base_iterator<flat_bfs_type<T>> {
+    using base = base_iterator<flat_bfs_type<T>>;
+    sibling_iterator<flat_bfs_type<T>> find() {
 
-  if (it) {
-    return sibling_iterator<flat_bfs_type<T>>{
-        it.owner->hierarchy__[it.self].ch_begin, it.owner};
-  } else if (it.self == flat_bfs_type<T>::root_index) {
-    return sibling_iterator<flat_bfs_type<T>>{0, it.owner};
-  } else {
-    return sibling_iterator<flat_bfs_type<T>>{flat_bfs_type<T>::npos, it.owner};
-  }
+      if (this->valid()) {
+        return base{this->owner->hierarchy__[this->self].ch_begin, this->owner};
+      } else if (this->self == bfs_hierarchy_node_t::root) {
+        return base{0, this->owner};
+      } else {
+        return base{bfs_hierarchy_node_t::npos, this->owner};
+      }
+    };
+  } child_search{it};
+  return child_search.find();
 }
-
 template <typename T> auto parent_of(base_iterator<flat_bfs_type<T>> it) {
-  if (it) {
-    return base_iterator<flat_bfs_type<T>>{
-        it.owner->hierarchy__[it.self].parent, it.owner};
-  } else {
-    return base_iterator<flat_bfs_type<T>>{};
-  }
+  struct : decltype(it) {
+    using base = decltype(it);
+
+    base find() {
+      if (this->valid()) {
+        return base{this->owner->hierarchy__[this->self].parent, this->owner};
+      } else {
+        return {};
+      };
+    };
+  } parent_search{it};
+
+  return parent_search.find();
 }
 
 template <typename T, typename U>
@@ -719,11 +764,12 @@ template <typename T> struct reverse_bfs_range_for<flat_bfs_type<T>> {
 
     iterator(base b) : base{b} {};
 
-    iterator(base::index_t i, typename base::owner_t *owner) : base{i, owner} {}
+    iterator(bfs_hierarchy_node_t::index_t i, typename base::owner_t *owner)
+        : base{i, owner} {}
 
-    iterator &operator++() { return --base::self, *this; };
+    iterator &operator++() { return --this->self, *this; };
 
-    T &operator*() { return base::owner->data__[base::self]; };
+    T &operator*() { return this->owner->data__[this->self]; };
   };
 
   reverse_bfs_range_for(const flat_bfs_type<T> &container)
@@ -745,7 +791,8 @@ template <typename T> struct bfs_range_for<flat_bfs_type<T>> {
 
     iterator(base b) : base{b} {};
 
-    iterator(base::index_t i, typename base::owner_t *owner) : base{i, owner} {}
+    iterator(bfs_hierarchy_node_t::index_t i, typename base::owner_t *owner)
+        : base{i, owner} {}
 
     iterator &operator++() { return ++base::self, *this; };
 
@@ -773,7 +820,8 @@ struct bfs_iterator_range_for<flat_bfs_type<T>, Iterator> {
 
     iterator(base b) : base{b} {};
 
-    iterator(base::index_t i, typename base::owner_t *owner) : base{i, owner} {}
+    iterator(bfs_hierarchy_node_t::index_t i, typename base::owner_t *owner)
+        : base{i, owner} {}
 
     iterator &operator++() { return ++base::self, *this; };
 
@@ -805,7 +853,8 @@ struct bfs_iterator_range_for<hierarchy<flat_bfs_type<T>>, Iterator> {
 
     iterator(base b) : base{b} {};
 
-    iterator(base::index_t i, typename base::owner_t *owner) : base{i, owner} {}
+    iterator(bfs_hierarchy_node_t::index_t i, typename base::owner_t *owner)
+        : base{i, owner} {}
 
     iterator &operator++() { return ++base::self, *this; };
 

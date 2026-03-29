@@ -53,7 +53,9 @@ template <erasure::is_pure_type T> struct base_iterator;
 // acc
 template <erasure::is_pure_type T> struct access_iterator;
 template <erasure::is_pure_type T> struct const_access_iterator;
+// semantic
 template <erasure::is_pure_type T> struct move_iterator;
+template <erasure::is_pure_type T> struct copy_iterator;
 // move
 template <erasure::is_pure_type T> struct root_iterator;
 template <erasure::is_pure_type T> struct sibling_iterator;

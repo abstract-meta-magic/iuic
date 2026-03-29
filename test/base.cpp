@@ -63,7 +63,7 @@ void main_window(iuic::scheme::builder &b, app &app) {
   using namespace kitty_kit;
 
   containers::boxes::left_top(b, [&](auto &b) {
-    for (auto i : index_range{3}) {
+    for (auto i : index_range{400}) {
       buttons::box(b, [&, i]() { std::println("hah {}", i); });
     }
     buttons::box(b, [&]() { app.quit = true; });
@@ -127,7 +127,7 @@ int main() {
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   InitWindow(600, 800, "iuic-test");
   SetWindowMinSize(400, 300);
-  SetTargetFPS(140);
+  SetTargetFPS(144);
   // END
 
   // ctx font init
@@ -202,6 +202,7 @@ int main() {
           }
         }
       }
+
     } else {
       ctx.scheme.global.set_key_code({});
     }

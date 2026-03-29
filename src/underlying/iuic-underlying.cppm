@@ -11,3 +11,5 @@ export import :external;
 export import :utils.tree.decl;
 export import :utils.tree.node;
 export import :utils.tree.bfs;
+export import :utils.tree.dfs;
+export import :utils.tree.unordered;

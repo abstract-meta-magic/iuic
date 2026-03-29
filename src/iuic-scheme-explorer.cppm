@@ -25,7 +25,8 @@ export struct explorer {
     };
 
     const units::ui::area &area(iterators::base it) {
-      return utils::tree::access_iterator{utils::tree::shift(self().begin_, it)}
+      return utils::tree::const_access_iterator{
+          utils::tree::shift(self().begin_, it)}
           ->area;
     };
   } props{*this};

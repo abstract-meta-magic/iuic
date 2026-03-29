@@ -27,8 +27,8 @@ struct tmp {
 
   public:
     style::value get(style::sid sid) const {
-      if (index.contains(sid)) {
-        return {index.at(sid).index, &sheet};
+      if (auto it = index.find(sid); it != index.end()) {
+        return {it->second.index, &sheet};
       } else {
         return {};
       }
@@ -139,8 +139,8 @@ struct tmp {
     void attach(event::value e) { data[e.uid].push_back(e); };
 
     std::span<event::value> list_of(units::uid uid) {
-      if (data.contains(uid)) {
-        return data.at(uid);
+      if (auto it = data.find(uid); it != data.end()) {
+        return it->second;
       } else {
         return {};
       };

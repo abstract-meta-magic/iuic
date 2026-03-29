@@ -718,9 +718,11 @@ void box(builder &b, std::invocable<> auto &&callback,
         },
         uid);
 
+    /* INNER TEST
     b.element.frame(uid, sid, layout_, [](auto &) {});
     b.element.frame(uid, sid, layout_, [](auto &) {});
     b.element.frame(uid, sid, layout_, [](auto &) {});
+    */
   });
 };
 

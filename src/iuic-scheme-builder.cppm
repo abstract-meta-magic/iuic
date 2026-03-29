@@ -22,8 +22,8 @@ concept builder_block_cpt = std::invocable<T, builder &>;
 
 struct builder_base {
 protected:
-  using insert_iterator =
-      utils::tree::insert_iterator<utils::tree::node_type<sketch::value_t>>;
+  using insert_iterator = utils::tree::insert_iterator<
+      utils::tree::flat_unordered_type<sketch::value_t>>;
 
 public:
   struct unit_t {
@@ -35,16 +35,15 @@ public:
                insert_iterator it_, builder &builder_)
       : tenv{tenv_}, penv{penv_}, it{it_}, builder{builder_} {
 
-          //   static std::string root_uid{"root-uid-hash-str-4467532667"};
-          // unit.push(unit_t{.uid =
-          // kernel.hash(std::as_bytes(std::span(root_uid)))});
-        };
+    unique_uid.reserve(400);
+  };
 
 protected: // builder unit stack
   environment::tmp &tenv;
   environment::persist &penv;
   insert_iterator it;
   builder &builder;
+  std::vector<std::size_t> unique_uid;
 };
 
 struct builder_element_interface : protected virtual builder_base {
@@ -242,7 +241,7 @@ struct director {
   std::pair<sketch, environment::tmp>
   make(std::invocable<builder &> auto &&call) {
     environment::tmp tenv;
-    utils::tree::node_type<sketch::value_t> tree;
+    utils::tree::flat_unordered_type<sketch::value_t> tree;
 
     builder b{tenv, penv, {tree.root()}};
 
@@ -322,34 +321,24 @@ units::uid builder_uid_interface::make(policy::shared sh,
 
 units::uid builder_uid_interface::make(policy::unique, const std::string &str,
                                        const utils::anchor &anchor) {
+  static thread_local char buff[512]{"--unique"};
 
-  // Тут скорей всего будет нормальный hash алгоритм.
-  std::stringstream ss;
-  ss << anchor.value;
-  ss << "unique--";
-  ss << str;
-  utils::tree::sibling_iterator sit{utils::tree::childs_of(it)};
-  utils::tree::root_iterator rit{it};
+  std::size_t size{8};
 
-  if (++rit) {
-    ss << utils::tree::access_iterator{rit}->uid;
+  if (unique_uid.empty()) {
+    static char first[]{"--first"};
+    std::memcpy(&buff[9], first, 8);
+    size += 8;
   } else {
-    // set root uid ?
-  };
-
-  if (auto inner = sit; --inner) {
-    ss << utils::tree::access_iterator{inner}->uid;
+    static char last[]{"--last--unique"};
+    std::memcpy(&buff[9], last, 15);
+    std::memcpy(&buff[24], &unique_uid.back(), sizeof(std::size_t));
+    size += 8 + 15 + sizeof(std::size_t);
   }
 
-  std::size_t counter{0};
+  std::size_t hash = std::hash<std::string_view>{}({buff, size});
 
-  for (; sit.valid(); ++sit) {
-    ++counter;
-  }
-
-  ss << counter;
-
-  std::size_t hash = std::hash<std::string>{}(ss.str());
+  unique_uid.push_back(hash);
 
   // std::println("hash : {}", hash);
 

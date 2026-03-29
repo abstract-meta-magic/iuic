@@ -18,6 +18,7 @@ target_sources(${PROJECT_NAME}_underlying PUBLIC
 	"iuic-utils-tree-hierarchy-type.cppm"
 	"iuic-utils-tree-flat-bfs-type.cppm"
 	"iuic-utils-tree-flat-dfs-type.cppm"
+	"iuic-utils-tree-flat-unordered-type.cppm"
 )
 target_sources(${PROJECT_NAME}_underlying PUBLIC
 	"iuic-advance.cpp"

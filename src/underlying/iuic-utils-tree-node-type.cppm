@@ -4,7 +4,19 @@ export module iuic.underlying:utils.tree.node;
 import :utils;
 import :utils.tree.decl;
 
+// flat_unordered_type;
 namespace iuic::utils::tree {
+struct unordered_hierarchy_node {
+  using index_t = std::uint16_t;
+  static constexpr index_t npos = std::numeric_limits<index_t>::max();
+  static constexpr index_t root = npos - 1;
+  index_t parent;
+  index_t left;
+  index_t right;
+  index_t ch_first;
+  index_t ch_last;
+};
+
 template <typename T> struct tree_node {
   tree_node *parent{nullptr};
   tree_node *left{nullptr};
@@ -256,6 +268,7 @@ struct insert_iterator<node_type<T>> : base_iterator<node_type<T>> {
 
     node *insert_at{base::self->child};
 
+    // TO LONG
     if (insert_at) {
       for (; insert_at->right;) {
         insert_at = insert_at->right;

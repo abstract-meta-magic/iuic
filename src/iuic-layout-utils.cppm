@@ -1,7 +1,6 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// TODO : может переименовать в layout.utils ?
 export module iuic.core:layout.utils;
 import std;
 import iuic.underlying;
@@ -16,12 +15,11 @@ struct utils_base {
   utils_base(environment::tmp &tenv_, scheme::blueprint::base_iterator it_)
       : tenv{tenv_}, it{it_} {}
 
-  style::sid self() { return utils::tree::access_iterator{it}->sid; };
+  style::sid self() { return utils::tree::const_access_iterator{it}->sid; };
 
   style::sid parent() {
-    utils::tree::root_iterator rit{it};
-    if (++rit) {
-      return rit->sid;
+    if (utils::tree::root_iterator rit{it}; ++rit) {
+      return utils::tree::const_access_iterator{rit}->sid;
     }
     return style::sid{0};
   };
