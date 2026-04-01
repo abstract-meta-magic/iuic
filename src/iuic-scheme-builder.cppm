@@ -175,6 +175,8 @@ struct builder_state_interface : protected virtual builder_base {
 
   void detach(units::uid uid, state::value s);
 
+  void persist(units::uid uid);
+
   struct : utils::member_for<builder_state_interface> {
     void use(const auto &proto);
 
@@ -359,6 +361,10 @@ void builder_state_interface::detach(units::uid uid, state::value v) {
 };
 bool builder_state_interface::has(units::uid uid, state::value v) {
   return penv.state.has(uid, v);
+};
+
+void builder_state_interface::persist(units::uid uid) {
+  penv.state.update_lifetime(uid);
 };
 
 void utils::type_of<&builder_state_interface::machine>::use(const auto &proto) {

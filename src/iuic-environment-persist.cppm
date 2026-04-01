@@ -147,8 +147,9 @@ struct persist {
 
     void detach(units::uid uid, iuic::state::value value) {
       auto [old, cur] = data.get_buffers();
-      cur.at(uid).erase(value);
-      old.at(uid).erase(value);
+      if (auto it = cur.find(uid); it != cur.end()) {
+        it->second.erase(value);
+      }
     };
 
     bool has(units::uid uid, iuic::state::value value) {
@@ -156,7 +157,7 @@ struct persist {
       if (cur.contains(uid)) {
         return cur.at(uid).contains(value);
       } else if (old.contains(uid)) {
-        return old.at(uid).contains(value); // outdated, but OK
+        return old.at(uid).contains(value);
       } else {
         return false;
       };
@@ -218,10 +219,7 @@ struct persist {
       }
     };
 
-    void update_lifetime(units::uid uid) {
-      auto [old, cur] = data.get_buffers();
-      data.move_forward(uid);
-    };
+    void update_lifetime(units::uid uid) { data.move_forward(uid); };
 
   protected:
     void advance() override { data.swap(); };

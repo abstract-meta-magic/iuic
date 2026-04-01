@@ -601,13 +601,13 @@ struct short_text : public iuic::layout::text {
 };
 }; // namespace kitty_kit::layout
 
-export namespace kitty_kit {
+namespace kitty_kit {
 
 namespace style {
 
-constexpr inline iuic::style::font::decl font_base;
+export constexpr inline iuic::style::font::decl font_base;
 
-constexpr inline iuic::style::font::decl font_base_hovered{font_base};
+export constexpr inline iuic::style::font::decl font_base_hovered{font_base};
 
 constexpr iuic::style::decl base{[]() {
   iuic::style::decl res{};
@@ -654,9 +654,224 @@ using namespace iuic;
 using builder = iuic::scheme::builder;
 
 namespace containers {
+
+namespace layouts {
 namespace boxes {
+
+static units::upixel get_pixel_h(iuic::layout::arrange::frame_utils &utils,
+                                 const iuic::units::ui::adaptive::unit &u) {
+  return std::visit(
+      [&]<typename type>(const type &obj) -> units::upixel {
+        if constexpr (std::same_as<type, units::upixel>) {
+          return obj;
+        } else if constexpr (std::same_as<type, units::percent>) {
+          return obj * utils.self_size().borderless.h;
+        } else if constexpr (std::same_as<type, units::vw>) {
+          return obj * utils.root_size().w;
+        } else if constexpr (std::same_as<type, units::vh>) {
+          return obj * utils.root_size().h;
+        }
+
+        return 0;
+      },
+      u);
+};
+
+static units::upixel get_pixel_w(iuic::layout::arrange::frame_utils &utils,
+                                 const iuic::units::ui::adaptive::unit &u) {
+  return std::visit(
+      [&]<typename type>(const type &obj) -> units::upixel {
+        if constexpr (std::same_as<type, units::upixel>) {
+          return obj;
+        } else if constexpr (std::same_as<type, units::percent>) {
+          return obj * utils.self_size().borderless.w;
+        } else if constexpr (std::same_as<type, units::vw>) {
+          return obj * utils.root_size().w;
+        } else if constexpr (std::same_as<type, units::vh>) {
+          return obj * utils.root_size().h;
+        }
+
+        return 0;
+      },
+      u);
+};
+
+static void calc_area(iuic::units::ui::area &area,
+                      iuic::layout::arrange::frame_utils &utils,
+                      const iuic::layout::measure::result &measure,
+                      const iuic::style::shape &shape) {
+  area.borderless.h = get_pixel_h(utils, measure.height);
+  area.borderless.w = get_pixel_w(utils, measure.width);
+
+  area.bordered.h = area.borderless.h + get_pixel_h(utils, shape.border.top) +
+                    get_pixel_h(utils, shape.border.bottom);
+
+  area.bordered.w = area.borderless.w + get_pixel_w(utils, shape.border.left) +
+                    get_pixel_w(utils, shape.border.right);
+};
+
+struct cc : iuic::layout::frame {
+  std::optional<iuic::layout::measure::result>
+  measure(iuic::layout::measure::frame_utils utils) const noexcept override {
+    return iuic::layout::measure::result{iuic::units::percent{100},
+                                         iuic::units::percent{100}};
+  };
+
+  bool
+  arrange(iuic::layout::arrange::frame_utils utils) const noexcept override {
+    static thread_local std::vector<iuic::units::ui::area> buff;
+    buff.clear();
+
+    auto range = utils.childs_range();
+    auto b_1 = range.b;
+
+    iuic::units::ui::rect inner_box{};
+    iuic::units::pixel y_end{0}; // end of elements
+
+    if (b_1.valid()) {
+      auto &req = *iuic::utils::tree::access_iterator{b_1};
+      buff.push_back({});
+      auto &area = buff.back();
+      calc_area(area, utils, req.measure, utils.style_of(req.sid).get_shape());
+
+      y_end += area.bordered.h;
+    }
+
+    auto b_2 = b_1;
+    ++b_2;
+
+    // ???
+    std::size_t index{1};
+    for (; b_2.valid(); ++b_1, ++b_2, ++index) {
+      auto &req_1 = *iuic::utils::tree::access_iterator{b_1};
+      auto &req_2 = *iuic::utils::tree::access_iterator{b_2};
+      // calc y_end
+      // mb virtualization
+      buff.push_back({});
+      auto &area = buff.back();
+      calc_area(area, utils, req_2.measure,
+                utils.style_of(req_2.sid).get_shape());
+
+      y_end += area.bordered.h;
+
+      auto m_1 = get_pixel_h(
+          utils, utils.style_of(req_1.sid).get_shape().margin.bottom);
+      auto m_2 =
+          get_pixel_h(utils, utils.style_of(req_2.sid).get_shape().margin.top);
+
+      y_end += std::max(m_1, m_2);
+
+      if (y_end >= utils.self_size().borderless.h) {
+        break;
+      }
+
+      // check out of box
+    };
+
+    // insert
+
+    auto inner_h = utils.self_size().borderless.h;
+    auto elem_h = y_end; // iuic::units::pixel
+    auto gap = inner_h > elem_h ? (inner_h - elem_h) / 2 : 0;
+
+    iuic::units::pixel y_insert = utils.self_size().borderless.y + gap;
+
+    b_1 = range.b;
+    b_2 = range.b;
+    ++b_2;
+
+    if (b_1.valid()) {
+      auto &req = *iuic::utils::tree::access_iterator{b_1};
+
+      auto &area = buff[0];
+      area.bordered.y = y_insert;
+      area.borderless.y = y_insert;
+
+      area.bordered.x += (utils.self_size().borderless.w - area.bordered.w) / 2;
+      auto br_left =
+          get_pixel_w(utils, utils.style_of(req.sid).get_shape().border.left);
+      auto br_top =
+          get_pixel_h(utils, utils.style_of(req.sid).get_shape().border.top);
+
+      area.borderless.x = area.bordered.x + br_left;
+      area.borderless.y = area.bordered.y + br_top;
+
+      utils.apply_element(b_1, area);
+
+      y_insert = area.bordered.y + area.bordered.h;
+    }
+
+    // ???
+    std::size_t nindex{1};
+    for (; nindex < index; ++b_1, ++b_2, ++nindex) {
+      auto &req_1 = *iuic::utils::tree::access_iterator{b_1};
+      auto &req_2 = *iuic::utils::tree::access_iterator{b_2};
+
+      auto m_1 = get_pixel_h(
+          utils, utils.style_of(req_1.sid).get_shape().margin.bottom);
+      auto m_2 =
+          get_pixel_h(utils, utils.style_of(req_2.sid).get_shape().margin.top);
+
+      y_insert += std::max(m_1, m_2);
+
+      auto &area = buff[nindex];
+      area.bordered.y = y_insert;
+      area.borderless.y = y_insert;
+
+      area.bordered.x += (utils.self_size().borderless.w - area.bordered.w) / 2;
+      auto br_left =
+          get_pixel_w(utils, utils.style_of(req_2.sid).get_shape().border.left);
+      auto br_top =
+          get_pixel_h(utils, utils.style_of(req_2.sid).get_shape().border.top);
+      area.borderless.x = area.bordered.x + br_left;
+      area.borderless.y = area.bordered.y + br_top;
+
+      utils.apply_element(b_2, area);
+
+      y_insert += area.bordered.h;
+    };
+
+    return false;
+  };
+};
+}; // namespace boxes
+}; // namespace layouts
+
+export namespace boxes {
 void right_top(builder &b, std::invocable<builder &> auto &&call) { call(b); };
 void left_top(builder &b, std::invocable<builder &> auto &&call) { call(b); };
+void center_top(builder &b, std::invocable<builder &> auto &&call) { call(b); };
+
+void right_center(builder &b, std::invocable<builder &> auto &&call) {
+  call(b);
+};
+void left_center(builder &b, std::invocable<builder &> auto &&call) {
+  call(b);
+};
+
+void center_center(builder &b, std::invocable<builder &> auto &&call) {
+  static constexpr layouts::boxes::cc cc{};
+
+  static constexpr auto style = []() {
+    iuic::style::decl res{};
+
+    res.shape.min_size.width = iuic::units::percent{100};
+    res.shape.min_size.height = iuic::units::percent{100};
+    return res;
+  }();
+
+  b.element.frame(b.style.make(style), cc, [&call](builder &b) { call(b); });
+};
+
+void right_bottom(builder &b, std::invocable<builder &> auto &&call) {
+  call(b);
+};
+void left_bottom(builder &b, std::invocable<builder &> auto &&call) {
+  call(b);
+};
+void center_bottom(builder &b, std::invocable<builder &> auto &&call) {
+  call(b);
+};
 
 // short
 void lt(builder &b, std::invocable<builder &> auto &&call) {
@@ -665,10 +880,38 @@ void lt(builder &b, std::invocable<builder &> auto &&call) {
 void rt(builder &b, std::invocable<builder &> auto &&call) {
   right_top(b, std::forward<decltype(call)>(call));
 };
+
+void ct(builder &b, std::invocable<builder &> auto &&call) {
+  right_top(b, std::forward<decltype(call)>(call));
+};
+
+void lc(builder &b, std::invocable<builder &> auto &&call) {
+  left_center(b, std::forward<decltype(call)>(call));
+};
+void rc(builder &b, std::invocable<builder &> auto &&call) {
+  right_center(b, std::forward<decltype(call)>(call));
+};
+
+void cc(builder &b, std::invocable<builder &> auto &&call) {
+  center_center(b, std::forward<decltype(call)>(call));
+};
+
+void lb(builder &b, std::invocable<builder &> auto &&call) {
+  left_bottom(b, std::forward<decltype(call)>(call));
+};
+void rb(builder &b, std::invocable<builder &> auto &&call) {
+  right_bottom(b, std::forward<decltype(call)>(call));
+};
+
+void cb(builder &b, std::invocable<builder &> auto &&call) {
+  right_bottom(b, std::forward<decltype(call)>(call));
+};
+
+void span(builder &b) {};
 }; // namespace boxes
 }; // namespace containers
 
-namespace buttons {
+export namespace buttons {
 
 void box(builder &b, std::invocable<> auto &&callback,
          utils::anchor anchor = {}) {
@@ -684,11 +927,12 @@ void box(builder &b, std::invocable<> auto &&callback,
     using callback_type = std::remove_cvref_t<decltype(callback)>;
 
     b.memory.persist(uid, std::type_identity<callback_type>{});
+    b.state.persist(uid);
 
     b.memory.init_if_not(
         uid, [&]() { return std::forward<decltype(callback)>(callback); });
 
-    b.policy.hovered(policy::hovered::propagate);
+    b.policy.hovered(policy::hovered::block);
 
     if (b.state.has(uid, iuic::state::base::hovered)) {
 
@@ -741,7 +985,9 @@ void text(builder &b, std::string_view text, std::invocable<> auto &&callback,
     using callback_type = std::remove_cvref_t<decltype(callback)>;
 
     b.memory.persist<callback_type>(uid);
+    b.state.persist(uid);
 
+    // link with element uid to group lifetime
     b.memory.init_if_not(
         uid, [&]() { return std::forward<decltype(callback)>(callback); });
 

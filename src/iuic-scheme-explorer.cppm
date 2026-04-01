@@ -29,6 +29,25 @@ export struct explorer {
           utils::tree::shift(self().begin_, it)}
           ->area;
     };
+
+    bool is_virtualized(iterators::base it) {
+      auto &el = *utils::tree::const_access_iterator{
+          utils::tree::shift(self().begin_, it)};
+
+      return el.meta.has(el.meta.virtualized);
+    };
+
+    bool is_discarded(iterators::base it) {
+      auto &el = *utils::tree::const_access_iterator{
+          utils::tree::shift(self().begin_, it)};
+
+      return el.meta.has(el.meta.discarded);
+    }
+
+    policy::hovered hovered_policy(iterators::base it) {
+      return self().tenv->policy.hovered(self().get_uid(it));
+    };
+
   } props{*this};
 
   struct : utils::member_for<explorer> {
@@ -49,7 +68,7 @@ export struct explorer {
     }
 
     void detach(iterators::base it, state::value state) {
-      self().penv->state.attach(self().get_uid(it), state);
+      self().penv->state.detach(self().get_uid(it), state);
     }
   } state{*this};
 
@@ -58,6 +77,18 @@ export struct explorer {
       return utils::tree::bfs_iterator_range_for{
           self().h, utils::tree::iterator_type<utils::tree::base_iterator>{}};
     };
+
+    auto reverse_level_order() {
+      return ranges::reverse_level_order{self().h.begin()};
+    };
+
+    auto postorder() { return ranges::postorder{self().h.begin()}; };
+
+    auto preorder() {};
+
+    // only available elements
+    // no virtualized,discarted
+    auto viwe_ordered() {};
   } ranges{*this};
 
   struct : utils::member_for<explorer> {

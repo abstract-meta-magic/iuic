@@ -225,6 +225,7 @@ struct insert_iterator<flat_unordered_type<T>>
     } else if (this->valid()) {
       return at_(std::move(value));
     }
+    return {};
   };
 
   void to(T &&) {};
@@ -256,11 +257,14 @@ private:
     data.push_back(std::move(value));
     auto &self_node = hierarchy[this->self];
     if (self_node.ch_first != unordered_hierarchy_node_t::npos) {
-      hierarchy.push_back({.parent = this->self, .left = self_node.ch_last});
+      hierarchy.push_back(
+          {.parent = this->self, .left = self_node.ch_last}); // invalidate it
+      auto &self_node = hierarchy[this->self];
       hierarchy[self_node.ch_last].right = index;
       self_node.ch_last = index;
     } else {
-      hierarchy.push_back({.parent = this->self});
+      hierarchy.push_back({.parent = this->self}); // invalidate it
+      auto &self_node = hierarchy[this->self];
       self_node.ch_first = index;
       self_node.ch_last = index;
     }

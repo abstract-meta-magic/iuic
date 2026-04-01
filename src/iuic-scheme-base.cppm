@@ -32,7 +32,7 @@ struct bp_element {
 
     void set(flag f, bool value_ = true) { value.set(f, value_); };
 
-    bool has(flag f) { return value.test(f); }
+    bool has(flag f) const { return value.test(f); }
 
   private:
     std::bitset<8> value{};
@@ -46,6 +46,7 @@ using blueprint = utils::tree::flat_bfs_type<bp_element>;
 export namespace iterators {
 
 using base = utils::tree::base_iterator<utils::tree::hierarchy<blueprint>>;
+using sentinel = utils::tree::sentinel<base>;
 using root = utils::tree::root_iterator<utils::tree::hierarchy<blueprint>>;
 using sibling =
     utils::tree::sibling_iterator<utils::tree::hierarchy<blueprint>>;
@@ -54,9 +55,143 @@ sibling childs_of(base it) { return utils::tree::childs_of(it); };
 
 }; // namespace iterators
 
+export namespace props {
+struct base {};
+
+template <auto lhs, auto rhs> struct and__ : decltype(lhs), decltype(rhs) {};
+
+struct : base {
+} no_discarted;
+
+struct : base {
+} no_virtualized;
+
+struct : and__<no_virtualized, no_discarted> {
+} viewable;
+
+}; // namespace props
+
 export namespace ranges {
 // level_order
-// post_order
+
+struct level_order {
+  struct iterator : iterators::base {};
+
+  iterator begin();
+
+  utils::tree::sentinel<iterator> end();
 };
+
+struct reverse_level_order {
+  struct iterator : iterators::base {
+    using base = iterators::base;
+    iterator(base b) : base{b} {}
+    iterator() {}
+
+    iterator &operator*() { return *this; }
+
+    iterator &operator++() {
+      --self;
+      return *this;
+    };
+  };
+
+  reverse_level_order(iterators::base it) : begin_{find_begin__(it)} {};
+
+  iterator begin() { return begin_; };
+
+  utils::tree::sentinel<iterator> end() { return {}; };
+
+private:
+  static iterator find_begin__(iterators::base it) {
+    struct : iterators::base {
+      iterator find() {
+        return iterators::base{this->owner->hierarchy__.size() - 1,
+                               this->owner};
+      };
+    } search_end{it};
+
+    return search_end.find();
+  };
+
+private:
+  iterator begin_;
+};
+
+struct postorder {
+  struct iterator : iterators::base {
+    using base = iterators::base;
+    iterator(base b) : base{b} {}
+    iterator() {}
+
+    iterator &operator*() { return *this; }
+
+    iterator &operator++() {
+      if (not valid())
+        return *this;
+
+      auto &h = owner->hierarchy__;
+      auto &hself = h[self];
+
+      if (h.size() - 1 == self) {
+        self = hself.parent;
+      } else if (auto sel{self + 1}; h[self].parent == h[sel].parent) {
+        for (; h[sel].ch_begin != hself.npos;) {
+          sel = h[sel].ch_begin;
+        }
+
+        self = sel;
+        return *this;
+      } else if (sel = hself.parent; sel == hself.root) {
+        self = npos;
+      } else {
+        self = sel;
+      }
+
+      return *this;
+    };
+  };
+
+  postorder(iterators::base it) : begin_{find_entry__(it)} {}
+
+  iterator begin() { return begin_; };
+
+  utils::tree::sentinel<iterator> end() { return {}; };
+
+private:
+  static iterator find_entry__(iterators::base it) {
+    struct : iterators::base {
+      using base = iterator::base;
+      iterator find() {
+        if (owner && not owner->hierarchy__.empty()) {
+          auto &h = owner->hierarchy__;
+          index_t sel{0};
+
+          for (; h[sel].ch_begin != npos;) {
+            sel = h[sel].ch_begin;
+          }
+          return base{sel, owner};
+
+        } else {
+          return base{};
+        }
+      }
+    } search_entry{it};
+    return search_entry.find();
+  };
+
+private:
+  iterator begin_;
+};
+
+struct preorder {
+  struct iterator : iterators::base {};
+  iterator begin();
+
+  utils::tree::sentinel<iterator> end();
+};
+
+// post_order
+}; // namespace ranges
 
 }; // namespace iuic::scheme

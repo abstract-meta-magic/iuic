@@ -62,8 +62,8 @@ bool operator==(const index_range::iterator_base &lhs,
 void main_window(iuic::scheme::builder &b, app &app) {
   using namespace kitty_kit;
 
-  containers::boxes::left_top(b, [&](auto &b) {
-    for (auto i : index_range{400}) {
+  containers::boxes::cc(b, [&](auto &b) {
+    for (auto i : index_range{30}) {
       buttons::box(b, [&, i]() { std::println("hah {}", i); });
     }
     buttons::box(b, [&]() { app.quit = true; });
@@ -161,6 +161,13 @@ int main() {
 
   // ctx.font.link(base_font);
 
+  InitAudioDevice();
+
+  std::vector<Sound> sounds;
+  std::size_t sound_id{0};
+  for (auto i : index_range{12}) {
+    sounds.push_back(LoadSound("../tmp_solutions/res/pop-up.mp3"));
+  };
   app app;
 
   auto mouse_position = GetMousePosition();
@@ -172,8 +179,6 @@ int main() {
 
     ctx.make(viewport, [&](auto &b) { main_window(b, app); }); // iuic test
 
-    // TODO :
-
     static constexpr auto in = [](units::ui::position,
                                   units::ui::rect) -> bool { return true; };
 
@@ -184,12 +189,32 @@ int main() {
              pointer.y >= area.y && pointer.y <= area.y + area.h;
     };
 
-    for (auto el : ctx.scheme.ranges.level_order()) {
+    // обход по площади
+    // обход с zorder
+    // discarted | virtualized
+    // machine
+    // events
+    // static | stick | absolute
+
+    for (auto el : ctx.scheme.ranges.postorder()) {
       ctx.scheme.event.list(el);
       auto &area = ctx.scheme.props.area(el);
 
-      if (in__(area.bordered)) {
-        ctx.scheme.state.attach(el, state::base::hovered);
+      if (not ctx.scheme.state.has(el, state::base::hovered) &&
+          in__(area.bordered)) {
+        if (auto policy = ctx.scheme.props.hovered_policy(el);
+            policy == iuic::policy::hovered::propagate) {
+          ctx.scheme.state.attach(el, state::base::hovered);
+          PlaySound(sounds[sound_id = (sound_id += 1) % 12]);
+        } else if (policy == iuic::policy::hovered::block) {
+          ctx.scheme.state.attach(el, state::base::hovered);
+          PlaySound(sounds[sound_id = (sound_id += 1) % 12]);
+          break;
+        }
+      } else if (ctx.scheme.state.has(el, state::base::hovered)) {
+        if (not in__(area.bordered)) {
+          ctx.scheme.state.detach(el, state::base::hovered);
+        }
       }
     };
 
@@ -199,6 +224,11 @@ int main() {
         if (ctx.scheme.state.has(el, state::base::hovered)) {
           for (auto &e : ctx.scheme.event.list(el)) {
             ctx.scheme.event.trigger(e);
+          }
+
+          if (ctx.scheme.props.is_discarded(el)) {
+
+            // aeu
           }
         }
       }
@@ -242,6 +272,9 @@ int main() {
   }
 
   UnloadImage(image);
+  for (auto &s : sounds) {
+    UnloadSound(s);
+  }
   CloseWindow();
 
 #endif

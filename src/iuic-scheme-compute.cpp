@@ -86,8 +86,8 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
             using type = std::remove_cvref_t<decltype(obj)>;
 
             if constexpr (std::same_as<type, const layout::frame *>) {
-              auto res =
-                  obj->measure(layout::measure::frame_utils{tenv, bit, chit});
+              auto res = obj->measure(
+                  layout::measure::frame_utils{tenv, penv, bit, chit});
 
               auto mit = utils::tree::shift(m.begin(), cur);
 
@@ -177,7 +177,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
 
             if constexpr (std::same_as<type, const layout::frame *>) {
               layout::arrange::frame_utils utils{
-                  tenv, bp_acc,
+                  tenv, penv, bp_acc,
                   utils::tree::childs_of(
                       utils::tree::shift(m.begin(), bp_acc))};
 

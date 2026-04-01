@@ -52,7 +52,7 @@ struct hierarchy<flat_bfs_type<T>>
     if (this->hierarchy__.empty()) {
       return {};
     } else {
-      return {this->hierarchy__.size() - 1, const_cast<hierarchy *>(this)};
+      return {bfs_hierarchy_node_t::root, const_cast<hierarchy *>(this)};
     };
   };
 
@@ -104,8 +104,10 @@ struct hierarchy<flat_bfs_type<T>>
       this->hierarchy__.push_back(
           bfs_hierarchy_node_t{.parent = parent}); // set parent
 
+      std::size_t test{0};
       for (auto ch : iterator_range_for{childs_of(cur[index])}) {
         next.push_back(ch);
+        ++test;
       };
 
       if (not deep) {

@@ -156,7 +156,7 @@ struct transform {
 
   units::ui::position offset{0, 0};
 
-  float scale;
+  float scale{1.0f};
 };
 
 // static - unlimited
