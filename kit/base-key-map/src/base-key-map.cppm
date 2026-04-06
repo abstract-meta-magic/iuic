@@ -5,10 +5,10 @@ module;
 #include <cstdint>
 #include <string_view>
 
-export module iuic.key_map.base;
+export module iuic.keymap.base;
 import iuic.core;
 
-export namespace iuic::key_map {
+export namespace iuic::keymap {
 
 consteval key_code mouse(std::string_view code) {
   if (code == "left") {
@@ -26,4 +26,4 @@ namespace en {
 constexpr key_code qwerty(std::string_view code);
 };
 
-}; // namespace iuic::key_map
+}; // namespace iuic::keymap

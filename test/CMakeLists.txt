@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.30)
 
 find_package(Raylib REQUIRED)
+find_package(Tracy REQUIRED)
 
 
 add_executable(te base.cpp)
 
 
-target_link_libraries(te iuic::core kitty_kit raylib)
+target_link_libraries(te iuic::core kitty_kit raylib Tracy::TracyClient)
 
 if(IUIC_TMP_CXX_STD)
 	#	target_link_libraries(te tmp_cxx_std)

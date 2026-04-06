@@ -162,10 +162,12 @@ struct transform {
 // static - unlimited
 struct advence {
   struct {
-    float grow{0};
+    bool used{false};
 
-    float shrink{0};
-  } flex;
+    float grow{1.0f};
+
+    float shrink{1.0f};
+  } adaptive;
 
   struct {
     units::pixel height;

@@ -1,9 +1,10 @@
 #include <raylib.h>
 
+import std;
 import iuic.state;
 import iuic.core;
 import iuic.kitty_kit;
-import std;
+import iuic.keymap.base;
 
 using builder_ui = iuic::scheme::builder;
 
@@ -63,8 +64,16 @@ void main_window(iuic::scheme::builder &b, app &app) {
   using namespace kitty_kit;
 
   containers::boxes::cc(b, [&](auto &b) {
-    for (auto i : index_range{30}) {
+    for (auto i : index_range{3}) {
       buttons::box(b, [&, i]() { std::println("hah {}", i); });
+
+      constexpr auto style = []() {
+        iuic::style::decl res{};
+
+        return res;
+      }();
+
+      containers::boxes::lrc<style>(b, [](auto &b) {});
     }
     buttons::box(b, [&]() { app.quit = true; });
   });
@@ -130,37 +139,6 @@ int main() {
   SetTargetFPS(144);
   // END
 
-  // ctx font init
-  struct d : text::glyph::decoder {
-    // test
-    constexpr std::expected<std::vector<text::glyph::index_t>, error>
-    decode(const text::token &t) const noexcept override {
-      std::vector<text::glyph::index_t> res{};
-      for (auto &c : t.text) {
-        res.push_back(c);
-      }
-      return res;
-    };
-  };
-
-  struct b : iuic::external::binding {
-    // test
-    constexpr const external::type &type() const noexcept override {
-      return opengl_text;
-    };
-
-    constexpr std::string_view info() const noexcept override {
-      return "Kitty kit gl binding";
-    };
-  };
-
-  std::shared_ptr<text::fontset> base_font = text::fontset{}.bind(
-      kitty_kit::style::font_base,
-      text::glyph::atlas{std::unique_ptr<text::glyph::decoder>{new d{}},
-                         std::unique_ptr<external::binding>{new b{}}});
-
-  // ctx.font.link(base_font);
-
   InitAudioDevice();
 
   std::vector<Sound> sounds;
@@ -178,9 +156,6 @@ int main() {
                              (units::upixel)GetScreenHeight()};
 
     ctx.make(viewport, [&](auto &b) { main_window(b, app); }); // iuic test
-
-    static constexpr auto in = [](units::ui::position,
-                                  units::ui::rect) -> bool { return true; };
 
     units::ui::position pointer{GetMouseX(), GetMouseY()};
 
@@ -219,14 +194,15 @@ int main() {
     };
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-      ctx.scheme.global.set_key_code(key_map::mouse("left"));
+      ctx.scheme.global.set_key_code(keymap::mouse("left"));
       for (auto el : ctx.scheme.ranges.level_order()) {
         if (ctx.scheme.state.has(el, state::base::hovered)) {
           for (auto &e : ctx.scheme.event.list(el)) {
             ctx.scheme.event.trigger(e);
           }
 
-          if (ctx.scheme.props.is_discarded(el)) {
+          if (ctx.scheme.props.is_discarded(el) ||
+              ctx.scheme.props.is_virtualized(el)) {
 
             // aeu
           }
