@@ -44,6 +44,7 @@ namespace font {
 
 struct decl {
   consteval decl() = default;
+  constexpr ~decl() = default;
   consteval decl(const decl &other) : self{this}, underlying{&other} {};
   consteval decl(const decl &underlying_, const decl &adjacent_)
       : self{this}, underlying{&underlying_}, adjacent{&adjacent_} {};

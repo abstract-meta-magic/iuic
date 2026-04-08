@@ -230,10 +230,6 @@ struct persist {
 
   struct : private iuic::advance::interface {
     friend persist;
-    units::ui::size get_viewport_size() { return viewport_size; };
-
-    void set_viewport_size(units::ui::size vp) { viewport_size = vp; };
-
     units::ui::position get_pointer_position() { return pointer_position; };
 
     units::ui::position get_old_pointer_position() {
@@ -249,7 +245,6 @@ struct persist {
   private:
     units::ui::position old_pointer_position;
     units::ui::position pointer_position;
-    units::ui::size viewport_size;
   } external;
 
   persist(advance::pool &pool) {

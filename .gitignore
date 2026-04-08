@@ -3,6 +3,10 @@
 
 .build
 .cache
+.clocignore
+kit/kitty-kit
+tmp_solutions
+utils
 compile_commands.json
 *~
 /#*#

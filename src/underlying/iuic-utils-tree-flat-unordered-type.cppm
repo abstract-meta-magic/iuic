@@ -4,41 +4,11 @@
 export module iuic.underlying:utils.tree.unordered;
 import std;
 import :utils.tree.decl;
-
-namespace iuic::utils::tree {
-struct unordered_hierarchy_node_t {
-  using index_t = std::size_t; // TODO : replace to template papam
-  static constexpr index_t npos = std::numeric_limits<index_t>::max();
-  static constexpr index_t root = npos - 1;
-  index_t parent{root};
-  index_t left{npos};
-  index_t right{npos};
-  index_t ch_first{npos};
-  index_t ch_last{npos};
-};
-
-template <typename> struct hierarchy_base;
-
-}; // namespace iuic::utils::tree
-
-export namespace iuic::utils::tree {
-template <typename> struct hierarchy;
-template <typename> struct flat_unordered_type;
-
-template <typename T> struct hierarchy_base<flat_unordered_type<T>> {
-  std::vector<unordered_hierarchy_node_t> hierarchy__;
-  unordered_hierarchy_node_t::index_t root_begin{0}, root_end{0};
-};
-
-template <typename T>
-struct hierarchy<flat_unordered_type<T>>
-    : protected hierarchy_base<flat_unordered_type<T>> {};
-
-}; // namespace iuic::utils::tree
+export import :utils.tree.hierarchy.unordered;
 
 export namespace iuic::utils::tree {
 template <typename T>
-struct flat_unordered_type_base : hierarchy_base<flat_unordered_type<T>> {
+struct flat_unordered_type_base : hierarchy::unordered_base {
   std::vector<T> data__;
 };
 
@@ -49,6 +19,7 @@ struct flat_unordered_type : protected flat_unordered_type_base<T> {
   using sibling_iterator = sibling_iterator<flat_unordered_type>;
   using access_iterator = access_iterator<flat_unordered_type>;
   using const_access_iterator = const_access_iterator<flat_unordered_type>;
+  using hierarchy = hierarchy::unordered_base;
 
   base_iterator begin() const {
     return {0, const_cast<flat_unordered_type *>(this)};
@@ -56,13 +27,11 @@ struct flat_unordered_type : protected flat_unordered_type_base<T> {
 
   base_iterator end() const {
     // not normal
-    return {unordered_hierarchy_node_t::npos,
-            const_cast<flat_unordered_type *>(this)};
+    return {hierarchy::node_t::npos, const_cast<flat_unordered_type *>(this)};
   };
 
   base_iterator root() const {
-    return {unordered_hierarchy_node_t::root,
-            const_cast<flat_unordered_type *>(this)};
+    return {hierarchy::node_t::root, const_cast<flat_unordered_type *>(this)};
   };
 };
 
@@ -80,7 +49,7 @@ public:
   bool valid() const { return owner ? self < owner->data__.size() : false; };
 
   bool is_root() const {
-    return owner ? self == unordered_hierarchy_node_t::root : false;
+    return owner ? self == container_t::hierarchy::node_t::root : false;
   };
 
   template <typename I>
@@ -99,11 +68,11 @@ public:
 
   base_iterator() {}
 
-  base_iterator(unordered_hierarchy_node_t::index_t self_, owner_t *owner_)
+  base_iterator(container_t::hierarchy::index_t self_, owner_t *owner_)
       : self{self_}, owner{owner_} {};
 
 protected:
-  unordered_hierarchy_node_t::index_t self{unordered_hierarchy_node_t::npos};
+  container_t::hierarchy::index_t self{container_t::hierarchy::node_t::npos};
   owner_t *owner{nullptr};
 };
 
@@ -220,7 +189,8 @@ struct insert_iterator<flat_unordered_type<T>>
   insert_iterator() {};
 
   insert_iterator at(T &&value) {
-    if (this->self == unordered_hierarchy_node_t::root && this->owner) {
+    if (this->self == base::container_t::hierarchy::node_t::root &&
+        this->owner) {
       return at_root(std::move(value));
     } else if (this->valid()) {
       return at_(std::move(value));
@@ -256,7 +226,7 @@ private:
 
     data.push_back(std::move(value));
     auto &self_node = hierarchy[this->self];
-    if (self_node.ch_first != unordered_hierarchy_node_t::npos) {
+    if (self_node.ch_first != base::container_t::hierarchy::node_t::npos) {
       hierarchy.push_back(
           {.parent = this->self, .left = self_node.ch_last}); // invalidate it
       auto &self_node = hierarchy[this->self];

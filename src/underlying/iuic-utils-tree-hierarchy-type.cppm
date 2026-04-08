@@ -4,11 +4,11 @@
 export module iuic.underlying:utils.tree.hierarchy;
 import :utils.tree.decl;
 
-namespace uitls::tree {
-struct hierarchy_tree_node_type {
+namespace uitls::tree::hierarchy {
+struct bfs {
   std::size_t self;
 };
 
-} // namespace uitls::tree
+} // namespace uitls::tree::hierarchy
 
 export namespace uitls::tree {};

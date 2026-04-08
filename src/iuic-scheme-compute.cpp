@@ -86,8 +86,8 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
             using type = std::remove_cvref_t<decltype(obj)>;
 
             if constexpr (std::same_as<type, const layout::frame *>) {
-              auto res = obj->measure(
-                  layout::measure::frame_utils{tenv, penv, bit, chit});
+              auto res =
+                  obj->measure(layout::measure::frame_utils{tenv, bit, chit});
 
               auto mit = utils::tree::shift(m.begin(), cur);
 
@@ -130,7 +130,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
       utils::tree::access_iterator mesure_acc{
           utils::tree::shift(m.begin(), root_ch)};
 
-      auto viewport = penv.external.get_viewport_size();
+      auto &viewport = tenv.meta.viewport_size;
 
       // make area
       auto area = calc_root_child_area(
@@ -177,7 +177,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
 
             if constexpr (std::same_as<type, const layout::frame *>) {
               layout::arrange::frame_utils utils{
-                  tenv, penv, bp_acc,
+                  tenv, bp_acc,
                   utils::tree::childs_of(
                       utils::tree::shift(m.begin(), bp_acc))};
 

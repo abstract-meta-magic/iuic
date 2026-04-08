@@ -192,5 +192,9 @@ struct tmp {
   private:
     // mem buff
   } memory;
+
+  struct {
+    units::ui::size viewport_size{0, 0};
+  } meta; // frame meta
 };
 }; // namespace iuic::environment

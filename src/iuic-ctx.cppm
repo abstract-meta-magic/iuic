@@ -20,11 +20,6 @@ public: // api
   };
 
 private:
-  void set_view_size(units::ui::size sz) {
-    penv.external.set_viewport_size(sz);
-  };
-
-private:
   // sync
   advance::pool adp;
 
@@ -44,15 +39,10 @@ void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
   adp.advance();
 
   // <<-----------------------<< begin
-  set_view_size(vp);
-
-  // <<-----------------------<< make base
-
-  penv.external.set_viewport_size(vp);
 
   scheme::director d{penv};
 
-  auto [sketch, tenv_] = d.make(std::forward<decltype(call)>(call));
+  auto [sketch, tenv_] = d.make(vp, std::forward<decltype(call)>(call));
 
   blueprint = scheme::compute(sketch, tenv_, penv);
 

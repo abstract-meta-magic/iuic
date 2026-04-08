@@ -63,6 +63,10 @@ struct builder_element_interface : protected virtual builder_base {
   void frame(units::uid uid, style::sid, const layout::frame &,
              builder_block_cpt auto &&call) noexcept;
 
+  void frame(units::uid uid, style::sid, const layout::frame &) noexcept;
+
+  void frame(style::sid, const layout::frame &) noexcept;
+
   /*
     Является конечной точкой.Отрисовка текста
   */
@@ -241,8 +245,9 @@ struct director {
   director(environment::persist &penv_) : penv{penv_} {};
 
   std::pair<sketch, environment::tmp>
-  make(std::invocable<builder &> auto &&call) {
+  make(units::ui::size viewport, std::invocable<builder &> auto &&call) {
     environment::tmp tenv;
+    tenv.meta.viewport_size = viewport;
     utils::tree::flat_unordered_type<sketch::value_t> tree;
 
     builder b{tenv, penv, {tree.root()}};
@@ -289,6 +294,28 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
   std::swap(nit, it);
   call(builder);
   std::swap(nit, it);
+};
+void builder_element_interface::frame(units::uid uid_, style::sid sid_,
+                                      const layout::frame &layout_) noexcept {
+  auto ait = utils::tree::access_iterator{it};
+
+  auto nit = it.at(
+      sketch::value_t{.layout = &layout_,
+                      .uid = uid_,
+                      .sid = sid_,
+                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
+};
+
+void builder_element_interface::frame(style::sid sid_,
+                                      const layout::frame &layout_) noexcept {
+
+  auto ait = utils::tree::access_iterator{it};
+
+  auto nit = it.at(
+      sketch::value_t{.layout = &layout_,
+                      .uid = ait ? ait->uid : 0,
+                      .sid = sid_,
+                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
 };
 
 // ---- IMPL [uid] ----

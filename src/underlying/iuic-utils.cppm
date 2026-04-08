@@ -6,6 +6,17 @@ import std;
 
 export namespace iuic::utils {
 
+struct unimplemented : std::runtime_error {
+  unimplemented()
+      : std::runtime_error{"This part/function doesn't have implementation."} {
+        };
+
+  unimplemented(std::string msg)
+      : std::runtime_error{std::format(
+            "This part/function doesn't have implementation. msg : {}", msg)} {
+        };
+};
+
 template <erasure::is_pure_type Owner> struct member_for {
   member_for(Owner &owner_) : owner{owner_} {}
 

@@ -16,8 +16,6 @@ struct dfs_t {
 } constexpr inline dfs{};
 }; // namespace tags
 
-template <typename T> struct hierarchy;
-
 enum class iterator_state { valid, invalid, root };
 
 enum class walk_op {
@@ -195,7 +193,7 @@ template <typename T> base_iterator<T> begin(T &&);
 template <typename T> sentinel<base_iterator<T>> end(T &&) { return {}; };
 
 template <typename T, typename U>
-base_iterator<T> shift(base_iterator<T>, base_iterator<U>);
+base_iterator<T> shift(base_iterator<T> from, base_iterator<U> to);
 
 template <typename T, template <typename> typename Iterator>
 struct iterator_range_for<root_iterator<T>, Iterator> {

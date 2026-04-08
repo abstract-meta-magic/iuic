@@ -12,26 +12,33 @@ namespace iuic {
 
 export namespace layout {
 struct utils_base {
-  utils_base(environment::tmp &tenv_, environment::persist &penv_,
-             scheme::blueprint::base_iterator it_)
-      : tenv{tenv_}, penv{penv_}, it{it_} {}
+  using iterator = scheme::iterators::base;
+  using root = scheme::iterators::root;
+  using sibling = scheme::iterators::sibling;
 
-  style::sid self() { return utils::tree::const_access_iterator{it}->sid; };
+  utils_base(environment::tmp &tenv_, scheme::blueprint::base_iterator it_)
+      : tenv{tenv_}, it{it_} {}
 
-  style::sid parent() {
-    if (utils::tree::root_iterator rit{it}; ++rit) {
-      return utils::tree::const_access_iterator{rit}->sid;
-    }
-    return style::sid{0};
+  iterator self() { return it; };
+
+  iterator parent() { return ++utils::tree::root_iterator{it}; };
+
+  utils::tree::iterator_range_for<sibling> childs() {
+    return {scheme::iterators::childs_of(it)};
   };
 
-  style::value style_of(style::sid sid) { return tenv.style.get(sid); };
+  // this is joke...BUT
+  struct : utils::adv_member_for<utils_base> {
+    style::value operator[](iterator el) {
+      return self().tenv.style.get(
+          utils::tree::access_iterator{utils::tree::shift(self().it, el)}->sid);
+    };
+  } style [[no_unique_address]];
 
-  units::ui::size root_size() { return penv.external.get_viewport_size(); };
+  units::ui::size root_size() { return tenv.meta.viewport_size; };
 
 protected:
   environment::tmp &tenv;
-  environment::persist &penv;
   scheme::blueprint::base_iterator it;
 };
 
@@ -51,27 +58,20 @@ struct unit {
 using tree = utils::tree::flat_bfs_type<unit>;
 
 struct frame_utils : public utils_base {
-  frame_utils(environment::tmp &tenv, environment::persist &penv_,
-              scheme::blueprint::base_iterator it,
-              measure::tree::sibling_iterator ch_)
-      : utils_base{tenv, penv_, it}, ch{ch_} {};
+  frame_utils(environment::tmp &tenv, scheme::blueprint::base_iterator it,
+              measure::tree::sibling_iterator m_)
+      : utils_base{tenv, it}, m{m_} {};
 
-  // TODO : нужно врапнуть итераторы
-  // чтобы они могли пропускать discarded элементы.
-  struct childs_proxy {
-    struct iterator : measure::tree::sibling_iterator {
-      auto &operator*() { return *utils::tree::access_iterator{*this}; }
+  // this is joke...BUT
+  struct : utils::adv_member_for<frame_utils> {
+    const measure::result &operator[](iterator el) {
+      return utils::tree::access_iterator{utils::tree::shift(self().m, el)}
+          ->measure;
     };
-    measure::tree::sibling_iterator b;
-    utils::tree::sentinel<measure::tree::sibling_iterator> e;
-    iterator begin() { return {b}; };
-    utils::tree::sentinel<iterator> end() { return {}; };
-  };
-
-  childs_proxy childs_range() { return {ch, {}}; };
+  } measure [[no_unique_address]];
 
 private:
-  measure::tree::sibling_iterator ch;
+  measure::tree::sibling_iterator m;
 };
 
 struct text_utils : public utils_base {};
@@ -79,25 +79,12 @@ struct text_utils : public utils_base {};
 
 namespace arrange {
 struct frame_utils : public utils_base {
-  frame_utils(environment::tmp &tenv, environment::persist &penv_,
-              scheme::blueprint::base_iterator it,
-              measure::tree::sibling_iterator ch_)
-      : utils_base{tenv, penv_, it}, ch{ch_} {};
+  frame_utils(environment::tmp &tenv, scheme::blueprint::base_iterator it,
+              measure::tree::sibling_iterator m_)
+      : utils_base{tenv, it}, m{m_} {};
 
-  struct childs_proxy {
-    struct iterator : measure::tree::sibling_iterator {
-      auto &operator*() { return *utils::tree::access_iterator{*this}; }
-    };
-    measure::tree::sibling_iterator b;
-    utils::tree::sentinel<measure::tree::sibling_iterator> e;
-    iterator begin() { return {b}; };
-    utils::tree::sentinel<iterator> end() { return {}; };
-  };
-
-  childs_proxy childs_range() { return {ch, {}}; };
-
-  void apply_element(measure::tree::sibling_iterator it_, units::ui::area a) {
-    utils::tree::access_iterator ait{utils::tree::shift(it, it_)};
+  void apply_element(iterator el, units::ui::area a) {
+    utils::tree::access_iterator ait{utils::tree::shift(it, el)};
 
     if (ait) {
       ait->area = a;
@@ -105,12 +92,20 @@ struct frame_utils : public utils_base {
     }
   };
 
+  // this is joke...BUT
+  struct : utils::adv_member_for<frame_utils> {
+    const measure::result &operator[](iterator el) {
+      return utils::tree::access_iterator{utils::tree::shift(self().m, el)}
+          ->measure;
+    };
+  } measure [[no_unique_address]];
+
   const units::ui::area &self_size() const {
     return (utils::tree::access_iterator{it})->area;
   };
 
 private:
-  measure::tree::sibling_iterator ch;
+  measure::tree::sibling_iterator m;
 };
 
 struct text_utils : public utils_base {};

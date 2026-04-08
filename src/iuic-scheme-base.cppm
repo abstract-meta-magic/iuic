@@ -45,11 +45,10 @@ using blueprint = utils::tree::flat_bfs_type<bp_element>;
 
 export namespace iterators {
 
-using base = utils::tree::base_iterator<utils::tree::hierarchy<blueprint>>;
+using base = utils::tree::base_iterator<utils::tree::hierarchy::bfs>;
 using sentinel = utils::tree::sentinel<base>;
-using root = utils::tree::root_iterator<utils::tree::hierarchy<blueprint>>;
-using sibling =
-    utils::tree::sibling_iterator<utils::tree::hierarchy<blueprint>>;
+using root = utils::tree::root_iterator<utils::tree::hierarchy::bfs>;
+using sibling = utils::tree::sibling_iterator<utils::tree::hierarchy::bfs>;
 
 sibling childs_of(base it) { return utils::tree::childs_of(it); };
 

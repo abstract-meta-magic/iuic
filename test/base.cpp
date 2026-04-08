@@ -60,22 +60,38 @@ bool operator==(const index_range::iterator_base &lhs,
   return lhs.index >= rhs.index;
 }
 
+template <auto obj> constexpr auto inline_style{obj()};
+
+template <std::invocable<iuic::style::decl> auto obj>
+constexpr auto inline_style<obj>{obj(iuic::style::decl{})};
+
+template <std::invocable<iuic::style::shape> auto obj>
+constexpr auto inline_style<obj>{obj(iuic::style::shape{})};
+
 void main_window(iuic::scheme::builder &b, app &app) {
   using namespace kitty_kit;
 
-  containers::boxes::cc(b, [&](auto &b) {
-    for (auto i : index_range{3}) {
-      buttons::box(b, [&, i]() { std::println("hah {}", i); });
+  // single element
+  form::frame<inline_style<[](iuic::style::decl style) {
+    style.shape.min_size.height = iuic::units::percent{16};
+    style.shape.min_size.width = iuic::units::percent{100};
+    return style;
+  }>>(b, [](iuic::scheme::builder &b) {
+    containers::boxes::lrc(b, [&](auto &b) {
+      form::rect<inline_style<[](iuic::style::decl style) {
+        style.shape.min_size.height = iuic::units::percent{100};
+        style.shape.min_size.width = iuic::units::percent{8};
+        return style;
+      }>>(b);
 
-      constexpr auto style = []() {
-        iuic::style::decl res{};
+      form::span(b);
 
-        return res;
-      }();
-
-      containers::boxes::lrc<style>(b, [](auto &b) {});
-    }
-    buttons::box(b, [&]() { app.quit = true; });
+      form::rect<inline_style<[](iuic::style::decl style) {
+        style.shape.min_size.height = iuic::units::percent{100};
+        style.shape.min_size.width = iuic::units::percent{8};
+        return style;
+      }>>(b);
+    });
   });
 };
 

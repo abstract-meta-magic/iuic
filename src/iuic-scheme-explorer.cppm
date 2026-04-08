@@ -118,7 +118,7 @@ private:
 
 private:
   blueprint::base_iterator begin_{};
-  utils::tree::hierarchy<blueprint> h{};
+  utils::tree::hierarchy::bfs h{};
   environment::tmp *tenv{nullptr};
   environment::persist *penv{nullptr};
 };
