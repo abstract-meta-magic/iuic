@@ -21,6 +21,7 @@ endif()
 
 add_subdirectory(utils/cmake)
 add_subdirectory(src/underlying)
+add_subdirectory(src/text)
 add_subdirectory(src/state)
 
 
@@ -28,7 +29,7 @@ option(IUIC_INFO "Вывод информации" ON)
 
 add_library(${PROJECT_NAME}_core STATIC)
 
-target_link_libraries(${PROJECT_NAME}_core iuic::underlying iuic::state)
+target_link_libraries(${PROJECT_NAME}_core iuic::underlying iuic::text iuic::state)
 
 if(IUIC_TMP_CXX_STD)
 	#target_link_libraries(${PROJECT_NAME}_core tmp_cxx_std)
@@ -50,10 +51,6 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-environment-tmp.cppm"
 	"src/iuic-environment-persist.cppm"
 	"src/iuic-token.cppm"
-	"src/iuic-text-font.cppm"
-	"src/iuic-text-fontset.cppm"
-	"src/iuic-text-present.cppm"
-	"src/iuic-text-buff.cppm"
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
 	"src/iuic-event-collector.cppm"
@@ -77,10 +74,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-scheme-compute.cpp"
 	"src/iuic-ctx.cpp"
-	"src/iuic-text-present.cpp"
 	"src/iuic-layout-utils.cpp"
-	"src/iuic-text-font.cpp"
-	#"src/iuic-kernel-impl.cpp" [depricated]
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

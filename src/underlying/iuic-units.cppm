@@ -11,7 +11,9 @@ using uid = std::uint64_t;
 // TOTO : use -> enum hash : std::uint64_t;
 using hash = std::uint64_t;
 using pixel = std::int32_t;
+using pixel_l = std::int16_t;
 using upixel = std::uint32_t;
+using upixel_l = std::uint16_t;
 using time = std::chrono::time_point<std::chrono::steady_clock>;
 using time_duration = std::chrono::duration<double>;
 
@@ -118,6 +120,12 @@ struct position {
   pixel x, y = 0;
   constexpr auto operator<=>(const position &) const = default;
 };
+
+struct local_position {
+  pixel_l x, y = 0;
+  constexpr auto operator<=>(const local_position &) const = default;
+};
+
 struct size {
   upixel w, h = 0;
   constexpr auto operator<=>(const ui::size &) const = default;
@@ -137,6 +145,13 @@ struct rect {
 
   std::tuple<pixel, pixel, upixel, upixel> xywh() const {
     return {x, y, w, h};
+  };
+
+  struct position center() const {
+    return {
+        .x = (pixel)x + (w / 2),
+        .y = (pixel)y + (h / 2),
+    };
   };
 
   constexpr auto operator<=>(const rect &) const = default;

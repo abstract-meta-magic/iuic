@@ -4,7 +4,6 @@
 export module iuic.core:style;
 import std;
 import iuic.underlying;
-import :text.font;
 
 export namespace iuic::style {
 

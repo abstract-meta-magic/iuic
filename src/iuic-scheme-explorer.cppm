@@ -6,7 +6,6 @@ import std;
 import iuic.underlying;
 import :policy;
 import :style;
-import :text.present;
 import :event;
 import :scheme.base;
 

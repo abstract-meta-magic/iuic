@@ -4,6 +4,7 @@
 export module iuic.core:layout.utils;
 import std;
 import iuic.underlying;
+import iuic.text;
 import :layout.def;
 import :environment.tmp;
 import :scheme.base;
@@ -100,7 +101,7 @@ struct frame_utils : public utils_base {
     };
   } measure [[no_unique_address]];
 
-  const units::ui::area &self_size() const {
+  const units::ui::area &self_area() const {
     return (utils::tree::access_iterator{it})->area;
   };
 
@@ -126,7 +127,8 @@ struct text {
   virtual ~text() {};
   virtual std::optional<measure::result>
   measure(measure::text_utils utils) const = 0;
-  virtual iuic::text::glyph::sequence
+
+  virtual std::span<const iuic::text::present::token>
   arrange(arrange::text_utils utils) const = 0;
 };
 } // namespace layout

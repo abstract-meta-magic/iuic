@@ -73,24 +73,63 @@ void main_window(iuic::scheme::builder &b, app &app) {
 
   // single element
   form::frame<inline_style<[](iuic::style::decl style) {
-    style.shape.min_size.height = iuic::units::percent{16};
+    style.shape.min_size.height = iuic::units::percent{4};
     style.shape.min_size.width = iuic::units::percent{100};
+    style.decoration.background = iuic::units::color{0, 0, 30};
     return style;
-  }>>(b, [](iuic::scheme::builder &b) {
+  }>>(b, [&](iuic::scheme::builder &b) {
     containers::boxes::lrc(b, [&](auto &b) {
-      form::rect<inline_style<[](iuic::style::decl style) {
-        style.shape.min_size.height = iuic::units::percent{100};
-        style.shape.min_size.width = iuic::units::percent{8};
-        return style;
-      }>>(b);
+      auto line = [](auto &b) static { form::vline<{255, 255, 255}, 4>(b); };
+      auto sline = [](auto &b) static {
+        form::vline<{255, 255, 255}, 4, 70.f>(b);
+      };
+      auto srect = [](auto &b) static {
+        static constexpr auto style = []() {
+          iuic::style::decl res{};
+          res.shape.min_size.width = iuic::units::percent{6};
+          res.shape.min_size.height = iuic::units::percent{100};
+          res.decoration.background = iuic::units::color{44, 44, 44};
+
+          return res;
+        }();
+        form::rect<style>(b);
+      };
+
+      text::label(b, "Hello", "Fira Code");
+
+      srect(b);
+
+      line(b);
+
+      srect(b);
+
+      line(b);
+
+      srect(b);
+
+      line(b);
+
+      srect(b);
+
+      line(b);
 
       form::span(b);
 
+      line(b);
+
       form::rect<inline_style<[](iuic::style::decl style) {
         style.shape.min_size.height = iuic::units::percent{100};
         style.shape.min_size.width = iuic::units::percent{8};
+        style.decoration.background = iuic::units::color{44, 44, 44};
         return style;
       }>>(b);
+
+      line(b);
+      form::span(b);
+      sline(b);
+      form::span(b);
+      sline(b);
+      form::span(b);
     });
   });
 };

@@ -5,9 +5,7 @@ export module iuic.core:scheme.builder;
 import std;
 import iuic.underlying;
 import iuic.state;
-import :text.token;
-import :text.buff;
-import :text.present;
+import iuic.text;
 import :event;
 import :policy;
 import :machine.dispatcher;
@@ -70,10 +68,9 @@ struct builder_element_interface : protected virtual builder_base {
   /*
     Является конечной точкой.Отрисовка текста
   */
-  void text(iuic::text::token &&, const style::decl *, const layout::text &);
+  void text(const iuic::text::raw::token &token, const layout::text &);
 
-  // in frame
-  void text(const iuic::text::token &, const style::decl *,
+  void text(std::span<const iuic::text::raw::token> tokens,
             const layout::text &);
 };
 
@@ -146,6 +143,18 @@ struct builder_event_interface : protected virtual builder_base {
   void operator()(event::callback_cpt auto &&call, units::uid object = 0);
 };
 
+struct builder_text_interface : protected virtual builder_base {
+  builder_text_interface(environment::tmp &tenv_, environment::persist &penv_,
+                         insert_iterator it_, struct builder &builder_)
+      : builder_base{tenv_, penv_, it_, builder_} {}
+
+  // UTF-8
+  const text::raw::token &static_token(text::atlas::id, std::string_view);
+
+  // UTF-8
+  const text::raw::token &dynamic_token(text::atlas::id, std::string_view);
+};
+
 struct builder_style_interface : protected virtual builder_base {
   builder_style_interface(environment::tmp &tenv_, environment::persist &penv_,
                           insert_iterator it_, struct builder &builder_)
@@ -205,6 +214,7 @@ struct builder final : public virtual builder_base,
                        private builder_uid_interface,
                        private builder_policy_interface,
                        private builder_memory_interface,
+                       private builder_text_interface,
                        private builder_event_interface,
                        private builder_style_interface {
   // TOTO пересмотреть концепцию конструктора
@@ -217,6 +227,7 @@ struct builder final : public virtual builder_base,
         builder_uid_interface{tenv, penv, it, *this},
         builder_policy_interface{tenv, penv, it, *this},
         builder_memory_interface{tenv, penv, it, *this},
+        builder_text_interface{tenv, penv, it, *this},
         builder_event_interface{tenv, penv, it, *this},
         builder_style_interface{tenv, penv, it, *this} {};
 
@@ -227,6 +238,7 @@ struct builder final : public virtual builder_base,
   builder_memory_interface &memory{*this};
   builder_event_interface &event{*this};
   builder_style_interface &style{*this};
+  builder_text_interface &text{*this};
 
 public: // public forward decl
   builder(const builder &) = delete;
