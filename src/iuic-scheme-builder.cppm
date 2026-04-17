@@ -68,10 +68,11 @@ struct builder_element_interface : protected virtual builder_base {
   /*
     Является конечной точкой.Отрисовка текста
   */
-  void text(const iuic::text::raw::token &token, const layout::text &);
+  void text(const iuic::text::raw::token &token, iuic::style::sid sid,
+            const layout::text &);
 
   void text(std::span<const iuic::text::raw::token> tokens,
-            const layout::text &);
+            iuic::style::sid sid, const layout::text &);
 };
 
 struct builder_order_interface : protected virtual builder_base {
@@ -254,11 +255,10 @@ public: // public forward decl
 namespace iuic::scheme {
 
 struct director {
-  director(environment::persist &penv_) : penv{penv_} {};
+  director(environment::tmp &tenv_, environment::persist &penv_)
+      : tenv{tenv_}, penv{penv_} {};
 
-  std::pair<sketch, environment::tmp>
-  make(units::ui::size viewport, std::invocable<builder &> auto &&call) {
-    environment::tmp tenv;
+  sketch make(units::ui::size viewport, std::invocable<builder &> auto &&call) {
     tenv.meta.viewport_size = viewport;
     utils::tree::flat_unordered_type<sketch::value_t> tree;
 
@@ -266,10 +266,11 @@ struct director {
 
     call(b);
 
-    return {sketch{utils::tree::move_iterator{tree.begin()}}, std::move(tenv)};
+    return sketch{utils::tree::move_iterator{tree.begin()}};
   };
 
 private:
+  environment::tmp &tenv;
   environment::persist &penv;
 };
 
@@ -330,6 +331,34 @@ void builder_element_interface::frame(style::sid sid_,
                       .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
 };
 
+void builder_element_interface::text(const iuic::text::raw::token &token,
+                                     iuic::style::sid sid_,
+                                     const layout::text &layout_) {
+  auto ait = utils::tree::access_iterator{it};
+
+  auto nit = it.at(sketch::value_t{
+      .layout = &layout_,
+      .uid = ait ? ait->uid : 0,
+      .sid = sid_,
+      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0},
+      .text = {&token, 1} // SINGLE TOKEN SPAN
+  });
+};
+
+void builder_element_interface::text(
+    std::span<const iuic::text::raw::token> tokens, iuic::style::sid sid_,
+    const layout::text &layout_) {
+  auto ait = utils::tree::access_iterator{it};
+
+  auto nit = it.at(
+      sketch::value_t{.layout = &layout_,
+                      .uid = ait ? ait->uid : 0,
+                      .sid = iuic::style::sid{0},
+                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0},
+                      .text = tokens
+
+      });
+};
 // ---- IMPL [uid] ----
 
 units::uid
@@ -508,6 +537,46 @@ void builder_memory_interface::init_if_not(units::uid uid,
   }
 };
 
+// ---- IMPL [text] ----
+const text::raw::token &
+builder_text_interface::static_token(text::atlas::id id,
+                                     std::string_view text) {
+  static text::raw::token inv{.atlas_id = text::atlas::invalid_id};
+  static std::unordered_map<text::atlas::id,
+                            std::unordered_map<std::string, text::raw::token>>
+      chache;
+  auto &atlas = text::atlas::by_id(id);
+
+  if (atlas.get_id() == text::atlas::invalid_id || text.size() > 50) {
+    return inv;
+  }
+
+  if (atlas.decoder->capabilities().is_std_char_support()) {
+    if (auto map = chache.find(id); map != chache.end()) {
+      if (auto token = map->second.find(std::string{text});
+          token != map->second.end()) {
+        return token->second;
+      }
+    }
+    // wrap to try-block ??
+    auto res = atlas.decoder->decode(text); // exceptions
+
+    text::raw::token tk{.atlas_id = id, .meta = res};
+
+    auto it = chache[id].insert({std::string{text}, std::move(tk)});
+
+    return it.first->second;
+  }
+
+  return inv;
+};
+
+// UTF-8
+const text::raw::token &
+builder_text_interface::dynamic_token(text::atlas::id, std::string_view) {
+  static text::raw::token inv{.atlas_id = text::atlas::invalid_id};
+  return inv;
+};
 // ---- IMPL [policy] ----
 
 void builder_policy_interface::hovered(policy::hovered h) {

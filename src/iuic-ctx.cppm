@@ -25,7 +25,7 @@ private:
 
   // explore
   scheme::blueprint blueprint;
-  environment::tmp tenv{};
+  environment::tmp tenv{adp};
   environment::persist penv{adp};
 
 public:
@@ -40,13 +40,11 @@ void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
 
   // <<-----------------------<< begin
 
-  scheme::director d{penv};
+  scheme::director d{tenv, penv};
 
-  auto [sketch, tenv_] = d.make(vp, std::forward<decltype(call)>(call));
+  auto sketch = d.make(vp, std::forward<decltype(call)>(call));
 
-  blueprint = scheme::compute(sketch, tenv_, penv);
-
-  std::swap(tenv_, tenv);
+  blueprint = scheme::compute(sketch, tenv, penv);
 
   scheme = {blueprint.begin(), &tenv, &penv};
 };

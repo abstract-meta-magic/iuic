@@ -103,7 +103,18 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
               }
 
             } else if constexpr (std::same_as<type, const layout::text *>) {
-              // obj->measure(layout::measure::text_utils{});
+              auto res = obj->measure(layout::measure::text_utils{
+                  tenv, utils::tree::access_iterator{cur}->text, bit});
+
+              auto mit = utils::tree::shift(m.begin(), cur);
+              if (res) {
+                utils::tree::access_iterator{mit}->measure =
+                    std::move(res.value());
+              } else {
+                utils::tree::access_iterator ait{bit};
+                ait->meta.set(ait->meta.discarded);
+                return;
+              }
             }
 
             utils::tree::access_iterator ait{bit};
@@ -186,7 +197,15 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
                 ait->meta.set(ait->meta.discarded);
               };
             } else if constexpr (std::same_as<type, const layout::text *>) {
-              // obj->arrange(layout::arrange::text_utils{});
+              auto res = obj->arrange(layout::arrange::text_utils{
+                  tenv, utils::tree::access_iterator{cur}->text, bp_acc});
+
+              if (res.empty()) {
+                utils::tree::access_iterator ait{bp_acc};
+                ait->meta.set(ait->meta.discarded);
+              } else {
+                utils::tree::access_iterator{bp_acc}->text = res;
+              };
             };
 
             utils::tree::access_iterator ait{bp_acc};

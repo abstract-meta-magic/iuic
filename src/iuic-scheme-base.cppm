@@ -3,6 +3,7 @@
 
 export module iuic.core:scheme.base;
 import iuic.underlying;
+import iuic.text;
 import :style;
 import :environment.tmp;
 import :environment.persist;
@@ -20,6 +21,7 @@ struct sk_element {
   units::uid uid;
   style::sid sid;
   units::ui::zorder zorder;
+  std::span<const text::raw::token> text;
 };
 
 struct bp_element {
@@ -27,6 +29,7 @@ struct bp_element {
   units::uid uid;
   style::sid sid;
   units::ui::zorder zorder;
+  std::span<const text::present::token> text;
   struct {
     enum flag { discarded = 0, virtualized, text, measure, applied, arrange };
 

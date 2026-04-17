@@ -11,11 +11,13 @@ import :event.collector;
 import :policy;
 
 namespace iuic::environment {
-struct tmp {
+struct tmp : iuic::advance::interface {
   struct {
   } text;
 
-  struct {
+  struct : private advance::interface {
+    friend tmp;
+
   private:
     struct meta {
       style::index index;
@@ -135,7 +137,8 @@ struct tmp {
     std::unordered_map<const style::decl *, style::sid> indexed_decl;
   } style;
 
-  struct {
+  struct : private advance::interface {
+    friend tmp;
     void attach(event::value e) { data[e.uid].push_back(e); };
 
     std::span<event::value> list_of(units::uid uid) {
@@ -147,10 +150,14 @@ struct tmp {
     };
 
   private:
+    void advance() override { data.clear(); };
+
+  private:
     std::map<units::uid, std::vector<event::value>> data;
   } event;
 
-  struct {
+  struct : private advance::interface {
+    friend tmp;
     policy::hovered hovered(units::uid uid) {
       if (data.contains(uid)) {
         return data.at(uid).first;
@@ -183,18 +190,48 @@ struct tmp {
     };
 
   private:
+    void advance() override { data.clear(); };
+
+  private:
     std::map<units::uid, std::pair<policy::hovered, policy::event>> data;
   } policy;
 
-  struct {
-    void *allocate(std::size_t size, std::size_t align) { return nullptr; };
+  static constexpr std::size_t tmp_buff_size = 1024 * 1024 * 4;
+
+  struct : private advance::interface {
+    friend tmp;
+    void *allocate(std::size_t size, std::size_t align, std::size_t count = 1) {
+      return allocator.allocate(size * count, align);
+    };
+
+    template <typename T>
+    std::span<T> allocate(std::size_t count = 1)
+      requires std::is_trivially_destructible_v<T>
+    {
+      return {static_cast<T *>(allocate(sizeof(T), alignof(T), count)), count};
+    };
 
   private:
-    // mem buff
+    void advance() override { allocator.release(); };
+
+  private:
+    std::array<std::byte, tmp_buff_size> tmp_buff;
+    std::pmr::monotonic_buffer_resource allocator{&tmp_buff, tmp_buff_size};
+
   } memory;
 
   struct {
     units::ui::size viewport_size{0, 0};
   } meta; // frame meta
+
+  tmp(advance::pool &adp) {
+    rebind(adp);
+
+    policy.rebind(adp);
+    style.rebind(adp);
+    memory.rebind(adp);
+  };
+
+private:
 };
 }; // namespace iuic::environment

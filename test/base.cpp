@@ -95,7 +95,7 @@ void main_window(iuic::scheme::builder &b, app &app) {
         form::rect<style>(b);
       };
 
-      text::label(b, "Hello", "Fira Code");
+      text::label(b, "Hello", "Fira Code - 24");
 
       srect(b);
 
@@ -154,6 +154,31 @@ int main() {
   // iuic::test::run();
 
   using namespace iuic;
+  struct DC : iuic::text::decoder {
+    std::vector<text::glyph::id_t> decode(std::string_view text) override {
+      std::vector<text::glyph::id_t> res;
+      for (auto ch : text) {
+        res.push_back(ch);
+      }
+      return res;
+    };
+
+    const text::decoder::capabilities_t &capabilities() const override {
+      static auto __ = capabilities_t{}.set_std_char_support();
+      return __;
+    };
+  };
+  auto b = iuic::text::atlas::construct("Fira Code - 24");
+
+  for (int i{0}; i <= 255; ++i) {
+    b.link_meta(i, {});
+    std::println("set id : {};", i);
+  };
+
+  b.set_etalon(4);
+  b.set_monospace();
+  auto fira_a = b.finalize();
+  fira_a.decoder = std::unique_ptr<text::decoder>(new DC{});
 
   // IUIC
 
@@ -276,6 +301,10 @@ int main() {
       auto &area = ctx.scheme.props.area(el);
       auto &shape = style.get_shape();
       auto &decor = style.get_decoration();
+
+      if (ctx.scheme.props.has_text(el)) {
+        auto text = ctx.scheme.props.text(el);
+      }
 
       std::visit(
           [&]<typename type>(const type &obj) {

@@ -14,6 +14,11 @@ target_sources(${PROJECT_NAME}_text PUBLIC
 	"iuic-glyph.cppm"
 	"iuic-atlas.cppm"
 	"iuic-token.cppm"
+	"iuic-i18n.cppm"
+)
+
+target_sources(${PROJECT_NAME}_text PUBLIC
+	"iuic-atlas.cpp"
 )
 
 if(IUIC_TMP_CXX_STD)

@@ -47,6 +47,14 @@ export struct explorer {
       return self().tenv->policy.hovered(self().get_uid(it));
     };
 
+    bool has_text(iterators::base it) {
+      return not self().get_element(it).text.empty();
+    };
+
+    std::span<const text::present::token> text(iterators::base it) {
+      return self().get_element(it).text;
+    };
+
   } props{*this};
 
   struct : utils::member_for<explorer> {
@@ -114,6 +122,10 @@ private:
   style::sid get_sid(iterators::base it) {
     return utils::tree::access_iterator{utils::tree::shift(begin_, it)}->sid;
   };
+
+  const bp_element &get_element(iterators::base it) {
+    return *utils::tree::const_access_iterator{utils::tree::shift(begin_, it)};
+  }
 
 private:
   blueprint::base_iterator begin_{};

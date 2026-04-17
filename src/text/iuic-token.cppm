@@ -11,7 +11,6 @@ export namespace iuic::text {
 namespace raw {
 struct token {
   std::size_t atlas_id;
-  float scale;
   std::vector<glyph::id_t> meta;
 };
 }; // namespace raw
@@ -26,7 +25,7 @@ struct token {
   std::size_t atlas_id;
   float scale;
   units::ui::position position;
-  std::vector<placement> placement;
+  std::span<const placement> placement;
 };
 }; // namespace present
 }; // namespace iuic::text
