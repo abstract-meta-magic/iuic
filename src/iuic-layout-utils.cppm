@@ -150,6 +150,11 @@ struct text_utils : public utils_base {
              std::span<const iuic::text::raw::token> tokens_,
              scheme::blueprint::base_iterator it)
       : utils_base{tenv, it}, tokens{tokens_} {};
+
+  const units::ui::area &self_area() const {
+    return (utils::tree::access_iterator{it})->area;
+  };
+
   std::span<const iuic::text::raw::token> get_tokens() { return tokens; };
 
   std::span<const iuic::text::present::token>

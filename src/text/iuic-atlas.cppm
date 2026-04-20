@@ -10,12 +10,15 @@ namespace iuic::text {
 struct atlas_registry_handler__;
 
 struct atlas_glyph_map__ {
-  text::glyph::id_t etalon{0};
-  std::map<glyph::id_t, text::glyph> map;
+  std::map<glyph::id_t, units::upixel> advance;
+  std::map<glyph::id_t, units::pixel> kerning;
 };
 
 struct atlas_meta_map__ {
   bool is_monospace : 1 {false};
+  bool kerning_support : 1 {false};
+  bool scale_support : 1 {false};
+  bool separation_support : 1 {false};
   // etc...
 };
 }; // namespace iuic::text
@@ -91,30 +94,44 @@ public:
   };
   using id = std::size_t;
 
-  struct : utils::adv_member_for<atlas> {
-    const text::glyph &operator[](glyph::id_t id) const {
-      if (auto glyph = self().glyph__.map.find(id);
-          glyph != self().glyph__.map.end()) {
-        return glyph->second;
-      }
-      throw glyph_not_exist{self().name, id};
-    };
+  struct : utils::adv_member_for<atlas, 1> {
+    struct : utils::adv_member_for<atlas> {
+      const units::upixel &operator[](glyph::id_t id) const {
+        if (auto advance = self().glyph__.advance.find(id);
+            advance != self().glyph__.advance.end()) {
+          return advance->second;
+        }
+        throw glyph_not_exist{self().name, id};
+      };
+    } advance [[no_unique_address]];
+
+    struct : utils::adv_member_for<atlas, 1> {
+      const units::upixel &operator[](glyph::id_t lhs, glyph::id_t rhs) const {
+        static units::upixel decoy{0}; // TODO NORMAL IMPL
+        // TODO
+        return decoy;
+      };
+    } kerning [[no_unique_address]];
   } glyph [[no_unique_address]];
 
   bool is_monospace() const { return true; };
 
-  const text::glyph &etalon() const { return glyph[glyph__.etalon]; };
-
+  std::string name;
   std::unique_ptr<external::binding> binding;
   std::unique_ptr<decoder> decoder;
-  const std::string name;
+
+  // directional
+
+  // Need to compute layout
+  units::upixel text_height;
+  // Need to compute layout
+  units::upixel baseline_offset;
 
   static const atlas &by_name(std::string_view name);
   static const atlas &by_symname(std::string_view name);
   static const atlas &by_family(std::string_view name);
   static const atlas &by_id(id id);
 
-  // static void make_famaly(std::string_view famaly_name,atlas...);
   // static void set_symname(std::string_view symname,atlas);
   // static void reset_symname(std::string_view symname);
 
@@ -130,8 +147,30 @@ public:
   // TODO : BIG-V
   atlas(const atlas &) = delete;
   atlas &operator=(const atlas &) = delete;
-  atlas(atlas &&) = delete;            // can be
-  atlas &operator=(atlas &&) = delete; // can be
+  atlas(atlas &&other)
+      : name{std::move(other.name)}, glyph__{std::move(other.glyph__)},
+        meta__{std::move(other.meta__)}, handler__{nullptr, registry_detach} {
+    std::swap(decoder, other.decoder);
+    std::swap(text_height, other.text_height);
+    std::swap(baseline_offset, other.baseline_offset);
+    std::swap(handler__, other.handler__);
+    registry_rebind(this, handler__.get());
+  }; // can be
+
+  atlas &operator=(atlas &&other) {
+    if (std::addressof(other) == this) {
+      return *this;
+    }
+    std::swap(name, other.name);
+    std::swap(glyph__, other.glyph__);
+    std::swap(meta__, other.meta__);
+    std::swap(decoder, other.decoder);
+    std::swap(text_height, other.text_height);
+    std::swap(baseline_offset, other.baseline_offset);
+    std::swap(handler__, other.handler__);
+    registry_rebind(this, handler__.get());
+    return *this;
+  }; // can be
   ~atlas() {};
 
   static builder construct(std::string_view name_);
@@ -142,10 +181,11 @@ private:
         atlas_meta_map__ &&meta_)
       : name{std::move(name_)}, glyph__{std::move(glyph_)},
         meta__{std::move(meta_)}, handler__{nullptr, registry_detach} {
-    handler__.reset(registry_attach(*this));
+    handler__.reset(registry_attach(this));
   };
 
-  static atlas_registry_handler__ *registry_attach(atlas &);
+  static atlas_registry_handler__ *registry_attach(const atlas *);
+  static void registry_rebind(const atlas *, atlas_registry_handler__ *);
   static void registry_detach(atlas_registry_handler__ *);
 
 private:
@@ -158,24 +198,72 @@ private:
 };
 
 struct atlas::builder {
-  void link_meta(text::glyph::id_t id, text::glyph g) {
-    // need
-    // key * -- 1 value
-    glyph__.map.insert({id, g});
+  struct fill_proxy {
+    void link_advance(text::glyph::id_t id, units::upixel adv) {
+      map.advance.insert({id, adv});
+    };
+
+    void link_kerning(text::glyph::id_t lhs, text::glyph::id_t rhs,
+                      units::pixel ker) {
+      // TODO
+    };
+
+    fill_proxy(atlas_glyph_map__ &map_) : map{map_} {};
+
+  private:
+    atlas_glyph_map__ &map;
   };
 
-  void set_monospace() { meta__.is_monospace = true; };
+  builder &set_monospace() { return meta__.is_monospace = true, *this; };
 
-  void set_etalon(text::glyph::id_t id) { glyph__.etalon = id; };
+  template <typename T>
+
+  builder &set_decoder(T &&decoder)
+    requires std::is_base_of_v<iuic::text::decoder, T>
+  {
+    decoder__.reset(new T{std::forward<T>(decoder)});
+    return *this;
+  };
+
+  builder &set_kerning_supported() {
+    return meta__.kerning_support = true, *this;
+  };
+
+  builder &set_text_height(iuic::units::upixel height) {
+    text_height__ = height;
+    return *this;
+  };
+  builder &set_baseline_offset(iuic::units::upixel offset) {
+    baseline_offset__ = offset;
+    return *this;
+  };
+
+  builder &fill_glyph_map(auto &&call) {
+    return call(fill_proxy{glyph__}), *this;
+  };
 
   atlas finalize() {
-    return {std::move(name), std::move(glyph__), std::move(meta__)};
+    atlas res{std::move(name), std::move(glyph__), std::move(meta__)};
+
+    if (iuic::text::atlas::by_name("Fira Code - 16").get_id() !=
+        iuic::text::atlas::invalid_id) {
+      std::println("HAVE - FIN");
+    }
+
+    res.baseline_offset = baseline_offset__;
+    res.text_height = text_height__;
+    res.decoder = std::move(decoder__);
+
+    return res;
   };
 
   builder(std::string name_) : name{name_} {};
 
 private:
+  std::unique_ptr<iuic::text::decoder> decoder__;
   std::string name;
+  iuic::units::upixel text_height__{8};
+  iuic::units::upixel baseline_offset__{8};
   atlas_glyph_map__ glyph__;
   atlas_meta_map__ meta__;
 };
@@ -183,4 +271,5 @@ private:
 atlas::builder atlas::construct(std::string_view name_) {
   return {std::string{name_}};
 };
+
 }; // namespace iuic::text

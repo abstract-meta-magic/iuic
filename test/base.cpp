@@ -95,7 +95,11 @@ void main_window(iuic::scheme::builder &b, app &app) {
         form::rect<style>(b);
       };
 
-      text::label(b, "Hello", "Fira Code - 24");
+      text::label(b, "Day", "Fira Code - 16");
+
+      text::label(b, "42", "Fira Code - 16");
+
+      text::label(b, "18:30", "Fira Code - 24");
 
       srect(b);
 
@@ -150,37 +154,59 @@ constexpr iuic::external::type opengl{};
 
 constexpr iuic::external::type opengl_text{opengl};
 
-int main() {
-  // iuic::test::run();
-
-  using namespace iuic;
+std::vector<iuic::text::atlas> init_fonts() {
   struct DC : iuic::text::decoder {
-    std::vector<text::glyph::id_t> decode(std::string_view text) override {
-      std::vector<text::glyph::id_t> res;
+    std::vector<iuic::text::glyph::id_t>
+    decode(std::string_view text) override {
+      std::vector<iuic::text::glyph::id_t> res;
       for (auto ch : text) {
         res.push_back(ch);
       }
       return res;
     };
 
-    const text::decoder::capabilities_t &capabilities() const override {
+    const iuic::text::decoder::capabilities_t &capabilities() const override {
       static auto __ = capabilities_t{}.set_std_char_support();
       return __;
     };
   };
-  auto b = iuic::text::atlas::construct("Fira Code - 24");
+  std::vector<iuic::text::atlas> res;
 
-  for (int i{0}; i <= 255; ++i) {
-    b.link_meta(i, {});
-    std::println("set id : {};", i);
-  };
+  res.emplace_back(
+      iuic::text::atlas{iuic::text::atlas::construct("Fira Code - 16")
+                            .set_text_height(16)
+                            .set_baseline_offset(16)
+                            .set_monospace()
+                            .set_decoder(DC{})
+                            .fill_glyph_map([](auto f) {
+                              for (int i{0}; i <= 255; ++i) {
+                                f.link_advance(i, 8);
+                              };
+                            })
+                            .finalize()});
 
-  b.set_etalon(4);
-  b.set_monospace();
-  auto fira_a = b.finalize();
-  fira_a.decoder = std::unique_ptr<text::decoder>(new DC{});
+  res.emplace_back(
+      iuic::text::atlas{iuic::text::atlas::construct("Fira Code - 24")
+                            .set_text_height(24)
+                            .set_baseline_offset(24)
+                            .set_monospace()
+                            .set_decoder(DC{})
+                            .fill_glyph_map([](auto f) {
+                              for (int i{0}; i <= 255; ++i) {
+                                f.link_advance(i, 12);
+                              };
+                            })
+                            .finalize()});
 
-  // IUIC
+  return res;
+};
+
+int main() {
+  // iuic::test::run();
+
+  using namespace iuic;
+
+  auto fonts = init_fonts();
 
   context ctx;
 #if 0
@@ -302,28 +328,46 @@ int main() {
       auto &shape = style.get_shape();
       auto &decor = style.get_decoration();
 
-      if (ctx.scheme.props.has_text(el)) {
+      if (ctx.scheme.props.has_text(el)) { // draw text
         auto text = ctx.scheme.props.text(el);
+
+        auto area = ctx.scheme.props.area(el);
+        DrawRectangle(area.bordered.x, area.bordered.y, area.bordered.w,
+                      area.bordered.h, {0, 255, 0, 100});
+
+        for (auto &token : text) {
+          //
+          auto &atlas = iuic::text::atlas::by_id(token.atlas_id);
+          auto y_ = token.baseline.y - atlas.baseline_offset;
+          auto h_ = atlas.text_height;
+          auto w_ = atlas.glyph.advance[0];
+
+          for (auto &glyph : token.placement) {
+            DrawRectangle(token.baseline.x + glyph.offset, y_, w_, h_,
+                          {255, 0, 0, 255});
+          };
+        };
+
+      } else { // draw frame
+        std::visit(
+            [&]<typename type>(const type &obj) {
+              if constexpr (std::same_as<type, units::color>) {
+                DrawRectangle(area.bordered.x, area.bordered.y, area.bordered.w,
+                              area.bordered.h, {obj.r, obj.g, obj.b, obj.a});
+              }
+            },
+            decor.border);
+
+        std::visit(
+            [&]<typename type>(const type &obj) {
+              if constexpr (std::same_as<type, units::color>) {
+                DrawRectangle(area.borderless.x, area.borderless.y,
+                              area.borderless.w, area.borderless.h,
+                              {obj.r, obj.g, obj.b, obj.a});
+              }
+            },
+            decor.background);
       }
-
-      std::visit(
-          [&]<typename type>(const type &obj) {
-            if constexpr (std::same_as<type, units::color>) {
-              DrawRectangle(area.bordered.x, area.bordered.y, area.bordered.w,
-                            area.bordered.h, {obj.r, obj.g, obj.b, obj.a});
-            }
-          },
-          decor.border);
-
-      std::visit(
-          [&]<typename type>(const type &obj) {
-            if constexpr (std::same_as<type, units::color>) {
-              DrawRectangle(area.borderless.x, area.borderless.y,
-                            area.borderless.w, area.borderless.h,
-                            {obj.r, obj.g, obj.b, obj.a});
-            }
-          },
-          decor.background);
     }
 
     DrawFPS(0, 0);

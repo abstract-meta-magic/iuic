@@ -11,20 +11,20 @@ export namespace iuic::text {
 namespace raw {
 struct token {
   std::size_t atlas_id;
-  std::vector<glyph::id_t> meta;
+  std::vector<glyph::id_t> glyphs;
 };
 }; // namespace raw
 namespace present {
 
 struct placement {
   glyph::id_t id;
-  units::ui::local_position position;
+  units::pixel offset;
 };
 
 struct token {
   std::size_t atlas_id;
   float scale;
-  units::ui::position position;
+  units::ui::position baseline;
   std::span<const placement> placement;
 };
 }; // namespace present

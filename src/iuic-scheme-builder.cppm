@@ -561,7 +561,7 @@ builder_text_interface::static_token(text::atlas::id id,
     // wrap to try-block ??
     auto res = atlas.decoder->decode(text); // exceptions
 
-    text::raw::token tk{.atlas_id = id, .meta = res};
+    text::raw::token tk{.atlas_id = id, .glyphs = res};
 
     auto it = chache[id].insert({std::string{text}, std::move(tk)});
 

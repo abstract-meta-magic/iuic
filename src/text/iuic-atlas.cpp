@@ -25,26 +25,39 @@ auto &registry_unsafe__() {
       }
     };
 
-    atlas_registry_handler__ *attach(const atlas &atlas) {
-      const iuic::text::atlas *ptr = std::addressof(atlas);
+    atlas_registry_handler__ *attach(const atlas *atlas) {
       if (id_pool__.empty()) {
         throw "error";
       }
 
-      if (name_store__.contains(atlas.name)) {
+      if (name_store__.contains(atlas->name)) {
         throw "error";
       }
 
       atlas::id id = id_pool__.front();
       id_pool__.pop();
 
-      ptr_store__.insert({id, ptr});
-      id_store__.insert({ptr, id});
-      name_store__.insert({atlas.name, ptr});
-      return new atlas_registry_handler__{.ptr = ptr, .id = id};
+      ptr_store__.insert({id, atlas});
+      id_store__.insert({atlas, id});
+      name_store__.insert({atlas->name, atlas});
+      return new atlas_registry_handler__{.ptr = atlas, .id = id};
+    };
+
+    void rebind(const atlas *ptr, atlas_registry_handler__ *handler) {
+      if (not handler || not ptr)
+        return;
+
+      ptr_store__.at(handler->id) = ptr;
+      id_store__.erase(handler->ptr);
+      id_store__.insert({ptr, handler->id});
+      name_store__.at(ptr->name) = ptr;
+      handler->ptr = ptr;
     };
 
     void detach(atlas_registry_handler__ *handler) {
+      if (not handler)
+        return;
+
       if (auto id = id_store__.find(handler->ptr); id != id_store__.end()) {
         ptr_store__.erase(id->second);
         name_store__.erase(handler->ptr->name);
@@ -109,9 +122,15 @@ auto registry_safe__() {
 }; // namespace
 
 namespace iuic::text {
-atlas_registry_handler__ *atlas::registry_attach(atlas &atlas) {
+atlas_registry_handler__ *atlas::registry_attach(const atlas *atlas) {
   return registry_safe__().instance.attach(atlas);
 };
+
+void atlas::registry_rebind(const atlas *atlas,
+                            atlas_registry_handler__ *handler) {
+  registry_safe__().instance.rebind(atlas, handler);
+};
+
 void atlas::registry_detach(atlas_registry_handler__ *heandler) {
   registry_safe__().instance.detach(heandler);
 };
