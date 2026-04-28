@@ -14,7 +14,7 @@ struct glyph {
 
 struct placment {
   glyph::id_t id;
-  units::upixel_l offset;
+  units::upixel offset;
 };
 
 struct token {

@@ -39,10 +39,7 @@ public:
   static constexpr auto npos = hierarchy::bfs_base::node_t::npos;
   static constexpr auto root_index = hierarchy::bfs_base::node_t::root;
 
-  bool valid() const {
-    return owner && self < owner->hierarchy__.size() &&
-           not owner->hierarchy__.empty();
-  };
+  bool valid() const { return owner && self < owner->hierarchy__.size(); };
 
   bool is_root() const {
     return owner && self == hierarchy::bfs_base::node_t::root;
@@ -98,66 +95,64 @@ struct bfs : protected bfs_base {
 
   bfs() {};
 
-  template <typename Other> bfs(tree::base_iterator<Other> it) {
-    using op = insert_op<order_type::bfs>;
-    using base_iterator = decltype(it);
-    using const_access_iterator = decltype(it);
+  template <typename Other> explicit bfs(tree::base_iterator<Other> it) {
+    using other_base_iterator = decltype(it);
 
-    std::size_t index = 0, child = 0, parent = bfs_base::node_t::root;
-    bool deep{false};
-    std::vector<base_iterator> cur{};
-    std::vector<base_iterator> next{};
+    std::vector<other_base_iterator> cur{};
+    std::vector<other_base_iterator> next{};
 
-    auto sep_ = [&]() {
-      if (parent >= this->hierarchy__.size()) {
-        child = this->hierarchy__.size();
-      } else if (child != this->hierarchy__.size()) {
-        auto &phnode = this->hierarchy__[parent];
-        phnode.ch_begin = child;
-        child = this->hierarchy__.size();
-        phnode.ch_end = child;
-      }
-
-      parent == bfs_base::node_t::root ? parent = 0 : ++parent;
-    };
-
-    for (auto sit : iterator_range_for{tree::sibling_iterator{it}}) {
-      cur.push_back(sit);
+    for (auto ch : iterator_range_for{childs_of(it)}) {
+      cur.push_back(ch);
     }
     cur.push_back({}); // sep
 
+    std::size_t index{0}, parent{tree::hierarchy::bfs_base::node_t::root},
+        ch_begin{0}, ch_count{0}, counter{0};
+    bool deep{false};
+
     for (;; ++index) {
       if (index >= cur.size()) {
+        // deep
         if (deep) {
           cur = std::move(next);
           next.clear();
           index = 0;
           deep = false;
         } else {
-          return; // end
+          std::println("move fuck : {}", counter);
+          return;
         }
-      } else if (not cur[index].valid()) {
-        sep_();
+      }
+
+      if (not cur[index].valid()) {
+        // sep
+        if (parent != node_t::root) {
+          auto &hnode = this->hierarchy__[parent];
+          hnode.ch_begin = ch_begin;
+          hnode.ch_end = this->hierarchy__.size();
+          ++parent;
+        } else {
+          parent = 0;
+        }
+        ch_begin = this->hierarchy__.size();
         continue;
       }
 
-      this->hierarchy__.push_back(
-          bfs_base::node_t{.parent = parent}); // set parent
+      // insert
+      this->hierarchy__.push_back({});
+      this->hierarchy__.back().parent = parent;
+      ++counter;
 
-      std::size_t test{0};
-      for (auto ch : iterator_range_for{childs_of(cur[index])}) {
+      for (auto ch : tree::iterator_range_for{childs_of(cur[index])}) {
         next.push_back(ch);
-        ++test;
-      };
+      }
 
-      if (not deep) {
-        if (not next.empty()) {
-          deep = next.back().valid();
-        }
+      if (not deep && not next.empty()) {
+        deep = next.back().valid();
       }
 
       next.push_back({}); // sep
-    };
+    }
   };
 };
 }; // namespace iuic::utils::tree::hierarchy
@@ -284,6 +279,10 @@ struct bfs_iterator_range_for<hierarchy::bfs, Iterator> {
     iterator_t operator*() { return base{*this}; };
   };
 
+  bfs_iterator_range_for(base_iterator<hierarchy::bfs> it,
+                         iterator_type<Iterator>)
+      : begin_{it} {}
+
   bfs_iterator_range_for(const hierarchy::bfs &container)
       : begin_{container.begin()} {}
 
@@ -303,6 +302,10 @@ private:
 
 template <template <typename> typename Iterator>
 bfs_iterator_range_for(const hierarchy::bfs &, iterator_type<Iterator>)
+    -> bfs_iterator_range_for<hierarchy::bfs, Iterator>;
+
+template <template <typename> typename Iterator>
+bfs_iterator_range_for(base_iterator<hierarchy::bfs>, iterator_type<Iterator>)
     -> bfs_iterator_range_for<hierarchy::bfs, Iterator>;
 
 }; // namespace iuic::utils::tree

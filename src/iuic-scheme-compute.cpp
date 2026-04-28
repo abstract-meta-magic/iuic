@@ -13,17 +13,17 @@ static constexpr inline units::upixel
 adapt_to_pixel(const units::ui::adaptive::unit &value, units::upixel psize,
                units::ui::size viewport) {
   return std::visit(
-      [&]<typename type>(const type &obj) -> units::pixel {
+      [&]<typename type>(const type &obj) -> units::upixel {
         if constexpr (std::same_as<type, units::percent>) {
-          return static_cast<units::upixel>(psize * obj);
+          return psize * obj;
         } else if constexpr (std::same_as<type, units::vh>) {
-          return static_cast<units::upixel>(viewport.h * obj);
+          return viewport.h * obj;
         } else if constexpr (std::same_as<type, units::vw>) {
-          return static_cast<units::upixel>(viewport.w * obj);
+          return viewport.w * obj;
         } else if constexpr (std::same_as<type, units::upixel>) {
           return obj;
         }
-        return 0;
+        return units::upixel{0};
       },
       value);
 };
@@ -45,10 +45,10 @@ calc_root_child_area(const layout::measure::result &m, style::value style,
   auto border_bottom =
       adapt_to_pixel(shape.border.bottom, viewport.h, viewport);
 
-  res.bordered.w = res.borderless.w + border_left + border_left;
+  res.bordered.w = res.borderless.w + border_left + border_right;
   res.bordered.h = res.borderless.h + border_top + border_bottom;
-  res.borderless.x += border_left;
-  res.borderless.y += border_top;
+  res.borderless.x + res.borderless.x + border_left;
+  res.borderless.y + res.borderless.y + border_top;
 
   return res;
 };
@@ -61,6 +61,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
 
   blueprint blueprint{
       sketch.reflect([](const sketch::value_t &el) -> blueprint::value_t {
+        std::println("reflect sid : {}", (unsigned)el.sid);
         return {.uid = el.uid, .sid = el.sid, .zorder = el.zorder};
       })};
 
@@ -131,7 +132,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
 
     auto root_ch = utils::tree::childs_of(sketch.root());
 
-    units::ui::position pos{0, 0};
+    units::ui::position pos{units::pixel{0}, units::pixel{0}};
     // apply root childs
     for (utils::tree::sentinel end{root_ch}; root_ch != end; ++root_ch) {
 
@@ -149,15 +150,18 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
       // set position
       auto &shape = tenv.style.get(ait->sid).get_shape();
 
-      pos.y += adapt_to_pixel(shape.margin.top, viewport.h, viewport);
+      pos.y = pos.y + adapt_to_pixel(shape.margin.top, viewport.h, viewport);
 
-      area.bordered.x += adapt_to_pixel(shape.margin.top, viewport.w, viewport);
-      area.borderless.x +=
-          adapt_to_pixel(shape.margin.top, viewport.w, viewport);
-      area.bordered.y += pos.y;
-      area.borderless.y += pos.y;
+      area.bordered.x = area.bordered.x +
+                        adapt_to_pixel(shape.margin.left, viewport.w, viewport);
+      area.borderless.x =
+          area.borderless.x +
+          adapt_to_pixel(shape.margin.left, viewport.w, viewport);
 
-      pos.y += area.bordered.h;
+      area.bordered.y = area.bordered.y + pos.y;
+      area.borderless.y = area.borderless.y + pos.y;
+
+      pos.y = pos.y + area.bordered.h;
 
       ait->area = area;
       ait->meta.set(ait->meta.applied);

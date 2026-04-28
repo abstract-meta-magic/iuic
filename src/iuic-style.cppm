@@ -154,7 +154,7 @@ struct transform {
 
   position position{position::STATIC};
 
-  units::ui::position offset{0, 0};
+  units::ui::position offset{units::pixel{0}, units::pixel{0}};
 
   float scale{1.0f};
 };
@@ -164,9 +164,9 @@ struct advence {
   struct {
     bool used{false};
 
-    float grow{1.0f};
+    units::weight grow{1000};
+    units::weight shrink{1000};
 
-    float shrink{1.0f};
   } adaptive;
 
   struct {

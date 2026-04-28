@@ -1,109 +1,12 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-export module iuic.underlying:units;
+export module iuic.underlying:units.ui;
 import std;
 import :external;
+import :units.decl;
+import :units.op;
 
 export namespace iuic::units {
-
-// TOTO : use -> enum uid : std::uint64_t;
-using uid = std::uint64_t;
-// TOTO : use -> enum hash : std::uint64_t;
-using hash = std::uint64_t;
-using pixel = std::int32_t;
-using pixel_l = std::int16_t;
-using upixel = std::uint32_t;
-using upixel_l = std::uint16_t;
-using time = std::chrono::time_point<std::chrono::steady_clock>;
-using time_duration = std::chrono::duration<double>;
-
-struct percent {
-  constexpr auto operator<=>(const percent &) const = default;
-
-  constexpr percent(float value_) noexcept
-      : value{value_ >= 0 ? (value_ < 300 ? value_ : 300) : 0} {}
-
-  constexpr operator float() const noexcept { return value * 0.01; }
-
-private:
-  float value;
-};
-
-struct vh {
-  percent value;
-  constexpr operator float() const noexcept { return value; }
-  constexpr auto operator<=>(const vh &) const = default;
-
-  constexpr vh(const percent &p) noexcept : value{p} {}
-  constexpr vh(percent &&p) noexcept : value{p} {}
-  constexpr vh &operator=(const percent &p) noexcept {
-    value = p;
-    return *this;
-  }
-  constexpr vh &operator=(percent &&p) noexcept {
-    value = p;
-    return *this;
-  }
-};
-
-struct vw {
-  percent value;
-  constexpr operator float() const noexcept { return value; }
-  constexpr auto operator<=>(const vw &) const = default;
-
-  constexpr vw(const percent &p) noexcept : value{p} {}
-  constexpr vw(percent &&p) noexcept : value{p} {}
-  constexpr vw &operator=(const percent &p) noexcept {
-    value = p;
-    return *this;
-  }
-  constexpr vw &operator=(percent &&p) noexcept {
-    value = p;
-    return *this;
-  }
-};
-
-struct em {
-  percent value;
-  constexpr operator float() const noexcept { return value; }
-  constexpr auto operator<=>(const em &) const = default;
-
-  constexpr em(const percent &p) noexcept : value{p} {}
-  constexpr em(percent &&p) noexcept : value{p} {}
-  constexpr em &operator=(const percent &p) noexcept {
-    value = p;
-    return *this;
-  }
-  constexpr em &operator=(percent &&p) noexcept {
-    value = p;
-    return *this;
-  }
-};
-
-struct rem {
-  percent value;
-  constexpr operator float() const noexcept { return value; }
-  constexpr auto operator<=>(const rem &) const = default;
-
-  constexpr rem(const percent &p) noexcept : value{p} {}
-  constexpr rem(percent &&p) noexcept : value{p} {}
-  constexpr rem &operator=(const percent &p) noexcept {
-    value = p;
-    return *this;
-  }
-  constexpr rem &operator=(percent &&p) noexcept {
-    value = p;
-    return *this;
-  }
-};
-// need px,%,rem,vh,vw
-
-struct color {
-  static constexpr color get_white() noexcept { return {255, 255, 255, 255}; };
-
-public:
-  std::uint8_t r{0}, g{0}, b{0}, a = {255};
-};
 
 // text font
 struct upm {
@@ -117,25 +20,20 @@ struct zorder {
 };
 
 struct position {
-  pixel x, y = 0;
+  pixel x, y = pixel{0};
   constexpr auto operator<=>(const position &) const = default;
 };
 
-struct local_position {
-  pixel_l x, y = 0;
-  constexpr auto operator<=>(const local_position &) const = default;
-};
-
 struct size {
-  upixel w, h = 0;
+  upixel w, h = upixel{0};
   constexpr auto operator<=>(const ui::size &) const = default;
 };
 
 struct rect {
   union {
     struct {
-      upixel x, y;
-      pixel w, h;
+      pixel x, y;
+      upixel w, h;
     };
     struct {
       position position;
@@ -149,8 +47,8 @@ struct rect {
 
   struct position center() const {
     return {
-        .x = (pixel)x + (w / 2),
-        .y = (pixel)y + (h / 2),
+        .x = x + (w / 2),
+        .y = y + (h / 2),
     };
   };
 
@@ -197,17 +95,4 @@ struct aspect_ratio {
 };
 
 }; // namespace ui
-
-namespace literals {
-consteval pixel operator""_px(unsigned long long value) {
-  return pixel{static_cast<pixel>(value)};
-}
-
-consteval upixel operator""_upx(unsigned long long value) {
-  return upixel{static_cast<upixel>(value)};
-}
-
-// NOLINTEND
-// operator ""_upx();
-}; // namespace literals
 }; // namespace iuic::units

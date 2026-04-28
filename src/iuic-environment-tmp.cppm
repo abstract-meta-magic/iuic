@@ -221,7 +221,7 @@ struct tmp : iuic::advance::interface {
   } memory;
 
   struct {
-    units::ui::size viewport_size{0, 0};
+    units::ui::size viewport_size{units::upixel{0}, units::upixel{0}};
   } meta; // frame meta
 
   tmp(advance::pool &adp) {

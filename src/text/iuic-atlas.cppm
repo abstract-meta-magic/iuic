@@ -11,7 +11,7 @@ struct atlas_registry_handler__;
 
 struct atlas_glyph_map__ {
   std::map<glyph::id_t, units::upixel> advance;
-  std::map<glyph::id_t, units::pixel> kerning;
+  std::map<std::uint64_t, units::pixel> kerning;
 };
 
 struct atlas_meta_map__ {
@@ -24,6 +24,8 @@ struct atlas_meta_map__ {
 }; // namespace iuic::text
 
 export namespace iuic::text {
+
+enum class directional { RTL, LTR, TTB, BTT };
 
 struct decoder {
   struct encoding_not_supported : std::runtime_error {
@@ -94,27 +96,37 @@ public:
   };
   using id = std::size_t;
 
-  struct : utils::adv_member_for<atlas, 1> {
+  union { // ignore inner offset
     struct : utils::adv_member_for<atlas> {
-      const units::upixel &operator[](glyph::id_t id) const {
+      units::upixel operator[](glyph::id_t id) const {
         if (auto advance = self().glyph__.advance.find(id);
             advance != self().glyph__.advance.end()) {
           return advance->second;
         }
         throw glyph_not_exist{self().name, id};
       };
-    } advance [[no_unique_address]];
+    } advance [[no_unique_address]]{};
+    struct : utils::adv_member_for<atlas> {
+      units::pixel operator[](glyph::id_t lhs, glyph::id_t rhs) const {
+        static units::pixel decoy{0}; // TODO NORMAL IMPL
 
-    struct : utils::adv_member_for<atlas, 1> {
-      const units::upixel &operator[](glyph::id_t lhs, glyph::id_t rhs) const {
-        static units::upixel decoy{0}; // TODO NORMAL IMPL
-        // TODO
+        std::uint64_t key = (static_cast<std::uint64_t>(lhs) << 32) | rhs;
+
+        if (auto kerning = self().glyph__.kerning.find(key);
+            kerning != self().glyph__.kerning.end()) {
+          return kerning->second;
+        };
+
         return decoy;
       };
     } kerning [[no_unique_address]];
-  } glyph [[no_unique_address]];
+  } glyphs [[no_unique_address]]{};
 
   bool is_monospace() const { return true; };
+
+  bool is_scale_supported() const { return meta__.scale_support; };
+
+  bool is_kerning_supported() const { return meta__.kerning_support; };
 
   std::string name;
   std::unique_ptr<external::binding> binding;
@@ -155,7 +167,7 @@ public:
     std::swap(baseline_offset, other.baseline_offset);
     std::swap(handler__, other.handler__);
     registry_rebind(this, handler__.get());
-  }; // can be
+  };
 
   atlas &operator=(atlas &&other) {
     if (std::addressof(other) == this) {
@@ -170,7 +182,7 @@ public:
     std::swap(handler__, other.handler__);
     registry_rebind(this, handler__.get());
     return *this;
-  }; // can be
+  };
   ~atlas() {};
 
   static builder construct(std::string_view name_);
@@ -185,8 +197,8 @@ private:
   };
 
   static atlas_registry_handler__ *registry_attach(const atlas *);
-  static void registry_rebind(const atlas *, atlas_registry_handler__ *);
   static void registry_detach(atlas_registry_handler__ *);
+  static void registry_rebind(const atlas *, atlas_registry_handler__ *);
 
 private:
   atlas_glyph_map__ glyph__;
@@ -205,7 +217,8 @@ struct atlas::builder {
 
     void link_kerning(text::glyph::id_t lhs, text::glyph::id_t rhs,
                       units::pixel ker) {
-      // TODO
+      std::uint64_t key = (static_cast<std::uint64_t>(lhs) << 32) | rhs;
+      map.kerning.insert({key, ker});
     };
 
     fill_proxy(atlas_glyph_map__ &map_) : map{map_} {};

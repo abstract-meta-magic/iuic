@@ -7,6 +7,8 @@ target_sources(${PROJECT_NAME}_underlying PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"iuic-underlying.cppm"
+	"iuic-units-decl.cppm"
+	"iuic-units-op.cppm"
 	"iuic-units.cppm"
 	"iuic-utils.cppm"
 	"iuic-advance.cppm"

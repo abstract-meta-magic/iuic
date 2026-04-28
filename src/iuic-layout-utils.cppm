@@ -80,6 +80,7 @@ using result = units::ui::adaptive::size;
 struct unit {
   style::sid sid{0};
   result measure{units::ui::none{}, units::ui::none{}};
+  // приоритеты и требования ???
 };
 
 using tree = utils::tree::flat_bfs_type<unit>;

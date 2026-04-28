@@ -29,20 +29,28 @@ private:
   Owner &owner;
 };
 
+// this is UB struct.
 template <erasure::is_pure_type Owner, std::size_t offset = 0>
 struct adv_member_for {
-  adv_member_for() {}
+  constexpr adv_member_for() {}
 
 protected:
-  Owner &self() {
-    Owner *ptr =
-        reinterpret_cast<Owner *>(reinterpret_cast<char *>(this) - offset);
-    return *ptr;
+  constexpr Owner &self() {
+    if constexpr (offset == 0) {
+      return *static_cast<Owner *>(static_cast<void *>(this));
+    } else {
+      void *adv_ptr = static_cast<char *>(this) - offset;
+      return *static_cast<Owner *>(adv_ptr);
+    }
   };
 
-  const Owner &self() const {
-    return *(reinterpret_cast<const Owner *>(
-        reinterpret_cast<const char *>(this) - offset));
+  constexpr const Owner &self() const {
+    if constexpr (offset == 0) {
+      return *static_cast<const Owner *>(static_cast<const void *>(this));
+    } else {
+      const void *adv_ptr = static_cast<const char *>(this) - offset;
+      return *static_cast<const Owner *>(adv_ptr);
+    }
   };
 };
 

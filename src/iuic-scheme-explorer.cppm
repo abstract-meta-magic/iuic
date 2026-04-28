@@ -81,15 +81,22 @@ export struct explorer {
 
   struct : utils::member_for<explorer> {
     auto level_order() {
+
+      utils::tree::hierarchy::bfs::base_iterator bhit{self().begin_};
+
       return utils::tree::bfs_iterator_range_for{
-          self().h, utils::tree::iterator_type<utils::tree::base_iterator>{}};
+          bhit, utils::tree::iterator_type<utils::tree::base_iterator>{}};
     };
 
     auto reverse_level_order() {
-      return ranges::reverse_level_order{self().h.begin()};
+      return ranges::reverse_level_order{
+          utils::tree::hierarchy::bfs::base_iterator{self().begin_}};
     };
 
-    auto postorder() { return ranges::postorder{self().h.begin()}; };
+    auto postorder() {
+      return ranges::postorder{
+          utils::tree::hierarchy::bfs::base_iterator{self().begin_}};
+    };
 
     auto preorder() {};
 
@@ -107,9 +114,6 @@ public: // assign
     begin_ = assing.it;
     tenv = assing.tenv;
     penv = assing.penv;
-
-    // copy hierarchy
-    h = {begin_};
 
     return *this;
   }
@@ -129,7 +133,6 @@ private:
 
 private:
   blueprint::base_iterator begin_{};
-  utils::tree::hierarchy::bfs h{};
   environment::tmp *tenv{nullptr};
   environment::persist *penv{nullptr};
 };

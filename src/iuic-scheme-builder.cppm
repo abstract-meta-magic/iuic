@@ -139,9 +139,10 @@ struct builder_event_interface : protected virtual builder_base {
       : builder_base{tenv_, penv_, it_, builder_} {}
 
   template <event::callback_cpt Call>
-  void attach(Call &&call, units::uid object = 0);
+  void attach(Call &&call, units::uid object = units::uid{0});
 
-  void operator()(event::callback_cpt auto &&call, units::uid object = 0);
+  void operator()(event::callback_cpt auto &&call,
+                  units::uid object = units::uid{0});
 };
 
 struct builder_text_interface : protected virtual builder_base {
@@ -266,7 +267,7 @@ struct director {
 
     call(b);
 
-    return sketch{utils::tree::move_iterator{tree.begin()}};
+    return sketch{utils::tree::move_iterator{tree.root()}};
   };
 
 private:
@@ -284,7 +285,7 @@ void builder_element_interface::frame(style::sid sid_,
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout,
-                      .uid = ait ? ait->uid : 0,
+                      .uid = ait ? ait->uid : units::uid{0},
                       .sid = sid_,
                       .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
 
@@ -326,7 +327,7 @@ void builder_element_interface::frame(style::sid sid_,
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout_,
-                      .uid = ait ? ait->uid : 0,
+                      .uid = ait ? ait->uid : units::uid{0},
                       .sid = sid_,
                       .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
 };
@@ -338,7 +339,7 @@ void builder_element_interface::text(const iuic::text::raw::token &token,
 
   auto nit = it.at(sketch::value_t{
       .layout = &layout_,
-      .uid = ait ? ait->uid : 0,
+      .uid = ait ? ait->uid : units::uid{0},
       .sid = sid_,
       .zorder = ait ? ait->zorder : units::ui::zorder{0, 0},
       .text = {&token, 1} // SINGLE TOKEN SPAN
@@ -352,7 +353,7 @@ void builder_element_interface::text(
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout_,
-                      .uid = ait ? ait->uid : 0,
+                      .uid = ait ? ait->uid : units::uid{0},
                       .sid = iuic::style::sid{0},
                       .zorder = ait ? ait->zorder : units::ui::zorder{0, 0},
                       .text = tokens
@@ -368,7 +369,8 @@ builder_uid_interface::make(const std::string &str,
   std::stringstream ss;
   ss << anchor.value;
   ss << str;
-  return std::hash<std::string>{}(ss.str());
+  return units::uid{
+      static_cast<std::uint64_t>(std::hash<std::string>{}(ss.str()))};
 };
 
 units::uid builder_uid_interface::make(policy::shared sh,
@@ -381,12 +383,13 @@ units::uid builder_uid_interface::make(policy::shared sh,
   utils::tree::root_iterator rit{it};
 
   if (++rit) {
-    ss << utils::tree::access_iterator{++rit}->uid;
+    ss << std::to_underlying(utils::tree::access_iterator{++rit}->uid);
   } else {
     ss << "--root-of";
   }
 
-  return std::hash<std::string>{}(ss.str());
+  return units::uid{
+      static_cast<std::uint64_t>(std::hash<std::string>{}(ss.str()))};
 };
 
 units::uid builder_uid_interface::make(policy::unique, const std::string &str,
@@ -412,7 +415,7 @@ units::uid builder_uid_interface::make(policy::unique, const std::string &str,
 
   // std::println("hash : {}", hash);
 
-  return hash;
+  return units::uid{static_cast<std::uint64_t>(hash)};
 };
 
 units::uid builder_uid_interface::self() const noexcept {

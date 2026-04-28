@@ -6,6 +6,18 @@ find_package(Tracy REQUIRED)
 
 add_executable(te base.cpp)
 
+target_sources(te PUBLIC
+	FILE_SET te_base_modules
+	TYPE CXX_MODULES
+	FILES
+	"backend.cppm"
+)
+
+target_sources(te PUBLIC
+	"backend.cpp"
+)
+
+
 
 target_link_libraries(te iuic::core kitty_kit raylib Tracy::TracyClient)
 

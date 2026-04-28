@@ -87,127 +87,72 @@ struct flat_bfs_type : protected flat_bfs_type_base<T> {
 
   flat_bfs_type() {};
 
-  template <typename Other> flat_bfs_type(tree::copy_iterator<Other> it) {
-    using op = insert_op<order_type::bfs>;
-    using base_iterator = decltype(it)::base;
-    using const_access_iterator = decltype(it);
-
-    std::size_t index = 0, child = 0, parent = hierarchy::node_t::root;
-    bool deep{false};
-    std::vector<base_iterator> cur{};
-    std::vector<base_iterator> next{};
-
-    auto sep_ = [&]() {
-      if (parent >= this->hierarchy__.size()) {
-        child = this->hierarchy__.size();
-      } else if (child != this->hierarchy__.size()) {
-        auto &phnode = this->hierarchy__[parent];
-        phnode.ch_begin = child;
-        child = this->hierarchy__.size();
-        phnode.ch_end = child;
-      }
-
-      parent == hierarchy::node_t::root ? parent = 0 : ++parent;
-    };
-
-    for (auto sit : iterator_range_for{tree::sibling_iterator{it}}) {
-      cur.push_back(sit);
-    }
-    cur.push_back({}); // sep
-
-    for (;; ++index) {
-      if (index >= cur.size()) {
-        if (deep) {
-          cur = std::move(next);
-          next.clear();
-          index = 0;
-          deep = false;
-        } else {
-          return; // end
-        }
-      } else if (not cur[index].valid()) {
-        sep_();
-        continue;
-      }
-
-      this->data__.push_back(*const_access_iterator{cur[index]});
-      this->hierarchy__.push_back(
-          hierarchy::node_t{.parent = parent}); // set parent
-
-      for (auto ch : iterator_range_for{childs_of(cur[index])}) {
-        next.push_back(ch);
-      };
-
-      if (not deep) {
-        if (not next.empty()) {
-          deep = next.back().valid();
-        }
-      }
-
-      next.push_back({}); // sep
-    };
+  template <typename Other>
+  explicit flat_bfs_type(tree::copy_iterator<Other> it){
+      // DO JOB
   };
 
-  template <typename Other> flat_bfs_type(tree::move_iterator<Other> it) {
-    using op = insert_op<order_type::bfs>;
-    using base_iterator = decltype(it)::base;
-    using move_iterator = decltype(it);
+  template <typename Other>
+  explicit flat_bfs_type(tree::move_iterator<Other> it) {
+    // DOJOB
+    using other_base_iterator = decltype(it)::base;
 
-    std::size_t index = 0, child = 0, parent = hierarchy::node_t::root;
-    bool deep{false};
-    std::vector<base_iterator> cur{};
-    std::vector<base_iterator> next{};
-    //
+    std::vector<other_base_iterator> cur{};
+    std::vector<other_base_iterator> next{};
 
-    auto sep_ = [&]() {
-      if (parent >= this->hierarchy__.size()) {
-        child = this->hierarchy__.size();
-      } else if (child != this->hierarchy__.size()) {
-        auto &phnode = this->hierarchy__[parent];
-        phnode.ch_begin = child;
-        child = this->hierarchy__.size();
-        phnode.ch_end = child;
-      }
-
-      parent == hierarchy::node_t::root ? parent = 0 : ++parent;
-    };
-
-    for (auto sit : iterator_range_for{tree::sibling_iterator{it}}) {
-      cur.push_back(sit);
+    for (auto ch : iterator_range_for{childs_of(it)}) {
+      cur.push_back(ch);
     }
     cur.push_back({}); // sep
 
+    std::size_t index{0}, parent{tree::hierarchy::bfs_base::node_t::root},
+        ch_begin{0}, ch_count{0}, counter{0};
+    bool deep{false};
+
     for (;; ++index) {
       if (index >= cur.size()) {
+        // deep
         if (deep) {
           cur = std::move(next);
           next.clear();
           index = 0;
           deep = false;
         } else {
-          return; // end
+          std::println("move : {}", counter);
+          return;
         }
-      } else if (not cur[index].valid()) {
-        sep_();
+      }
+
+      if (not cur[index].valid()) {
+        // sep
+        if (parent != hierarchy::node_t::root) {
+          auto &hnode = this->hierarchy__[parent];
+          hnode.ch_begin = ch_begin;
+          hnode.ch_end = this->hierarchy__.size();
+          ++parent;
+        } else {
+          parent = 0;
+        }
+        ch_begin = this->hierarchy__.size();
         continue;
       }
 
-      this->data__.push_back(*move_iterator{cur[index]});
-      this->hierarchy__.push_back(
-          hierarchy::node_t{.parent = parent}); // set parent
+      // insert
+      this->data__.push_back(*tree::move_iterator{cur[index]});
+      this->hierarchy__.push_back({});
+      this->hierarchy__.back().parent = parent;
+      ++counter;
 
-      for (auto ch : iterator_range_for{childs_of(cur[index])}) {
+      for (auto ch : tree::iterator_range_for{childs_of(cur[index])}) {
         next.push_back(ch);
-      };
+      }
 
-      if (not deep) {
-        if (not next.empty()) {
-          deep = next.back().valid();
-        }
+      if (not deep && not next.empty()) {
+        deep = next.back().valid();
       }
 
       next.push_back({}); // sep
-    };
+    }
   };
 
 private:
