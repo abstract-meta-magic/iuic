@@ -6,7 +6,7 @@
 .clocignore
 kit/kitty-kit
 tmp_solutions
-utils
+/utils
 compile_commands.json
 *~
 /#*#
