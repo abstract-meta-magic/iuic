@@ -10,6 +10,7 @@ struct instance {
   virtual void eval(iuic::context &) = 0;
   virtual units::ui::size get_viewport_size() = 0;
   virtual void set_viewport_size(units::ui::size) = 0;
+  virtual bool is_shutdown() const = 0;
   static instance &get();
 };
 

@@ -22,9 +22,9 @@ struct utils_base {
 
   iterator self() { return it; };
 
-  iterator parent() { return ++utils::tree::root_iterator{it}; };
+  iterator parent() { return ++tree::root_iterator{it}; };
 
-  utils::tree::iterator_range_for<sibling> childs() {
+  tree::iterator_range_for<sibling> childs() {
     return {scheme::iterators::childs_of(it)};
   };
 
@@ -32,7 +32,7 @@ struct utils_base {
   struct : utils::adv_member_for<utils_base> {
     style::value operator[](iterator el) {
       return self().tenv.style.get(
-          utils::tree::access_iterator{utils::tree::shift(self().it, el)}->sid);
+          tree::access_iterator{tree::shift(self().it, el)}->sid);
     };
   } style [[no_unique_address]];
 
@@ -83,7 +83,7 @@ struct unit {
   // приоритеты и требования ???
 };
 
-using tree = utils::tree::flat_bfs_type<unit>;
+using tree = tree::flat_bfs_type<unit>;
 
 struct frame_utils : public utils_base {
   frame_utils(environment::tmp &tenv, scheme::blueprint::base_iterator it,
@@ -93,8 +93,7 @@ struct frame_utils : public utils_base {
   // this is joke...BUT
   struct : utils::adv_member_for<frame_utils> {
     const measure::result &operator[](iterator el) {
-      return utils::tree::access_iterator{utils::tree::shift(self().m, el)}
-          ->measure;
+      return tree::access_iterator{iuic::tree::shift(self().m, el)}->measure;
     };
   } measure [[no_unique_address]];
 
@@ -122,7 +121,7 @@ struct frame_utils : public utils_base {
       : utils_base{tenv, it}, m{m_} {};
 
   void apply_element(iterator el, units::ui::area a) {
-    utils::tree::access_iterator ait{utils::tree::shift(it, el)};
+    tree::access_iterator ait{tree::shift(it, el)};
 
     if (ait) {
       ait->area = a;
@@ -133,13 +132,12 @@ struct frame_utils : public utils_base {
   // this is joke...BUT
   struct : utils::adv_member_for<frame_utils> {
     const measure::result &operator[](iterator el) {
-      return utils::tree::access_iterator{utils::tree::shift(self().m, el)}
-          ->measure;
+      return tree::access_iterator{tree::shift(self().m, el)}->measure;
     };
   } measure [[no_unique_address]];
 
   const units::ui::area &self_area() const {
-    return (utils::tree::access_iterator{it})->area;
+    return (tree::access_iterator{it})->area;
   };
 
 private:
@@ -153,7 +151,7 @@ struct text_utils : public utils_base {
       : utils_base{tenv, it}, tokens{tokens_} {};
 
   const units::ui::area &self_area() const {
-    return (utils::tree::access_iterator{it})->area;
+    return (tree::access_iterator{it})->area;
   };
 
   std::span<const iuic::text::raw::token> get_tokens() { return tokens; };

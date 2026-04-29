@@ -24,21 +24,17 @@ export struct explorer {
     };
 
     const units::ui::area &area(iterators::base it) {
-      return utils::tree::const_access_iterator{
-          utils::tree::shift(self().begin_, it)}
-          ->area;
+      return tree::const_access_iterator{tree::shift(self().begin_, it)}->area;
     };
 
     bool is_virtualized(iterators::base it) {
-      auto &el = *utils::tree::const_access_iterator{
-          utils::tree::shift(self().begin_, it)};
+      auto &el = *tree::const_access_iterator{tree::shift(self().begin_, it)};
 
       return el.meta.has(el.meta.virtualized);
     };
 
     bool is_discarded(iterators::base it) {
-      auto &el = *utils::tree::const_access_iterator{
-          utils::tree::shift(self().begin_, it)};
+      auto &el = *tree::const_access_iterator{tree::shift(self().begin_, it)};
 
       return el.meta.has(el.meta.discarded);
     }
@@ -82,20 +78,20 @@ export struct explorer {
   struct : utils::member_for<explorer> {
     auto level_order() {
 
-      utils::tree::hierarchy::bfs::base_iterator bhit{self().begin_};
+      tree::hierarchy::bfs::base_iterator bhit{self().begin_};
 
-      return utils::tree::bfs_iterator_range_for{
-          bhit, utils::tree::iterator_type<utils::tree::base_iterator>{}};
+      return tree::bfs_iterator_range_for{
+          bhit, tree::iterator_type<tree::base_iterator>{}};
     };
 
     auto reverse_level_order() {
       return ranges::reverse_level_order{
-          utils::tree::hierarchy::bfs::base_iterator{self().begin_}};
+          tree::hierarchy::bfs::base_iterator{self().begin_}};
     };
 
     auto postorder() {
       return ranges::postorder{
-          utils::tree::hierarchy::bfs::base_iterator{self().begin_}};
+          tree::hierarchy::bfs::base_iterator{self().begin_}};
     };
 
     auto preorder() {};
@@ -120,15 +116,15 @@ public: // assign
 
 private:
   units::uid get_uid(iterators::base it) {
-    return utils::tree::access_iterator{utils::tree::shift(begin_, it)}->uid;
+    return tree::access_iterator{tree::shift(begin_, it)}->uid;
   };
 
   style::sid get_sid(iterators::base it) {
-    return utils::tree::access_iterator{utils::tree::shift(begin_, it)}->sid;
+    return tree::access_iterator{tree::shift(begin_, it)}->sid;
   };
 
   const bp_element &get_element(iterators::base it) {
-    return *utils::tree::const_access_iterator{utils::tree::shift(begin_, it)};
+    return *tree::const_access_iterator{tree::shift(begin_, it)};
   }
 
 private:

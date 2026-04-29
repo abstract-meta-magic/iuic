@@ -1,12 +1,12 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.underlying:utils.tree.dfs;
-import :utils.tree.decl;
-import :erasure;
-export import :utils.tree.hierarchy.dfs;
+export module iuic.underlying.tree:flat.dfs;
+import iuic.underlying.utils;
+import :decl;
+export import :flat.hierarchy.dfs;
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 
 template <erasure::is_pure_type T>
 struct flat_dfs_type_base : hierarchy::dfs_base {
@@ -234,26 +234,6 @@ template <typename T> auto childs_of(tree::base_iterator<flat_dfs_type<T>> it) {
   return child_search.find();
 };
 
-template <typename T, typename U>
-base_iterator<flat_dfs_type<T>> shift(base_iterator<flat_dfs_type<T>> from,
-                                      base_iterator<flat_dfs_type<U>> to) {
-  // UNSAFE
-  // NEED TO CHECK HIERARCHY
-  struct : decltype(from), decltype(to) {
-    decltype(from) value() {
-      return decltype(from){decltype(to)::self, decltype(from)::owner};
-    };
-  } shift{from, to};
-
-  return shift.value();
-};
-
-template <typename T>
-base_iterator<flat_dfs_type<T>> shift(base_iterator<flat_dfs_type<T>> lhs,
-                                      base_iterator<flat_dfs_type<T>> rhs) {
-  return rhs;
-};
-
 template <typename T> struct dfs_range_for<flat_dfs_type<T>> {
   struct iterator : access_iterator<flat_dfs_type<T>> {
     using base = access_iterator<flat_dfs_type<T>>;
@@ -289,4 +269,4 @@ private:
 
 template <typename T>
 dfs_range_for(flat_dfs_type<T> &) -> dfs_range_for<flat_dfs_type<T>>;
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree

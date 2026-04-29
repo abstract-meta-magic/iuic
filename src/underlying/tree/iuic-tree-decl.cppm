@@ -1,10 +1,11 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.underlying:utils.tree.decl;
-import :erasure;
+export module iuic.underlying.tree:decl;
+import std;
+import iuic.underlying.utils;
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 
 // TODO : normal name to enum
 enum class order_type { dfs, bfs };
@@ -243,4 +244,4 @@ template <typename T, template <typename> typename Iterator = base_iterator>
 iterator_range_for(sibling_iterator<T>, iterator_type<Iterator> = {})
     -> iterator_range_for<sibling_iterator<T>, Iterator>;
 
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree

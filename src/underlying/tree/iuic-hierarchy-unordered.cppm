@@ -1,11 +1,11 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.underlying:utils.tree.hierarchy.unordered;
+export module iuic.underlying.tree:flat.hierarchy.unordered;
 import std;
-import :utils.tree.decl;
+import :decl;
 
-namespace iuic::utils::tree::hierarchy {
+namespace iuic::tree::hierarchy {
 
 struct unordered_base {
   using index_t = std::size_t; // TODO : replace to template papam
@@ -24,9 +24,9 @@ struct unordered_base {
 };
 
 export struct unordered;
-}; // namespace iuic::utils::tree::hierarchy
+}; // namespace iuic::tree::hierarchy
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 
 template <> struct base_iterator<hierarchy::unordered> {};
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree

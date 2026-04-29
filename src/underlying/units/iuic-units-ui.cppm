@@ -1,10 +1,11 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-export module iuic.underlying:units.ui;
+
+export module iuic.underlying.units:ui;
 import std;
-import :external;
-import :units.decl;
-import :units.op;
+import iuic.underlying.utils;
+import :decl;
+import :op;
 
 export namespace iuic::units {
 

@@ -74,13 +74,13 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
   // - reverse bfs
   // - call layout::measure
   {
-    auto range = utils::tree::reverse_bfs_range_for{sketch};
+    auto range = tree::reverse_bfs_range_for{sketch};
 
     for (auto [cur, end] = range.range(); cur != end; ++cur) {
       //
-      utils::tree::access_iterator ait{cur};
-      auto bit = utils::tree::shift(blueprint.begin(), cur);
-      auto chit = utils::tree::childs_of(utils::tree::shift(m.begin(), cur));
+      tree::access_iterator ait{cur};
+      auto bit = tree::shift(blueprint.begin(), cur);
+      auto chit = tree::childs_of(tree::shift(m.begin(), cur));
 
       std::visit(
           [&](auto obj) {
@@ -90,13 +90,12 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
               auto res =
                   obj->measure(layout::measure::frame_utils{tenv, bit, chit});
 
-              auto mit = utils::tree::shift(m.begin(), cur);
+              auto mit = tree::shift(m.begin(), cur);
 
               if (res) {
-                (utils::tree::access_iterator{mit})->measure =
-                    std::move(res.value());
+                (tree::access_iterator{mit})->measure = std::move(res.value());
               } else {
-                utils::tree::access_iterator ait{bit};
+                tree::access_iterator ait{bit};
 
                 ait->meta.set(ait->meta.discarded);
 
@@ -105,20 +104,19 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
 
             } else if constexpr (std::same_as<type, const layout::text *>) {
               auto res = obj->measure(layout::measure::text_utils{
-                  tenv, utils::tree::access_iterator{cur}->text, bit});
+                  tenv, tree::access_iterator{cur}->text, bit});
 
-              auto mit = utils::tree::shift(m.begin(), cur);
+              auto mit = tree::shift(m.begin(), cur);
               if (res) {
-                utils::tree::access_iterator{mit}->measure =
-                    std::move(res.value());
+                tree::access_iterator{mit}->measure = std::move(res.value());
               } else {
-                utils::tree::access_iterator ait{bit};
+                tree::access_iterator ait{bit};
                 ait->meta.set(ait->meta.discarded);
                 return;
               }
             }
 
-            utils::tree::access_iterator ait{bit};
+            tree::access_iterator ait{bit};
             ait->meta.set(ait->meta.measure);
           },
           ait->layout);
@@ -130,17 +128,16 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
   // - call layout::arrange
   {
 
-    auto root_ch = utils::tree::childs_of(sketch.root());
+    auto root_ch = tree::childs_of(sketch.root());
 
     units::ui::position pos{units::pixel{0}, units::pixel{0}};
     // apply root childs
-    for (utils::tree::sentinel end{root_ch}; root_ch != end; ++root_ch) {
+    for (tree::sentinel end{root_ch}; root_ch != end; ++root_ch) {
 
-      auto bit = utils::tree::shift(blueprint.begin(), root_ch);
-      utils::tree::access_iterator ait{bit};
+      auto bit = tree::shift(blueprint.begin(), root_ch);
+      tree::access_iterator ait{bit};
 
-      utils::tree::access_iterator mesure_acc{
-          utils::tree::shift(m.begin(), root_ch)};
+      tree::access_iterator mesure_acc{tree::shift(m.begin(), root_ch)};
 
       auto &viewport = tenv.meta.viewport_size;
 
@@ -167,19 +164,17 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
       ait->meta.set(ait->meta.applied);
     }
 
-    auto range = utils::tree::bfs_range_for{sketch};
+    auto range = tree::bfs_range_for{sketch};
 
     for (auto [cur, end] = range.range(); cur != end; ++cur) {
 
-      utils::tree::access_iterator cur_acc{cur};
-      auto bp_acc = utils::tree::access_iterator{
-          utils::tree::shift(blueprint.begin(), cur)};
+      tree::access_iterator cur_acc{cur};
+      auto bp_acc = tree::access_iterator{tree::shift(blueprint.begin(), cur)};
 
-      if (auto ait = utils::tree::access_iterator{bp_acc};
+      if (auto ait = tree::access_iterator{bp_acc};
           ait->meta.has(ait->meta.discarded)) {
         continue;
-      } else if (auto pait =
-                     utils::tree::access_iterator{utils::tree::parent_of(ait)};
+      } else if (auto pait = tree::access_iterator{tree::parent_of(ait)};
                  pait && (pait->meta.has(pait->meta.discarded) ||
                           not ait->meta.has(ait->meta.applied))) {
         ait->meta.set(ait->meta.discarded);
@@ -193,26 +188,25 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
             if constexpr (std::same_as<type, const layout::frame *>) {
               layout::arrange::frame_utils utils{
                   tenv, bp_acc,
-                  utils::tree::childs_of(
-                      utils::tree::shift(m.begin(), bp_acc))};
+                  iuic::tree::childs_of(iuic::tree::shift(m.begin(), bp_acc))};
 
               if (not obj->arrange(utils)) {
-                utils::tree::access_iterator ait{bp_acc};
+                tree::access_iterator ait{bp_acc};
                 ait->meta.set(ait->meta.discarded);
               };
             } else if constexpr (std::same_as<type, const layout::text *>) {
               auto res = obj->arrange(layout::arrange::text_utils{
-                  tenv, utils::tree::access_iterator{cur}->text, bp_acc});
+                  tenv, tree::access_iterator{cur}->text, bp_acc});
 
               if (res.empty()) {
-                utils::tree::access_iterator ait{bp_acc};
+                tree::access_iterator ait{bp_acc};
                 ait->meta.set(ait->meta.discarded);
               } else {
-                utils::tree::access_iterator{bp_acc}->text = res;
+                tree::access_iterator{bp_acc}->text = res;
               };
             };
 
-            utils::tree::access_iterator ait{bp_acc};
+            tree::access_iterator ait{bp_acc};
             ait->meta.set(ait->meta.arrange);
           },
           cur_acc->layout);

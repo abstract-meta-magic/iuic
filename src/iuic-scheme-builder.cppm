@@ -20,8 +20,8 @@ concept builder_block_cpt = std::invocable<T, builder &>;
 
 struct builder_base {
 protected:
-  using insert_iterator = utils::tree::insert_iterator<
-      utils::tree::flat_unordered_type<sketch::value_t>>;
+  using insert_iterator =
+      tree::insert_iterator<tree::flat_unordered_type<sketch::value_t>>;
 
 public:
   struct unit_t {
@@ -261,13 +261,13 @@ struct director {
 
   sketch make(units::ui::size viewport, std::invocable<builder &> auto &&call) {
     tenv.meta.viewport_size = viewport;
-    utils::tree::flat_unordered_type<sketch::value_t> tree;
+    tree::flat_unordered_type<sketch::value_t> tree;
 
     builder b{tenv, penv, {tree.root()}};
 
     call(b);
 
-    return sketch{utils::tree::move_iterator{tree.root()}};
+    return sketch{tree::move_iterator{tree.root()}};
   };
 
 private:
@@ -281,7 +281,7 @@ private:
 void builder_element_interface::frame(style::sid sid_,
                                       const layout::frame &layout,
                                       builder_block_cpt auto &&call) noexcept {
-  auto ait = utils::tree::access_iterator{it};
+  auto ait = tree::access_iterator{it};
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout,
@@ -297,7 +297,7 @@ void builder_element_interface::frame(style::sid sid_,
 void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       const layout::frame &layout_,
                                       builder_block_cpt auto &&call) noexcept {
-  auto ait = utils::tree::access_iterator{it};
+  auto ait = tree::access_iterator{it};
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout_,
@@ -311,7 +311,7 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
 };
 void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       const layout::frame &layout_) noexcept {
-  auto ait = utils::tree::access_iterator{it};
+  auto ait = tree::access_iterator{it};
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout_,
@@ -323,7 +323,7 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
 void builder_element_interface::frame(style::sid sid_,
                                       const layout::frame &layout_) noexcept {
 
-  auto ait = utils::tree::access_iterator{it};
+  auto ait = tree::access_iterator{it};
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout_,
@@ -335,7 +335,7 @@ void builder_element_interface::frame(style::sid sid_,
 void builder_element_interface::text(const iuic::text::raw::token &token,
                                      iuic::style::sid sid_,
                                      const layout::text &layout_) {
-  auto ait = utils::tree::access_iterator{it};
+  auto ait = tree::access_iterator{it};
 
   auto nit = it.at(sketch::value_t{
       .layout = &layout_,
@@ -349,7 +349,7 @@ void builder_element_interface::text(const iuic::text::raw::token &token,
 void builder_element_interface::text(
     std::span<const iuic::text::raw::token> tokens, iuic::style::sid sid_,
     const layout::text &layout_) {
-  auto ait = utils::tree::access_iterator{it};
+  auto ait = tree::access_iterator{it};
 
   auto nit = it.at(
       sketch::value_t{.layout = &layout_,
@@ -380,10 +380,10 @@ units::uid builder_uid_interface::make(policy::shared sh,
   ss << anchor.value;
   ss << "shared--";
   ss << str;
-  utils::tree::root_iterator rit{it};
+  tree::root_iterator rit{it};
 
   if (++rit) {
-    ss << std::to_underlying(utils::tree::access_iterator{++rit}->uid);
+    ss << std::to_underlying(tree::access_iterator{++rit}->uid);
   } else {
     ss << "--root-of";
   }
@@ -419,7 +419,7 @@ units::uid builder_uid_interface::make(policy::unique, const std::string &str,
 };
 
 units::uid builder_uid_interface::self() const noexcept {
-  return utils::tree::access_iterator{it}->uid;
+  return tree::access_iterator{it}->uid;
 };
 
 // ---- IMPL [state] ----
@@ -445,7 +445,7 @@ void utils::type_of<&builder_state_interface::machine>::use(const auto &proto) {
 void utils::type_of<&builder_state_interface::machine>::try_visit_shared(
     erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&visitor) {
   auto *machine =
-      self().penv.machine.get(utils::tree::access_iterator{self().it}->uid);
+      self().penv.machine.get(tree::access_iterator{self().it}->uid);
   if (machine) {
     machine->get_controller().try_visit_shared(
         std::forward<decltype(visitor)>(visitor));
@@ -455,7 +455,7 @@ void utils::type_of<&builder_state_interface::machine>::try_visit_shared(
 void utils::type_of<&builder_state_interface::machine>::transition(
     state::value v) {
   auto *machine =
-      self().penv.machine.get(utils::tree::access_iterator{self().it}->uid);
+      self().penv.machine.get(tree::access_iterator{self().it}->uid);
   if (machine) {
     // Mb no move ??
     machine->get_controller().try_move(v);
@@ -465,7 +465,7 @@ void utils::type_of<&builder_state_interface::machine>::transition(
 // ---- IMPL [event] ----
 template <event::callback_cpt Call>
 void builder_event_interface::attach(Call &&call, units::uid object) {
-  tenv.event.attach({call, utils::tree::access_iterator{it}->uid, object});
+  tenv.event.attach({call, tree::access_iterator{it}->uid, object});
 };
 
 void builder_event_interface::operator()(event::callback_cpt auto &&call,
@@ -475,11 +475,11 @@ void builder_event_interface::operator()(event::callback_cpt auto &&call,
 // ---- IMPL [style] ----
 
 style::sid builder_style_interface::self() {
-  return utils::tree::access_iterator{it}->sid;
+  return tree::access_iterator{it}->sid;
 };
 
 style::sid builder_style_interface::override(style::sid sid) {
-  return utils::tree::access_iterator{it}->sid = sid;
+  return tree::access_iterator{it}->sid = sid;
 };
 
 style::sid builder_style_interface::make(style::sid sid) {
@@ -583,11 +583,11 @@ builder_text_interface::dynamic_token(text::atlas::id, std::string_view) {
 // ---- IMPL [policy] ----
 
 void builder_policy_interface::hovered(policy::hovered h) {
-  tenv.policy.set(utils::tree::access_iterator{it}->uid, h);
+  tenv.policy.set(tree::access_iterator{it}->uid, h);
 };
 
 void builder_policy_interface::event(policy::event e) {
-  tenv.policy.set(utils::tree::access_iterator{it}->uid, e);
+  tenv.policy.set(tree::access_iterator{it}->uid, e);
 };
 
 }; // namespace iuic::scheme

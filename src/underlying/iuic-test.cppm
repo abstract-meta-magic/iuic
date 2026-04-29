@@ -5,9 +5,10 @@ module;
 #include <backtrace.h>
 #include <cxxabi.h>
 
-export module iuic.underlying:test;
+export module iuic.underlying.test;
 import std;
-import :utils;
+import iuic.underlying.utils;
+
 namespace iuic::test {
 
 void trace_if_supported() {};

@@ -1,5 +1,3 @@
-#include <raylib.h>
-
 import std;
 import iuic.state;
 import iuic.core;
@@ -73,24 +71,22 @@ inline void top_panel(iuic::scheme::builder &b, app &app) {
   using namespace kitty_kit;
   using namespace iuic::units::literals;
   form::frame<inline_style<[](iuic::style::decl style) {
-    style.shape.min_size.height = iuic::units::percent{4};
-    style.shape.min_size.width = iuic::units::percent{100};
+    style.shape.min_size.height = 4_pr;
+    style.shape.min_size.width = 100_pr;
     style.decoration.background = iuic::units::color{0, 0, 30};
     return style;
   }>>(b, [&](iuic::scheme::builder &b) {
     containers::boxes::lrc(b, [&](auto &b) {
-      auto line = [](auto &b) static {
-        form::vline<{255, 255, 255}, iuic::units::upixel{4}>(b);
-      };
+      auto line = [](auto &b) static { form::vline<"white"_rgb8, 4_upx>(b); };
       auto sline = [](auto &b) static {
-        form::vline<{255, 255, 255}, iuic::units::upixel{4},
-                    iuic::units::percent{70}>(b);
+        form::vline<"white"_rgb8, 4_upx, 70_pr>(b);
       };
+
       auto srect = [](auto &b) static {
         static constexpr auto style = []() {
           iuic::style::decl res{};
-          res.shape.min_size.width = iuic::units::percent{6};
-          res.shape.min_size.height = iuic::units::percent{100};
+          res.shape.min_size.width = 6_pr;
+          res.shape.min_size.height = 100_pr;
           res.decoration.background = iuic::units::color{44, 44, 44};
 
           return res;
@@ -113,15 +109,11 @@ inline void top_panel(iuic::scheme::builder &b, app &app) {
   });
 };
 
-inline void main_window(iuic::scheme::builder &b, app &app) {
+inline void mid_panel_stats(iuic::scheme::builder &b, app &app) {
   using namespace kitty_kit;
   using namespace iuic::units::literals;
 
-  // single element
-
-  top_panel(b, app);
-
-  form::frame<inline_style<[](iuic::style::decl style) {
+  form::frame<inline_style<[](iuic::style::decl style) static {
     style.shape.min_size.width = 420_upx;
     style.shape.min_size.height = 160_upx;
     style.shape.margin.top = 40_upx;
@@ -138,32 +130,130 @@ inline void main_window(iuic::scheme::builder &b, app &app) {
         return style;
       }();
       form::frame<style>(b, [](auto &b) {});
+      form::span(b);
       form::hline<"white"_rgb8, 4_upx, 92_pr>(b);
+      form::span(b);
 
       static constexpr auto style_2 = []() {
         iuic::style::decl style{};
         style.shape.min_size.width = 80_pr;
-        style.shape.min_size.height = 60_pr;
+        style.shape.min_size.height = 64_pr;
         style.decoration.background = "black"_rgb8;
         return style;
       }();
 
+      form::span(b);
       form::frame<style_2>(b, [](auto &b) {
         containers::boxes::lrc(b, [](auto &b) {
           static constexpr auto style_3 = []() {
             iuic::style::decl style{};
-            style.shape.min_size.width = 80_pr;
+            style.shape.min_size.width = 46_pr;
             style.shape.min_size.height = 100_pr;
             style.decoration.background = "blue"_rgb8;
             return style;
           }();
           form::span(b);
+          form::frame<style_3>(b, [](auto &b) {
+            containers::boxes::tbc(b, [](auto &b) {
+              form::span<600_w>(b);
+
+              // TODO : replace to rlc
+              containers::boxes::lrc(b, [](auto &b) {
+                text::label(b, "day", "Fira Code - 24"); // dynamic in prod
+                form::span(b);
+                text::label(b, "16", "Fira Code - 24"); // dynamic in prod
+              });
+              form::span<800_w>(b);
+              form::hline<"white"_rgb8>(b);
+              form::span<800_w>(b);
+              containers::boxes::lrc(b, [](auto &b) {
+                text::label(b, "day", "Fira Code - 24"); // dynamic in prod
+                form::span(b);
+                text::label(b, "16", "Fira Code - 24"); // dynamic in prod
+              });
+              form::span<600_w>(b);
+            });
+          });
+          form::span(b);
           form::vline<"white"_rgb8, 4_upx, 92_pr>(b);
+          form::span(b);
+          form::frame<style_3>(b, [](auto &b) {
+            containers::boxes::tbc(b, [](auto &b) {
+              form::span<600_w>(b);
+              containers::boxes::lrc(b, [](auto &b) {
+                text::label(b, "day", "Fira Code - 24"); // dynamic in prod
+                form::span(b);
+                text::label(b, "16", "Fira Code - 24"); // dynamic in prod
+              });
+              form::span<800_w>(b);
+              form::hline<"white"_rgb8>(b);
+              form::span<800_w>(b);
+              containers::boxes::lrc(b, [](auto &b) {
+                text::label(b, "day", "Fira Code - 24"); // dynamic in prod
+                form::span(b);
+                text::label(b, "16", "Fira Code - 24"); // dynamic in prod
+              });
+              form::span<600_w>(b);
+            });
+          });
           form::span(b);
         });
       });
     });
   });
+};
+
+inline void mid_panel_characteristics(iuic::scheme::builder &b, app &app) {
+  using namespace kitty_kit;
+  using namespace iuic::units::literals;
+  form::frame<inline_style<[](iuic::style::decl style) static {
+    style.shape.min_size.width = 420_upx;
+    style.shape.min_size.height = 160_upx;
+    style.shape.margin.top = 40_upx;
+    style.shape.margin.left = 20_upx;
+    style.decoration.background = "gray"_rgb8;
+    return style;
+  }>>(b, [](auto &b) {
+    containers::boxes::tbc(b, [](auto &b) {
+      static constexpr auto style = []() {
+        iuic::style::decl res{};
+        res.shape.min_size.width = 80_pr;
+        res.shape.min_size.height = 100_pr;
+        res.decoration.background = "black"_rgb8;
+
+        return res;
+      }();
+      form::span(b);
+      form::frame<style>(b, [](auto &b) {});
+      form::span(b);
+    });
+  });
+};
+
+inline void mid_panel(iuic::scheme::builder &b, app &app) {
+  using namespace kitty_kit;
+  using namespace iuic::units::literals;
+
+  form::frame<inline_style<[](iuic::style::decl style) {
+    style.shape.min_size.width = 100_pr;
+    style.shape.min_size.height = 24_pr;
+    return style;
+  }>>(b, [&](auto &b) {
+    containers::boxes::lrc(b, [&](auto &b) {
+      form::span<80_w>(b);
+      mid_panel_stats(b, app);
+      form::span<200_w>(b);
+      mid_panel_characteristics(b, app);
+      form::span<1800_w>(b);
+    });
+  });
+}
+
+inline void main_window(iuic::scheme::builder &b, app &app) {
+  using namespace kitty_kit;
+  using namespace iuic::units::literals;
+  top_panel(b, app);
+  mid_panel(b, app);
 };
 
 int main() {
@@ -177,7 +267,7 @@ int main() {
 
   app app;
 
-  while (not WindowShouldClose() && not app.quit) {
+  while (not app.quit && not backend.is_shutdown()) {
     ctx.make(backend.get_viewport_size(),
              [&](auto &b) { main_window(b, app); }); // iuic test
 

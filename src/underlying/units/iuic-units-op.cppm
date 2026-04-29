@@ -1,7 +1,7 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-export module iuic.underlying:units.op;
-import :units.decl;
+export module iuic.underlying.units:op;
+import :decl;
 
 namespace iuic::units {
 template <typename T> struct expressin_result {};

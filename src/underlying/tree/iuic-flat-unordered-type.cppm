@@ -1,12 +1,12 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.underlying:utils.tree.unordered;
+export module iuic.underlying.tree:flat.unordered;
 import std;
-import :utils.tree.decl;
-export import :utils.tree.hierarchy.unordered;
+import :decl;
+export import :flat.hierarchy.unordered;
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 template <typename T>
 struct flat_unordered_type_base : hierarchy::unordered_base {
   std::vector<T> data__;
@@ -307,4 +307,4 @@ void heh(base_iterator<flat_unordered_type<int>> it) {
   const_access_iterator cait{it};
   copy_iterator cit{it};
 };
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree

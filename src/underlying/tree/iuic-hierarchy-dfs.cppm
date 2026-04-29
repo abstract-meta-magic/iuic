@@ -1,11 +1,11 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.underlying:utils.tree.hierarchy.dfs;
+export module iuic.underlying.tree:flat.hierarchy.dfs;
 import std;
-import :utils.tree.decl;
+import :decl;
 
-namespace iuic::utils::tree::hierarchy {
+namespace iuic::tree::hierarchy {
 struct dfs_base {
   using index_t = std::size_t;
   struct node_t {
@@ -21,9 +21,9 @@ struct dfs_base {
 };
 
 export struct dfs;
-}; // namespace iuic::utils::tree::hierarchy
+}; // namespace iuic::tree::hierarchy
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 template <> struct base_iterator<hierarchy::dfs> {
 protected:
   using owner_t = hierarchy::dfs_base;
@@ -66,9 +66,9 @@ protected:
   hierarchy::dfs_base::index_t self;
   owner_t *owner;
 };
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree
 
-export namespace iuic::utils::tree::hierarchy {
+export namespace iuic::tree::hierarchy {
 
 struct dfs : protected dfs_base {
   using base_iterator = base_iterator<dfs>;
@@ -91,13 +91,13 @@ struct dfs : protected dfs_base {
   };
 
   template <typename Other>
-  dfs(tree::base_iterator<Other> it){
+  explicit dfs(tree::base_iterator<Other> it){
       // TODO
   };
 };
-} // namespace iuic::utils::tree::hierarchy
+} // namespace iuic::tree::hierarchy
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 
 template <>
 struct root_iterator<hierarchy::dfs> : base_iterator<hierarchy::dfs> {
@@ -183,4 +183,4 @@ template <typename T> auto childs_of(base_iterator<hierarchy::dfs> it) {
 
   return child_search.find();
 };
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree

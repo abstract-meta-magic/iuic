@@ -42,18 +42,18 @@ struct bp_element {
   } meta;
 };
 
-using sketch = utils::tree::flat_bfs_type<sk_element>;
+using sketch = tree::flat_bfs_type<sk_element>;
 
-using blueprint = utils::tree::flat_bfs_type<bp_element>;
+using blueprint = tree::flat_bfs_type<bp_element>;
 
 export namespace iterators {
 
-using base = utils::tree::base_iterator<utils::tree::hierarchy::bfs>;
-using sentinel = utils::tree::sentinel<base>;
-using root = utils::tree::root_iterator<utils::tree::hierarchy::bfs>;
-using sibling = utils::tree::sibling_iterator<utils::tree::hierarchy::bfs>;
+using base = tree::base_iterator<tree::hierarchy::bfs>;
+using sentinel = tree::sentinel<base>;
+using root = tree::root_iterator<tree::hierarchy::bfs>;
+using sibling = tree::sibling_iterator<tree::hierarchy::bfs>;
 
-sibling childs_of(base it) { return utils::tree::childs_of(it); };
+sibling childs_of(base it) { return tree::childs_of(it); };
 
 }; // namespace iterators
 
@@ -81,7 +81,7 @@ struct level_order {
 
   iterator begin();
 
-  utils::tree::sentinel<iterator> end();
+  tree::sentinel<iterator> end();
 };
 
 struct reverse_level_order {
@@ -102,7 +102,7 @@ struct reverse_level_order {
 
   iterator begin() { return begin_; };
 
-  utils::tree::sentinel<iterator> end() { return {}; };
+  tree::sentinel<iterator> end() { return {}; };
 
 private:
   static iterator find_begin__(iterators::base it) {
@@ -158,7 +158,7 @@ struct postorder {
 
   iterator begin() { return begin_; };
 
-  utils::tree::sentinel<iterator> end() { return {}; };
+  tree::sentinel<iterator> end() { return {}; };
 
 private:
   static iterator find_entry__(iterators::base it) {
@@ -190,7 +190,7 @@ struct preorder {
   struct iterator : iterators::base {};
   iterator begin();
 
-  utils::tree::sentinel<iterator> end();
+  tree::sentinel<iterator> end();
 };
 
 // post_order

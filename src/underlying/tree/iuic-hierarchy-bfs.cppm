@@ -1,11 +1,11 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.underlying:utils.tree.hierarchy.bfs;
+export module iuic.underlying.tree:flat.hierarchy.bfs;
 import std;
-import :utils.tree.decl;
+import :decl;
 
-namespace iuic::utils::tree::hierarchy {
+namespace iuic::tree::hierarchy {
 
 struct bfs_base {
   using index_t = std::size_t;
@@ -21,9 +21,9 @@ struct bfs_base {
   std::vector<node_t> hierarchy__;
 };
 export struct bfs;
-}; // namespace iuic::utils::tree::hierarchy
+}; // namespace iuic::tree::hierarchy
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 
 template <> struct base_iterator<hierarchy::bfs> {
 protected:
@@ -68,9 +68,9 @@ protected:
   owner_t *owner;
 };
 
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree
 
-export namespace iuic::utils::tree::hierarchy {
+export namespace iuic::tree::hierarchy {
 
 struct bfs : protected bfs_base {
   using base_iterator = base_iterator<bfs>;
@@ -155,9 +155,9 @@ struct bfs : protected bfs_base {
     }
   };
 };
-}; // namespace iuic::utils::tree::hierarchy
+}; // namespace iuic::tree::hierarchy
 
-export namespace iuic::utils::tree {
+export namespace iuic::tree {
 
 template <>
 struct root_iterator<hierarchy::bfs> : base_iterator<hierarchy::bfs> {
@@ -308,4 +308,4 @@ template <template <typename> typename Iterator>
 bfs_iterator_range_for(base_iterator<hierarchy::bfs>, iterator_type<Iterator>)
     -> bfs_iterator_range_for<hierarchy::bfs, Iterator>;
 
-}; // namespace iuic::utils::tree
+}; // namespace iuic::tree

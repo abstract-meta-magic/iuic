@@ -56,6 +56,9 @@ std::vector<iuic::text::atlas> init_fonts() {
 };
 
 struct raylib_backend : iuic::backend::instance {
+
+  bool is_shutdown() const override { return WindowShouldClose(); };
+
   void eval(context &ctx) override {
 
     units::ui::position pointer{static_cast<units::pixel>(GetMouseX()),
@@ -73,48 +76,15 @@ struct raylib_backend : iuic::backend::instance {
     // events
     // static | stick | absolute
 
-    for (auto el : ctx.scheme.ranges.postorder()) {
-      ctx.scheme.event.list(el);
-      auto &area = ctx.scheme.props.area(el);
-
-      if (not ctx.scheme.state.has(el, state::base::hovered) &&
-          in__(area.bordered)) {
-        if (auto policy = ctx.scheme.props.hovered_policy(el);
-            policy == iuic::policy::hovered::propagate) {
-          ctx.scheme.state.attach(el, state::base::hovered);
-        } else if (policy == iuic::policy::hovered::block) {
-          ctx.scheme.state.attach(el, state::base::hovered);
-          break;
-        }
-      } else if (ctx.scheme.state.has(el, state::base::hovered)) {
-        if (not in__(area.bordered)) {
-          ctx.scheme.state.detach(el, state::base::hovered);
-        }
-      }
-    };
-
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-      ctx.scheme.global.set_key_code(keymap::mouse("left"));
-      for (auto el : ctx.scheme.ranges.level_order()) {
-        if (ctx.scheme.state.has(el, state::base::hovered)) {
-          for (auto &e : ctx.scheme.event.list(el)) {
-            ctx.scheme.event.trigger(e);
-          }
-
-          if (ctx.scheme.props.is_discarded(el) ||
-              ctx.scheme.props.is_virtualized(el)) {
-
-            // aeu
-          }
-        }
-      }
-
-    } else {
-      ctx.scheme.global.set_key_code({});
-    }
-
     BeginDrawing();
     ClearBackground(WHITE);
+    float scale{1.f};
+    if (GetScreenHeight() < GetScreenWidth()) {
+      scale = (float)GetScreenWidth() / (float)bg.width;
+    } else {
+      scale = (float)GetScreenHeight() / (float)bg.height;
+    }
+    DrawTextureEx(bg_t, {0, 0}, 0.f, scale, {255, 255, 255, 255});
 
     auto to_raylib_rect = [](const iuic::units::ui::rect &rect) {
       struct ray_rect {
@@ -139,7 +109,8 @@ struct raylib_backend : iuic::backend::instance {
 
         auto area = ctx.scheme.props.area(el);
         auto brect = to_raylib_rect(area.borderless);
-        DrawRectangle(brect.x, brect.y, brect.w, brect.y, {0, 255, 255, 100});
+        // DrawRectangle(brect.x, brect.y, brect.w, brect.y, {0, 255, 255,
+        // 100});
 
         for (auto &token : text) {
           //
@@ -197,10 +168,18 @@ struct raylib_backend : iuic::backend::instance {
     SetWindowMinSize(400, 300);
     SetTargetFPS(144);
     InitWindow(800, 600, "RayBack");
+    bg = LoadImage("./source/bg.png");
+    bg_t = LoadTextureFromImage(bg);
   };
-  ~raylib_backend() { CloseWindow(); };
+  ~raylib_backend() {
+    UnloadTexture(bg_t);
+    UnloadImage(bg);
+    CloseWindow();
+  };
 
   std::vector<text::atlas> fonts{init_fonts()};
+  Image bg;
+  Texture bg_t;
 };
 }; // namespace
 

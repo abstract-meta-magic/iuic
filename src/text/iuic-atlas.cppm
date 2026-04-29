@@ -81,6 +81,10 @@ struct decoder {
     throw encoding_not_supported{};
   };
   virtual const capabilities_t &capabilities() const = 0;
+
+  // virtual const glyph::id_t idle() const { return 0; };
+
+  // virtual const glyph::id_t undefined() const { return 0; };
 };
 
 struct atlas final {
