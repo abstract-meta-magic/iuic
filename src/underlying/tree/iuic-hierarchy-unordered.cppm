@@ -5,6 +5,10 @@ export module iuic.underlying.tree:flat.hierarchy.unordered;
 import std;
 import :decl;
 
+export namespace iuic::tree::tag {
+struct unordered : tag_qualifier__ {};
+}; // namespace iuic::tree::tag
+
 namespace iuic::tree::hierarchy {
 
 struct unordered_base {

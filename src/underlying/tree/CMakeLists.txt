@@ -20,6 +20,12 @@ target_sources(${PROJECT_NAME}_underlying__tree PUBLIC
 	"shift/iuic-shift-dfs.cppm"
 	# ranges-impl
 	"ranges/iuic-ranges.cppm"
+	"ranges/iuic-ranges-hierarchy-bfs.cppm"
+	"ranges/iuic-ranges-hierarchy-dfs.cppm"
+	"ranges/iuic-ranges-hierarchy-unordered.cppm"
+	"ranges/iuic-ranges-type-bfs.cppm"
+	"ranges/iuic-ranges-type-dfs.cppm"
+	"ranges/iuic-ranges-type-unordered.cppm"
 )
 
 target_link_libraries(${PROJECT_NAME}_underlying__tree

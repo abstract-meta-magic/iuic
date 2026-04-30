@@ -1,0 +1,82 @@
+// Copyright (c) 2026 abstract-meta-magic and contributors
+// SPDX-License-Identifier: Apache-2.0
+
+export module iuic.underlying.tree:impl.ranges.type.dfs;
+import :decl;
+import :flat.dfs;
+
+export namespace iuic::tree {
+
+template <typename T> struct container_range_trait<flat_dfs_type<T>> {
+  using container_t = flat_dfs_type<T>;
+  using value_t = T;
+  using tag_t = tag::dfs;
+};
+
+template <typename T>
+struct range_for<container_range_trait<flat_dfs_type<T>>> {
+  struct iterator : base_iterator<flat_dfs_type<T>> {
+    using base = base_iterator<flat_dfs_type<T>>;
+
+    iterator(base b) : base{b} {};
+
+    iterator(base::container_t::hierarchy::index_t i,
+             typename base::owner_t *owner)
+        : base{i, owner} {}
+
+    iterator &operator++() { return ++base::self, *this; };
+
+    T &operator*() { return base::owner->data__[base::self]; };
+  };
+
+  explicit range_for(const flat_dfs_type<T> &container)
+      : begin_{container.begin()} {}
+
+  iterator begin() { return begin_; };
+
+  sentinel<iterator> end() { return {}; };
+
+  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
+
+private:
+  iterator begin_;
+};
+
+template <typename T>
+range_for(const flat_dfs_type<T> &)
+    -> range_for<container_range_trait<flat_dfs_type<T>>>;
+
+template <typename T, template <typename> typename Iterator>
+struct iterator_range_for<container_range_trait<flat_dfs_type<T>>, Iterator> {
+  struct iterator : base_iterator<flat_dfs_type<T>> {
+    using base = base_iterator<flat_dfs_type<T>>;
+    using iterator_t = Iterator<flat_dfs_type<T>>;
+
+    iterator(base b) : base{b} {};
+
+    iterator(base::container_t::hierarchy::index_t i,
+             typename base::owner_t *owner)
+        : base{i, owner} {}
+
+    iterator &operator++() { return ++base::self, *this; };
+
+    iterator_t operator*() { return base{*this}; };
+  };
+
+  iterator_range_for(const flat_dfs_type<T> &container, iterator_type<Iterator>)
+      : begin_{container.begin()} {}
+
+  iterator begin() { return begin_; };
+
+  sentinel<iterator> end() { return {}; };
+
+  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
+
+private:
+  iterator begin_;
+};
+
+template <typename T, template <typename> typename Iterator>
+iterator_range_for(const flat_dfs_type<T> &, iterator_type<Iterator>)
+    -> iterator_range_for<container_range_trait<flat_dfs_type<T>>, Iterator>;
+}; // namespace iuic::tree

@@ -24,7 +24,7 @@ struct utils_base {
 
   iterator parent() { return ++tree::root_iterator{it}; };
 
-  tree::iterator_range_for<sibling> childs() {
+  tree::iterator_range_for<tree::iterator_range_trait<sibling>> childs() {
     return {scheme::iterators::childs_of(it)};
   };
 

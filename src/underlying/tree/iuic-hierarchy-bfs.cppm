@@ -5,6 +5,10 @@ export module iuic.underlying.tree:flat.hierarchy.bfs;
 import std;
 import :decl;
 
+export namespace iuic::tree::tag {
+struct bfs : tag_qualifier__ {};
+}; // namespace iuic::tree::tag
+
 namespace iuic::tree::hierarchy {
 
 struct bfs_base {
@@ -262,50 +266,5 @@ template <> auto childs_of(base_iterator<hierarchy::bfs> it) {
   } child_search{it};
   return child_search.find();
 }
-
-template <template <typename> typename Iterator>
-struct bfs_iterator_range_for<hierarchy::bfs, Iterator> {
-  struct iterator : base_iterator<hierarchy::bfs> {
-    using base = base_iterator<hierarchy::bfs>;
-    using iterator_t = Iterator<hierarchy::bfs>;
-
-    iterator(base b) : base{b} {};
-
-    iterator(hierarchy::bfs_base::index_t i, typename base::owner_t *owner)
-        : base{i, owner} {}
-
-    iterator &operator++() { return ++base::self, *this; };
-
-    iterator_t operator*() { return base{*this}; };
-  };
-
-  bfs_iterator_range_for(base_iterator<hierarchy::bfs> it,
-                         iterator_type<Iterator>)
-      : begin_{it} {}
-
-  bfs_iterator_range_for(const hierarchy::bfs &container)
-      : begin_{container.begin()} {}
-
-  bfs_iterator_range_for(const hierarchy::bfs &container,
-                         iterator_type<Iterator>)
-      : begin_{container.begin()} {}
-
-  iterator begin() { return begin_; };
-
-  sentinel<iterator> end() { return {}; };
-
-  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
-
-private:
-  iterator begin_;
-};
-
-template <template <typename> typename Iterator>
-bfs_iterator_range_for(const hierarchy::bfs &, iterator_type<Iterator>)
-    -> bfs_iterator_range_for<hierarchy::bfs, Iterator>;
-
-template <template <typename> typename Iterator>
-bfs_iterator_range_for(base_iterator<hierarchy::bfs>, iterator_type<Iterator>)
-    -> bfs_iterator_range_for<hierarchy::bfs, Iterator>;
 
 }; // namespace iuic::tree

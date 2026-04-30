@@ -80,7 +80,7 @@ export struct explorer {
 
       tree::hierarchy::bfs::base_iterator bhit{self().begin_};
 
-      return tree::bfs_iterator_range_for{
+      return tree::iterator_range_for{
           bhit, tree::iterator_type<tree::base_iterator>{}};
     };
 

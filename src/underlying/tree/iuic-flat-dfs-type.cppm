@@ -234,39 +234,4 @@ template <typename T> auto childs_of(tree::base_iterator<flat_dfs_type<T>> it) {
   return child_search.find();
 };
 
-template <typename T> struct dfs_range_for<flat_dfs_type<T>> {
-  struct iterator : access_iterator<flat_dfs_type<T>> {
-    using base = access_iterator<flat_dfs_type<T>>;
-
-    iterator(base::container_t::hierarchy::index_t index, base::owner_t *owner)
-        : base{index, owner} {}
-
-    iterator(base b) : base{b} {}
-
-    iterator &operator++() {
-      if (this->valid()) { // this realy need ??
-        ++this->self;
-      }
-      return *this;
-    };
-
-    iterator operator++(int) {
-      auto res = *this;
-      ++*this;
-      return res;
-    };
-  };
-
-  iterator begin() { return begin_; };
-
-  sentinel<iterator> end() { return {}; };
-
-  dfs_range_for(flat_dfs_type<T> &container) : begin_{container.begin()} {};
-
-private:
-  iterator begin_;
-};
-
-template <typename T>
-dfs_range_for(flat_dfs_type<T> &) -> dfs_range_for<flat_dfs_type<T>>;
 }; // namespace iuic::tree

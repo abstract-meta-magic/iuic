@@ -5,6 +5,10 @@ export module iuic.underlying.tree:flat.hierarchy.dfs;
 import std;
 import :decl;
 
+export namespace iuic::tree::tag {
+struct dfs : tag_qualifier__ {};
+}; // namespace iuic::tree::tag
+
 namespace iuic::tree::hierarchy {
 struct dfs_base {
   using index_t = std::size_t;
@@ -183,4 +187,5 @@ template <typename T> auto childs_of(base_iterator<hierarchy::dfs> it) {
 
   return child_search.find();
 };
+
 }; // namespace iuic::tree

@@ -74,7 +74,8 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
   // - reverse bfs
   // - call layout::measure
   {
-    auto range = tree::reverse_bfs_range_for{sketch};
+    // mb use iterator_range_for ???
+    auto range = tree::range_for{sketch, tree::tag::reverse_levelorder{}};
 
     for (auto [cur, end] = range.range(); cur != end; ++cur) {
       //
@@ -164,7 +165,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
       ait->meta.set(ait->meta.applied);
     }
 
-    auto range = tree::bfs_range_for{sketch};
+    auto range = tree::range_for{sketch};
 
     for (auto [cur, end] = range.range(); cur != end; ++cur) {
 

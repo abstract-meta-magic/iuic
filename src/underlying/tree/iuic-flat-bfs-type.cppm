@@ -156,7 +156,8 @@ struct flat_bfs_type : protected flat_bfs_type_base<T> {
     std::vector<other_base_iterator> cur{};
     std::vector<other_base_iterator> next{};
 
-    for (auto ch : iterator_range_for{childs_of(it)}) {
+    for (auto ch : iterator_range_for{childs_of(it),
+                                      iterator_type<tree::base_iterator>{}}) {
       cur.push_back(ch);
     }
     cur.push_back({}); // sep
@@ -199,7 +200,8 @@ struct flat_bfs_type : protected flat_bfs_type_base<T> {
       this->hierarchy__.back().parent = parent;
       ++counter;
 
-      for (auto ch : tree::iterator_range_for{childs_of(cur[index])}) {
+      for (auto ch : tree::iterator_range_for{
+               childs_of(cur[index]), iterator_type<tree::base_iterator>{}}) {
         next.push_back(ch);
       }
 
@@ -482,110 +484,4 @@ template <typename T> auto parent_of(base_iterator<flat_bfs_type<T>> it) {
 
   return parent_search.find();
 }
-
-template <typename T> struct reverse_bfs_range_for<flat_bfs_type<T>> {
-  struct iterator : base_iterator<flat_bfs_type<T>> {
-    using base = base_iterator<flat_bfs_type<T>>;
-
-    iterator(base b) : base{b} {};
-
-    iterator(base::container_t::hierarchy::index_t i,
-             typename base::owner_t *owner)
-        : base{i, owner} {}
-
-    iterator &operator++() { return --this->self, *this; };
-
-    T &operator*() { return this->owner->data__[this->self]; };
-  };
-
-  reverse_bfs_range_for(const flat_bfs_type<T> &container)
-      : begin_{container.end()} {}
-
-  iterator begin() { return begin_; };
-
-  sentinel<iterator> end() { return {}; };
-
-  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
-
-private:
-  iterator begin_;
-};
-
-template <typename T> struct bfs_range_for<flat_bfs_type<T>> {
-  struct iterator : base_iterator<flat_bfs_type<T>> {
-    using base = base_iterator<flat_bfs_type<T>>;
-
-    iterator(base b) : base{b} {};
-
-    iterator(base::container_t::hierarchy::index_t i,
-             typename base::owner_t *owner)
-        : base{i, owner} {}
-
-    iterator &operator++() { return ++base::self, *this; };
-
-    T &operator*() { return base::owner->data__[base::self]; };
-  };
-
-  bfs_range_for(const flat_bfs_type<T> &container)
-      : begin_{container.begin()} {}
-
-  iterator begin() { return begin_; };
-
-  sentinel<iterator> end() { return {}; };
-
-  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
-
-private:
-  iterator begin_;
-};
-
-template <typename T, template <typename> typename Iterator>
-struct bfs_iterator_range_for<flat_bfs_type<T>, Iterator> {
-  struct iterator : base_iterator<flat_bfs_type<T>> {
-    using base = base_iterator<flat_bfs_type<T>>;
-    using iterator_t = Iterator<flat_bfs_type<T>>;
-
-    iterator(base b) : base{b} {};
-
-    iterator(base::container_t::hierarchy::index_t i,
-             typename base::owner_t *owner)
-        : base{i, owner} {}
-
-    iterator &operator++() { return ++base::self, *this; };
-
-    iterator_t operator*() { return base{*this}; };
-  };
-
-  bfs_iterator_range_for(const flat_bfs_type<T> &container)
-      : begin_{container.begin()} {}
-
-  bfs_iterator_range_for(const flat_bfs_type<T> &container,
-                         iterator_type<Iterator>)
-      : begin_{container.begin()} {}
-
-  iterator begin() { return begin_; };
-
-  sentinel<iterator> end() { return {}; };
-
-  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
-
-private:
-  iterator begin_;
-};
-
-template <typename T>
-bfs_range_for(const flat_bfs_type<T> &) -> bfs_range_for<flat_bfs_type<T>>;
-
-template <typename T>
-bfs_iterator_range_for(const flat_bfs_type<T> &)
-    -> bfs_iterator_range_for<flat_bfs_type<T>>;
-
-template <typename T, template <typename> typename Iterator>
-bfs_iterator_range_for(const flat_bfs_type<T> &, iterator_type<Iterator>)
-    -> bfs_iterator_range_for<flat_bfs_type<T>, Iterator>;
-
-template <typename T>
-reverse_bfs_range_for(const flat_bfs_type<T> &)
-    -> reverse_bfs_range_for<flat_bfs_type<T>>;
-
 } // namespace iuic::tree
