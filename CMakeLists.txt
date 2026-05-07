@@ -28,7 +28,6 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-environment-persist.cppm"
 	"src/iuic-key-code.cppm"
 	"src/iuic-event.cppm"
-	"src/iuic-event-collector.cppm"
 	"src/iuic-layout-utils.cppm"
 	"src/iuic-ctx.cppm"
 	"src/iuic-machine-dispatcher.cppm"
@@ -38,9 +37,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"src/iuic-scheme-explorer.cppm"
 	"src/iuic-scheme-builder.cppm"
 	"src/iuic-core.cppm"
-)
-
-target_sources(${PROJECT_NAME}_core PUBLIC
+	PRIVATE
 	"src/iuic-scheme-compute.cpp"
 )
 
