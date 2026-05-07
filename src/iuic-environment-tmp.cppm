@@ -6,8 +6,8 @@ import iuic.underlying;
 import iuic.state;
 import :machine.dispatcher;
 import :key_code;
+import :event;
 import :style;
-import :event.collector;
 import :policy;
 
 namespace iuic::environment {

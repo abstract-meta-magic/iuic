@@ -5,7 +5,6 @@ export module iuic.core:layout.utils;
 import std;
 import iuic.underlying;
 import iuic.text;
-import :layout.def;
 import :environment.tmp;
 import :scheme.base;
 
