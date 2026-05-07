@@ -10,11 +10,10 @@ target_sources(${PROJECT_NAME}_underlying PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"iuic-underlying.cppm"
-	"iuic-test.cppm"
 )
 
-if(IUIC_TMP_CXX_STD)
-		target_link_libraries(${PROJECT_NAME}_underlying PUBLIC tmp_cxx_std)
+if(TARGET iuic_std_module)
+		target_link_libraries(${PROJECT_NAME}_underlying PUBLIC iuic_std_module)
 endif()
 
 ## UNDERLYING LIBS

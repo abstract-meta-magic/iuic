@@ -11,8 +11,8 @@ target_sources(${PROJECT_NAME}_underlying__units PUBLIC
 	"iuic-units-ui.cppm"
 )
 
-if(IUIC_TMP_CXX_STD)
-		target_link_libraries(${PROJECT_NAME}_underlying__units PUBLIC tmp_cxx_std)
+if(TARGET iuic_std_module)
+		target_link_libraries(${PROJECT_NAME}_underlying__units PUBLIC iuic_std_module)
 endif()
 
 target_link_libraries(${PROJECT_NAME}_underlying__units

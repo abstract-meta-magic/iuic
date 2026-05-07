@@ -51,13 +51,22 @@ struct pointer : event_base {
   units::ui::position old_mouse_position{};
 };
 
+// TODO : IMPL
+// можно иметь глобальное состояние
+// и проверять его.
+// b.state.global.has<state::error>(); как приме
+struct attach_state : event_base {
+  state::value state;
+};
+// TODO : IMPL
+struct detach_state : event_base {
+  state::value state;
+};
+
 }; // namespace global
 
 namespace local {
-struct key {
-  utils utils;
-  units::uid object; // can be null
-  units::uid uid;
+struct key : event_base {
   key_code code;
   units::ui::position current_mouse_position{};
   units::ui::rect rect;
@@ -67,6 +76,15 @@ struct pointer : event_base {
   units::ui::position current_mouse_position{};
   units::ui::position old_mouse_position{};
   units::ui::rect rect;
+};
+
+// TODO : IMPL
+struct attach_state : event_base {
+  state::value state;
+};
+// TODO : IMPL
+struct detach_state : event_base {
+  state::value state;
 };
 
 }; // namespace local
@@ -151,9 +169,9 @@ namespace iuic::event {
 void trigger(value &e, environment::persist &penv) {
   switch (e.meta.to_ulong()) {
   case 1 << value::key | 1 << value::local: {
-    e.lk({.utils = utils{penv},
-          .object = units::uid{e.object},
-          .uid = units::uid{e.uid},
+    e.lk({{.utils = utils{penv},
+           .object = units::uid{e.object},
+           .uid = units::uid{e.uid}},
           .code = penv.external.key_code});
     e.meta.set(value::triggered);
     break;

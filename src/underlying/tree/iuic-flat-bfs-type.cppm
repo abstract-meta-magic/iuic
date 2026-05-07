@@ -29,189 +29,30 @@ struct flat_bfs_type : protected flat_bfs_type_base<T> {
 
   using hierarchy = hierarchy::bfs_base;
 
+public: // operations
+  auto reflect(std::invocable<const T &> auto &&mapper) const;
+
+public: // access
   std::span<T> flat();
 
   std::span<const T> flat() const;
 
-  base_iterator root() const {
-    return {hierarchy::node_t::root, const_cast<flat_bfs_type *>(this)};
-  };
+  base_iterator root() const;
 
-  base_iterator begin() const {
-    if (this->data__.empty()) {
-      return {};
-    } else {
-      return {0, const_cast<flat_bfs_type *>(this)};
-    }
-  };
+  base_iterator begin() const;
 
-  base_iterator end() const {
-    if (this->data__.empty()) {
-      return {};
-    } else {
-      return {this->data__.size() - 1, const_cast<flat_bfs_type *>(this)};
-    }
-  };
+  base_iterator end() const;
 
-  base_iterator at(hierarchy::index_t i) {
-    if (i < this->data__.size()) {
-      return {i, this};
-    } else {
-      return {};
-    }
-  };
+  base_iterator at(hierarchy::index_t i);
 
-  auto reflect(std::invocable<const T &> auto &&mapper) const {
-    using ftraits = typename decltype(erasure::func_type{mapper})::traits;
-
-    if constexpr (std::same_as<typename ftraits::return_t, void>) {
-      return flat_bfs_type{*this};
-    } else {
-      using type = typename std::remove_cvref_t<typename ftraits::return_t>;
-      flat_bfs_type<type> tree;
-
-      tree.hierarchy__ = this->hierarchy__;
-
-      tree.data__.reserve(this->data__.size());
-      auto begin = this->data__.begin();
-      auto end = this->data__.end();
-      auto insert = tree.data__.begin();
-
-      for (auto &element : this->data__) {
-        tree.data__.push_back(mapper(element));
-      }
-
-      return tree;
-    }
-  };
-
-  flat_bfs_type() {};
+public: // ctor's
+  explicit flat_bfs_type() noexcept;
 
   template <typename Other>
-  explicit flat_bfs_type(tree::copy_iterator<Other> it) {
-    using other_base_iterator = decltype(it)::base;
-
-    std::vector<other_base_iterator> cur{};
-    std::vector<other_base_iterator> next{};
-
-    for (auto ch : iterator_range_for{childs_of(it)}) {
-      cur.push_back(ch);
-    }
-    cur.push_back({}); // sep
-
-    std::size_t index{0}, parent{tree::hierarchy::bfs_base::node_t::root},
-        ch_begin{0}, ch_count{0}, counter{0};
-    bool deep{false};
-
-    for (;; ++index) {
-      if (index >= cur.size()) {
-        // deep
-        if (deep) {
-          cur = std::move(next);
-          next.clear();
-          index = 0;
-          deep = false;
-        } else {
-          std::println("move : {}", counter);
-          return;
-        }
-      }
-
-      if (not cur[index].valid()) {
-        // sep
-        if (parent != hierarchy::node_t::root) {
-          auto &hnode = this->hierarchy__[parent];
-          hnode.ch_begin = ch_begin;
-          hnode.ch_end = this->hierarchy__.size();
-          ++parent;
-        } else {
-          parent = 0;
-        }
-        ch_begin = this->hierarchy__.size();
-        continue;
-      }
-
-      // insert
-      this->data__.push_back(*tree::copy_iterator{cur[index]});
-      this->hierarchy__.push_back({});
-      this->hierarchy__.back().parent = parent;
-      ++counter;
-
-      for (auto ch : tree::iterator_range_for{childs_of(cur[index])}) {
-        next.push_back(ch);
-      }
-
-      if (not deep && not next.empty()) {
-        deep = next.back().valid();
-      }
-
-      next.push_back({}); // sep
-    }
-  };
+  explicit flat_bfs_type(tree::copy_iterator<Other> it);
 
   template <typename Other>
-  explicit flat_bfs_type(tree::move_iterator<Other> it) {
-    using other_base_iterator = decltype(it)::base;
-
-    std::vector<other_base_iterator> cur{};
-    std::vector<other_base_iterator> next{};
-
-    for (auto ch : iterator_range_for{childs_of(it),
-                                      iterator_type<tree::base_iterator>{}}) {
-      cur.push_back(ch);
-    }
-    cur.push_back({}); // sep
-
-    std::size_t index{0}, parent{tree::hierarchy::bfs_base::node_t::root},
-        ch_begin{0}, ch_count{0}, counter{0};
-    bool deep{false};
-
-    for (;; ++index) {
-      if (index >= cur.size()) {
-        // deep
-        if (deep) {
-          cur = std::move(next);
-          next.clear();
-          index = 0;
-          deep = false;
-        } else {
-          std::println("move : {}", counter);
-          return;
-        }
-      }
-
-      if (not cur[index].valid()) {
-        // sep
-        if (parent != hierarchy::node_t::root) {
-          auto &hnode = this->hierarchy__[parent];
-          hnode.ch_begin = ch_begin;
-          hnode.ch_end = this->hierarchy__.size();
-          ++parent;
-        } else {
-          parent = 0;
-        }
-        ch_begin = this->hierarchy__.size();
-        continue;
-      }
-
-      // insert
-      this->data__.push_back(*tree::move_iterator{cur[index]});
-      this->hierarchy__.push_back({});
-      this->hierarchy__.back().parent = parent;
-      ++counter;
-
-      for (auto ch : tree::iterator_range_for{
-               childs_of(cur[index]), iterator_type<tree::base_iterator>{}}) {
-        next.push_back(ch);
-      }
-
-      if (not deep && not next.empty()) {
-        deep = next.back().valid();
-      }
-
-      next.push_back({}); // sep
-    }
-  };
+  explicit flat_bfs_type(tree::move_iterator<Other> it);
 
 private:
   template <erasure::is_pure_type S> friend struct flat_bfs_type;
@@ -450,6 +291,221 @@ template <typename T>
 root_iterator(base_iterator<flat_bfs_type<T>> it)
     -> root_iterator<flat_bfs_type<T>>;
 
+//////////////////////////////////////////////////////////////
+/// IMPL//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
+/////////////////////////
+// ::OPERATIONS
+
+template <erasure::is_pure_type T>
+auto flat_bfs_type<T>::reflect(std::invocable<const T &> auto &&mapper) const {
+  using ftraits = typename decltype(erasure::func_type{mapper})::traits;
+
+  if constexpr (std::same_as<typename ftraits::return_t, void>) {
+    return flat_bfs_type{*this};
+  } else {
+    using type = typename std::remove_cvref_t<typename ftraits::return_t>;
+    flat_bfs_type<type> tree;
+
+    tree.hierarchy__ = this->hierarchy__;
+
+    tree.data__.reserve(this->data__.size());
+    auto begin = this->data__.begin();
+    auto end = this->data__.end();
+    auto insert = tree.data__.begin();
+
+    for (auto &element : this->data__) {
+      tree.data__.push_back(mapper(element));
+    }
+
+    return tree;
+  }
+};
+
+/////////////////////////
+// ::ACCESS
+
+template <erasure::is_pure_type T> std::span<T> flat_bfs_type<T>::flat() {
+  return std::span<T>{this->data__};
+};
+
+template <erasure::is_pure_type T>
+std::span<const T> flat_bfs_type<T>::flat() const {
+  return std::span<T>{this->data__};
+};
+
+template <erasure::is_pure_type T>
+base_iterator<flat_bfs_type<T>> flat_bfs_type<T>::root() const {
+  return {hierarchy::node_t::root, const_cast<flat_bfs_type *>(this)};
+};
+
+template <erasure::is_pure_type T>
+base_iterator<flat_bfs_type<T>> flat_bfs_type<T>::begin() const {
+  if (this->data__.empty()) {
+    return {};
+  } else {
+    return {0, const_cast<flat_bfs_type *>(this)};
+  }
+};
+
+template <erasure::is_pure_type T>
+base_iterator<flat_bfs_type<T>> flat_bfs_type<T>::end() const {
+  if (this->data__.empty()) {
+    return {};
+  } else {
+    return {this->data__.size() - 1, const_cast<flat_bfs_type *>(this)};
+  }
+};
+
+template <erasure::is_pure_type T>
+base_iterator<flat_bfs_type<T>> flat_bfs_type<T>::at(hierarchy::index_t i) {
+  if (i < this->data__.size()) {
+    return {i, this};
+  } else {
+    return {};
+  }
+};
+
+/////////////////////////
+// ::CTORS
+
+template <erasure::is_pure_type T>
+flat_bfs_type<T>::flat_bfs_type() noexcept {};
+
+template <erasure::is_pure_type T>
+template <typename Other>
+flat_bfs_type<T>::flat_bfs_type(tree::copy_iterator<Other> it) {
+  using other_base_iterator = decltype(it)::base;
+
+  std::vector<other_base_iterator> cur{};
+  std::vector<other_base_iterator> next{};
+
+  for (auto ch : iterator_range_for{childs_of(it),
+                                    iterator_type<tree::base_iterator>{}}) {
+    cur.push_back(ch);
+  }
+  cur.push_back({}); // sep
+
+  std::size_t index{0}, parent{tree::hierarchy::bfs_base::node_t::root},
+      ch_begin{0}, ch_count{0}, counter{0};
+  bool deep{false};
+
+  for (;; ++index) {
+    if (index >= cur.size()) {
+      // deep
+      if (deep) {
+        cur = std::move(next);
+        next.clear();
+        index = 0;
+        deep = false;
+      } else {
+        std::println("move : {}", counter);
+        return;
+      }
+    }
+
+    if (not cur[index].valid()) {
+      // sep
+      if (parent != hierarchy::node_t::root) {
+        auto &hnode = this->hierarchy__[parent];
+        hnode.ch_begin = ch_begin;
+        hnode.ch_end = this->hierarchy__.size();
+        ++parent;
+      } else {
+        parent = 0;
+      }
+      ch_begin = this->hierarchy__.size();
+      continue;
+    }
+
+    // insert
+    this->data__.push_back(*tree::copy_iterator{cur[index]});
+    this->hierarchy__.push_back({});
+    this->hierarchy__.back().parent = parent;
+    ++counter;
+
+    for (auto ch : tree::iterator_range_for{
+             childs_of(cur[index]), iterator_type<tree::base_iterator>{}}) {
+      next.push_back(ch);
+    }
+
+    if (not deep && not next.empty()) {
+      deep = next.back().valid();
+    }
+
+    next.push_back({}); // sep
+  }
+};
+
+template <erasure::is_pure_type T>
+template <typename Other>
+flat_bfs_type<T>::flat_bfs_type(tree::move_iterator<Other> it) {
+  using other_base_iterator = decltype(it)::base;
+
+  std::vector<other_base_iterator> cur{};
+  std::vector<other_base_iterator> next{};
+
+  for (auto ch : iterator_range_for{childs_of(it),
+                                    iterator_type<tree::base_iterator>{}}) {
+    cur.push_back(ch);
+  }
+  cur.push_back({}); // sep
+
+  std::size_t index{0}, parent{tree::hierarchy::bfs_base::node_t::root},
+      ch_begin{0}, ch_count{0}, counter{0};
+  bool deep{false};
+
+  for (;; ++index) {
+    if (index >= cur.size()) {
+      // deep
+      if (deep) {
+        cur = std::move(next);
+        next.clear();
+        index = 0;
+        deep = false;
+      } else {
+        std::println("move : {}", counter);
+        return;
+      }
+    }
+
+    if (not cur[index].valid()) {
+      // sep
+      if (parent != hierarchy::node_t::root) {
+        auto &hnode = this->hierarchy__[parent];
+        hnode.ch_begin = ch_begin;
+        hnode.ch_end = this->hierarchy__.size();
+        ++parent;
+      } else {
+        parent = 0;
+      }
+      ch_begin = this->hierarchy__.size();
+      continue;
+    }
+
+    // insert
+    this->data__.push_back(*tree::move_iterator{cur[index]});
+    this->hierarchy__.push_back({});
+    this->hierarchy__.back().parent = parent;
+    ++counter;
+
+    for (auto ch : tree::iterator_range_for{
+             childs_of(cur[index]), iterator_type<tree::base_iterator>{}}) {
+      next.push_back(ch);
+    }
+
+    if (not deep && not next.empty()) {
+      deep = next.back().valid();
+    }
+
+    next.push_back({}); // sep
+  }
+};
+
+//////////////////////////////////////////////////////////////
+/// IMPL OTHER////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 template <typename T> auto childs_of(base_iterator<flat_bfs_type<T>> it) {
   struct : base_iterator<flat_bfs_type<T>> {
     using base = base_iterator<flat_bfs_type<T>>;

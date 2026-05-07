@@ -125,12 +125,12 @@ struct decoration {
   // в радианах ?
   struct {
     struct {
-      units::ui::border_radius left;
-      units::ui::border_radius right;
+      units::ui::adaptive::unit left{units::ui::none{}};
+      units::ui::adaptive::unit right{units::ui::none{}};
     } top;
     struct {
-      units::ui::border_radius left;
-      units::ui::border_radius right;
+      units::ui::adaptive::unit left{units::ui::none{}};
+      units::ui::adaptive::unit right{units::ui::none{}};
     } bottom;
     units::color color;
   } border_radius; // decorations
@@ -168,6 +168,20 @@ struct advence {
     units::weight shrink{1000};
 
   } adaptive;
+
+  // TODO : in advance shaping v > 2.0
+  // CSG is shape in normalized view [1.0f,-1.0f](like Vulkan)
+  // in box-model\bounded-box
+  // has ratio 1:1,16:9,1:2, etc
+  struct {
+    enum {
+      ignore,
+      optional,
+      strict,
+    } policy;
+
+    // iuic::shape::model model; // CSGM
+  } shape;
 
   struct {
     units::pixel height;

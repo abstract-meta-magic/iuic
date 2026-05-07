@@ -39,6 +39,10 @@ constexpr inline auto operator<=>(upixel lhs, upixel rhs) {
   return std::to_underlying(lhs) <=> std::to_underlying(rhs);
 };
 
+constexpr inline auto operator<=>(segment lhs, segment rhs) {
+  return std::to_underlying(lhs) <=> std::to_underlying(rhs);
+};
+
 constexpr inline auto operator<=>(weight lhs, weight rhs) {
   return std::to_underlying(lhs) <=> std::to_underlying(rhs);
 };
@@ -69,6 +73,22 @@ constexpr inline percent operator-(percent lhs, percent rhs) {
     return percent{static_cast<std::uint8_t>(std::to_underlying(lhs) -
                                              std::to_underlying(rhs))};
   };
+}
+
+constexpr inline segment operator+(segment lhs, segment rhs) {
+  return segment{std::to_underlying(lhs) + std::to_underlying(rhs)};
+}
+
+constexpr inline segment operator-(segment lhs, segment rhs) {
+  return segment{std::to_underlying(lhs) - std::to_underlying(rhs)};
+}
+
+constexpr inline upixel operator*(segment lhs, upixel rhs) {
+  return upixel{std::to_underlying(lhs) * std::to_underlying(rhs)};
+}
+
+constexpr inline upixel operator*(upixel lhs, segment rhs) {
+  return upixel{std::to_underlying(lhs) * std::to_underlying(rhs)};
 }
 
 constexpr inline pixel operator+(pixel lhs, pixel rhs) {
@@ -180,22 +200,3 @@ constexpr inline upixel operator*(upixel unit, weight w) {
 }
 
 }; // namespace iuic::units
-
-void piu(iuic::units::pixel u) {};
-
-void heh() {
-  using namespace iuic::units::literals;
-
-  piu(44_px);
-  constexpr auto zaz = "black"_rgb8;
-
-  auto c = "white"_rgb8;
-  auto s = "pink"_rgb8;
-  constexpr bool u = 52_px > 44_px;
-
-  constexpr auto heh = 800_px * 120_pr;
-
-  constexpr auto hehu = 206_upx * 1200_w;
-
-  constexpr auto oeua = 44_px / 2;
-};

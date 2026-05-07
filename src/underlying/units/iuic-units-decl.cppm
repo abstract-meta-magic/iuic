@@ -10,6 +10,9 @@ struct color {
 };
 enum class percent : std::uint8_t {};
 
+// global setted segment size in upixel
+enum class segment : std::uint32_t {};
+
 enum class vh : std::uint8_t {};
 
 enum class vw : std::uint8_t {};
@@ -45,11 +48,15 @@ constexpr inline uid operator""_uid(unsigned long long value) {
   return uid{static_cast<std::uint64_t>(value)};
 };
 
+constexpr inline segment operator""_seg(unsigned long long value) {
+  return segment{static_cast<std::uint32_t>(value)};
+};
+
 constexpr inline upixel operator""_upx(unsigned long long value) {
   return upixel{static_cast<std::uint32_t>(value)};
 };
 
-constexpr inline percent operator""_pr(unsigned long long value) {
+constexpr inline percent operator""_per(unsigned long long value) {
   if (value > 250) {
     throw std::out_of_range{"range 0-250"};
   };

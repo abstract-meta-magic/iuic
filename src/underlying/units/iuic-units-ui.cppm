@@ -76,7 +76,7 @@ struct border_radius {
 };
 
 namespace adaptive {
-using unit = std::variant<none, adapt, upixel, percent, vw, vh>;
+using unit = std::variant<none, adapt, upixel, percent, vw, vh, segment>;
 
 struct size {
   unit width;

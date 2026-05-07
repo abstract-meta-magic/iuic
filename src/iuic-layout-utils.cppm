@@ -64,6 +64,8 @@ struct utils_base {
 
   units::ui::size root_size() { return tenv.meta.viewport_size; };
 
+  units::upixel segment_size() { return tenv.meta.segment_size; };
+
 protected:
   environment::tmp &tenv;
   scheme::blueprint::base_iterator it;
@@ -71,10 +73,6 @@ protected:
 
 namespace measure {
 
-/*
-Measure считаеться для
-bordered rect
-*/
 using result = units::ui::adaptive::size;
 
 struct unit {
@@ -239,4 +237,3 @@ struct text {
 };
 } // namespace layout
 } // namespace iuic
-// background\foreground

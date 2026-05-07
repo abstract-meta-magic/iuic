@@ -5,6 +5,10 @@ export module iuic.underlying.tree:flat.hierarchy.dfs;
 import std;
 import :decl;
 
+//////////////////////////////////////////////////////////////
+/// DECL//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
 export namespace iuic::tree::tag {
 struct dfs : tag_qualifier__ {};
 }; // namespace iuic::tree::tag
@@ -78,6 +82,7 @@ struct dfs : protected dfs_base {
   using base_iterator = base_iterator<dfs>;
   using root_iterator = root_iterator<dfs>;
   using sibling_iterator = sibling_iterator<dfs>;
+  using hierarchy = dfs_base;
 
   base_iterator root() const {
     return {dfs_base::node_t::root, const_cast<dfs *>(this)};
@@ -94,10 +99,7 @@ struct dfs : protected dfs_base {
     return {index, const_cast<dfs *>(this)};
   };
 
-  template <typename Other>
-  explicit dfs(tree::base_iterator<Other> it){
-      // TODO
-  };
+  template <typename Other> explicit dfs(tree::base_iterator<Other> it);
 };
 } // namespace iuic::tree::hierarchy
 
@@ -187,5 +189,77 @@ template <typename T> auto childs_of(base_iterator<hierarchy::dfs> it) {
 
   return child_search.find();
 };
+//////////////////////////////////////////////////////////////
+/// IMPL//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 
+/////////////////////////
+// ::CTOR
+
+template <typename Other> hierarchy::dfs::dfs(tree::base_iterator<Other> it) {
+  using other_base_iterator = decltype(it);
+  struct ctor_iterator : tree::base_iterator<tree::hierarchy::dfs> {
+    using base = tree::base_iterator<tree::hierarchy::dfs>;
+    ctor_iterator(hierarchy::dfs_base::index_t self,
+                  tree::hierarchy::dfs_base *owner)
+        : base{self, owner} {};
+
+    void push() { this->self = this->owner->hierarchy__[this->self].child; };
+
+    void shift() { this->self = this->owner->hierarchy__[this->self].right; };
+
+    void pop() { this->self = this->owner->hierarchy__[this->self].parent; };
+
+    hierarchy::dfs_base::index_t get_self() { return this->self; };
+
+    hierarchy::dfs_base::node_t &get_node() {
+      return this->owner->hierarchy__[this->self];
+    };
+  };
+
+  other_base_iterator cur;
+
+  ctor_iterator cit{0, this};
+
+  if (it.is_root()) {
+    cur = childs_of(it);
+  } else if (not it) {
+    return; // invalid iterator
+  } else {
+    cur = it;
+  }
+
+  this->hierarchy__.push_back({}); // FIRST|ROOT_CH_0
+
+  for (; cur;) {
+    if (auto ch{childs_of(cur)}) {
+      // set data\hierarchy
+      cit.get_node().child = this->hierarchy__.size();
+      this->hierarchy__.push_back({.parent = cit.get_self()}); // do job
+      cur = ch;
+      cit.push();
+    } else {
+      auto next = tree::root_iterator{cur};
+      for (;;) {
+        if (not next || next == it) {
+          return; // finish
+        } else if (auto sib = ++tree::sibling_iterator{next}) {
+          // set data\hierarchy
+          auto &prev_node = cit.get_node();
+          prev_node.right = this->hierarchy__.size();
+          this->hierarchy__.push_back({
+              .parent = prev_node.parent,
+              .left = cit.get_self(),
+          }); // do job
+          cur = sib;
+          cit.shift();
+          break;
+        } else {
+          ++next;
+          cit.pop();
+        }
+      }
+    }
+  };
+};
 }; // namespace iuic::tree

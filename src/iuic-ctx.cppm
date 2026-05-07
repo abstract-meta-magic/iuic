@@ -15,6 +15,9 @@ class context {
 public: // api
   void make(units::ui::size viewport, scheme::builder_block_cpt auto &&call);
 
+  void make(units::ui::size viewport, units::upixel segment,
+            scheme::builder_block_cpt auto &&call);
+
   context() {
     scheme = scheme::explorer_assign{blueprint.begin(), &tenv, &penv};
   };
@@ -28,17 +31,25 @@ private:
   environment::tmp tenv{adp};
   environment::persist penv{adp};
 
+  // TODO : backend capabilities
 public:
   scheme::explorer scheme{};
 };
 
-// Contex Template Impl
 void context::make(units::ui::size vp, scheme::builder_block_cpt auto &&call) {
+  make(vp, units::upixel{8}, std::forward<decltype(call)>(call));
+};
+
+// Contex Template Impl
+void context::make(units::ui::size vp, units::upixel seg,
+                   scheme::builder_block_cpt auto &&call) {
 
   // <<-----------------------<< advance
   adp.advance();
 
   // <<-----------------------<< begin
+  tenv.meta.viewport_size = vp;
+  tenv.meta.segment_size = seg;
 
   scheme::director d{tenv, penv};
 
