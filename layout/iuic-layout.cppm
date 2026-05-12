@@ -2,4 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export module iuic.layout;
+export import :decl;
 export import :utils;
+export import :interface;

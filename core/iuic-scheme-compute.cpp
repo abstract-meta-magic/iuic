@@ -135,16 +135,16 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
     auto sk_ait = tree::access_iterator{el};
     auto tree_ait = tree::access_iterator{tree::shift(tree.begin(), el)};
 
-    if (not tree_ait->meta.is_applyed()) {
+    // TODO : DISCARTED | VIRTUALIZED
+    if (tree_ait->meta.is_discarted() || not tree_ait->meta.is_applyed()) {
       tree_ait->meta.set_discarted();
-    } else if (auto rit = ++tree::root_iterator{tree_ait};
-               rit && tree::access_iterator{rit}->meta.is_discarted()) {
-      tree_ait->meta.set_discarted();
-    };
 
-    if (tree_ait->meta.is_discarted()) {
-      continue;
-    }
+      for (auto ch : tree::iterator_range_for{
+               tree::childs_of(tree_ait),
+               tree::iterator_type<tree::access_iterator>{}}) {
+        ch->meta.set_discarted();
+      };
+    };
 
     std::visit(
         [&](auto obj) {

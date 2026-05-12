@@ -80,8 +80,9 @@ template <typename T> struct iterator_range_trait;  // for base impl
 template <typename Trait, template <typename> typename Iterator>
 concept is_valide_iterator_subsitute =
     range_trait<Trait> &&
-    std::is_base_of_v<base_iterator<typename Trait::container_t>,
-                      Iterator<typename Trait::container_t>>;
+    requires(base_iterator<typename Trait::container_t> bit) {
+      Iterator<typename Trait::container_t>{bit};
+    };
 
 template <range_trait Trait,
           template <typename> typename Iterator = base_iterator>

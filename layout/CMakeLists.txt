@@ -4,8 +4,17 @@ target_sources(${PROJECT_NAME}_layout PUBLIC
 	FILE_SET iuic_underlying_modules
 	TYPE CXX_MODULES
 	FILES
-	"iuic-layout.cppm"
+	"iuic-layout-decl.cppm"
+	"iuic-layout-interface.cppm"
+	# utils
+	"iuic-layout-utils-base.cppm"
+	"iuic-layout-utils-frame-measure.cppm"
+	"iuic-layout-utils-frame-arrange.cppm"
+	"iuic-layout-utils-text-measure.cppm"
+	"iuic-layout-utils-text-arrange.cppm"
+	# final
 	"iuic-layout-utils.cppm"
+	"iuic-layout.cppm"
 )
 
 if(TARGET iuic_std_module)
