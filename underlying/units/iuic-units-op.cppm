@@ -146,11 +146,13 @@ constexpr inline upixel operator*(upixel lhs, percent rhs) {
 
 constexpr inline upixel operator*(upixel lhs, vh rhs) {
   // TODO : Write overflow rule
-  return upixel{std::to_underlying(lhs) * std::to_underlying(rhs)};
+  return upixel{static_cast<std::uint32_t>(static_cast<std::uint64_t>(lhs) *
+                                           std::to_underlying(rhs) / 100)};
 }
 constexpr inline upixel operator*(upixel lhs, vw rhs) {
   // TODO : Write overflow rule
-  return upixel{std::to_underlying(lhs) * std::to_underlying(rhs)};
+  return upixel{static_cast<std::uint32_t>(static_cast<std::uint64_t>(lhs) *
+                                           std::to_underlying(rhs) / 100)};
 }
 
 constexpr inline upixel operator/(upixel lhs, std::uint8_t rhs) {

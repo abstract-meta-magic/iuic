@@ -62,6 +62,21 @@ constexpr inline percent operator""_per(unsigned long long value) {
   };
   return percent{static_cast<std::uint8_t>(value)};
 };
+
+constexpr inline vh operator""_vh(unsigned long long value) {
+  if (value > 250) {
+    throw std::out_of_range{"range 0-250"};
+  };
+  return vh{static_cast<std::uint8_t>(value)};
+};
+
+constexpr inline vw operator""_vw(unsigned long long value) {
+  if (value > 250) {
+    throw std::out_of_range{"range 0-250"};
+  };
+  return vw{static_cast<std::uint8_t>(value)};
+};
+
 constexpr inline weight operator""_w(unsigned long long value) {
   return weight{static_cast<std::uint64_t>(value)};
 };

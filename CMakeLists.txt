@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.31)
 
 project(iuic LANGUAGES CXX)
 
-add_subdirectory(src/underlying)
-add_subdirectory(src/text)
-add_subdirectory(src/state)
+add_subdirectory(underlying)
+add_subdirectory(text)
+add_subdirectory(state)
 
 add_library(${PROJECT_NAME}_core STATIC)
 
@@ -23,22 +23,22 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	FILE_SET iuic_core_modules 
 	TYPE CXX_MODULES
 	FILES
-	"src/iuic-style.cppm"
-	"src/iuic-environment-tmp.cppm"
-	"src/iuic-environment-persist.cppm"
-	"src/iuic-key-code.cppm"
-	"src/iuic-event.cppm"
-	"src/iuic-layout-utils.cppm"
-	"src/iuic-ctx.cppm"
-	"src/iuic-machine-dispatcher.cppm"
-	"src/iuic-policy.cppm"
-	"src/iuic-scheme-base.cppm"
-	"src/iuic-scheme-compute.cppm"
-	"src/iuic-scheme-explorer.cppm"
-	"src/iuic-scheme-builder.cppm"
-	"src/iuic-core.cppm"
+	"core/iuic-style.cppm"
+	"core/iuic-environment-tmp.cppm"
+	"core/iuic-environment-persist.cppm"
+	"core/iuic-key-code.cppm"
+	"core/iuic-event.cppm"
+	"core/iuic-layout-utils.cppm"
+	"core/iuic-ctx.cppm"
+	"core/iuic-machine-dispatcher.cppm"
+	"core/iuic-policy.cppm"
+	"core/iuic-scheme-base.cppm"
+	"core/iuic-scheme-compute.cppm"
+	"core/iuic-scheme-explorer.cppm"
+	"core/iuic-scheme-builder.cppm"
+	"core/iuic-core.cppm"
 	PRIVATE
-	"src/iuic-scheme-compute.cpp"
+	"core/iuic-scheme-compute.cpp"
 )
 
 ## Main alias

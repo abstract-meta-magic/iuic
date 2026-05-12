@@ -400,7 +400,6 @@ flat_bfs_type<T>::flat_bfs_type(tree::copy_iterator<Other> it) {
         index = 0;
         deep = false;
       } else {
-        std::println("move : {}", counter);
         return;
       }
     }
@@ -465,7 +464,6 @@ flat_bfs_type<T>::flat_bfs_type(tree::move_iterator<Other> it) {
         index = 0;
         deep = false;
       } else {
-        std::println("move : {}", counter);
         return;
       }
     }

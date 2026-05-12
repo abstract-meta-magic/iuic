@@ -4,6 +4,8 @@
 .build
 .cache
 .clocignore
+.obsidian
+.trash
 kit/kitty-kit
 tmp_solutions
 /utils
