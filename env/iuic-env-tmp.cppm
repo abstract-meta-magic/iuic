@@ -1,16 +1,14 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.core:environment.tmp;
+export module iuic.env:tmp;
+import std;
 import iuic.underlying;
 import iuic.state;
-import :machine.dispatcher;
-import :key_code;
-import :event;
-import :style;
-import :policy;
+import iuic.style;
+import iuic.events;
 
-namespace iuic::environment {
+export namespace iuic::environment {
 struct tmp : iuic::advance::interface {
   struct {
   } text;
@@ -158,42 +156,7 @@ struct tmp : iuic::advance::interface {
 
   struct : private advance::interface {
     friend tmp;
-    policy::hovered hovered(units::uid uid) {
-      if (data.contains(uid)) {
-        return data.at(uid).first;
-      } else {
-        return {};
-      }
-    };
-
-    policy::event event(units::uid uid) {
-      if (data.contains(uid)) {
-        return data.at(uid).second;
-      } else {
-        return {};
-      }
-    };
-
-    void set(units::uid uid, policy::hovered h) {
-      if (data.contains(uid)) {
-        data.at(uid).first = h;
-      } else {
-        data.insert({uid, {h, {}}});
-      }
-    };
-    void set(units::uid uid, policy::event e) {
-      if (data.contains(uid)) {
-        data.at(uid).second = e;
-      } else {
-        data.insert({uid, {{}, e}});
-      }
-    };
-
-  private:
-    void advance() override { data.clear(); };
-
-  private:
-    std::map<units::uid, std::pair<policy::hovered, policy::event>> data;
+    // DEADCODE
   } policy;
 
   static constexpr std::size_t tmp_buff_size = 1024 * 1024 * 4;

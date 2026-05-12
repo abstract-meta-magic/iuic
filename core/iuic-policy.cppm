@@ -5,13 +5,6 @@ import std;
 
 export namespace iuic::policy {
 
-enum class usage {
-  unspecified,
-  unused,
-  optional,
-  required,
-};
-
 struct shared {
   unsigned up{0};
 };

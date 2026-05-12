@@ -1,37 +1,94 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.core:layout.utils;
+export module iuic.layout:utils;
 import std;
 import iuic.underlying;
+import iuic.style;
 import iuic.text;
-import :environment.tmp;
-import :scheme.base;
+import iuic.env;
 
 namespace iuic {
 
 export namespace layout {
-struct utils_base {
-  using iterator = scheme::iterators::base;
-  using root = scheme::iterators::root;
-  using sibling = scheme::iterators::sibling;
 
-  utils_base(environment::tmp &tenv_, scheme::blueprint::base_iterator it_)
+struct element {
+  units::ui::adaptive::size measure;
+  units::ui::area arrange;
+  std::span<const text::present::token> text;
+  style::value style;
+
+  struct meta {
+    void set_discarted() { value.set(static_cast<int>(map::discarted), true); };
+
+    void set_virtualized() {
+      value.set(static_cast<int>(map::virtualized), true);
+    };
+
+    void set_text_mark() { value.set(static_cast<int>(map::text_mark), true); };
+
+    void set_applyed() { value.set(static_cast<int>(map::applyed), true); };
+
+    void set_measured() { value.set(static_cast<int>(map::measured), true); };
+
+    void set_arranged() { value.set(static_cast<int>(map::arranged), true); };
+
+    bool is_discarted() {
+      return value.test(static_cast<int>(map::discarted));
+    };
+
+    bool is_virtualized() {
+      return value.test(static_cast<int>(map::virtualized));
+    };
+
+    bool is_applyed() { return value.test(static_cast<int>(map::applyed)); };
+
+    bool is_measured() { return value.test(static_cast<int>(map::measured)); };
+
+    bool is_arranged() { return value.test(static_cast<int>(map::arranged)); };
+
+    bool is_text() { return value.test(static_cast<int>(map::text_mark)); };
+
+  private:
+    enum class map {
+      discarted = 0,
+      text_mark,
+      virtualized,
+      measured,
+      applyed,
+      arranged,
+      size__,
+    };
+    std::bitset<static_cast<std::size_t>(map::size__)> value;
+  } meta;
+};
+
+using tree_type = ::iuic::tree::flat_bfs_type<element>;
+
+struct utils_base {
+  using base_iterator = iuic::tree::base_iterator<iuic::tree::hierarchy::bfs>;
+  using sibling_iterator =
+      iuic::tree::sibling_iterator<iuic::tree::hierarchy::bfs>;
+  using root_iterator = iuic::tree::root_iterator<iuic::tree::hierarchy::bfs>;
+  using element_base_iterator = tree_type::base_iterator;
+  using element_access_iterator = tree_type::access_iterator;
+
+  utils_base(environment::tmp &tenv_, element_base_iterator it_)
       : tenv{tenv_}, it{it_} {}
 
-  iterator self() { return it; };
+  base_iterator self() { return it; };
 
-  iterator parent() { return ++tree::root_iterator{it}; };
+  base_iterator parent() { return ++tree::root_iterator{it}; };
 
-  tree::iterator_range_for<tree::iterator_range_trait<sibling>> childs() {
-    return {scheme::iterators::childs_of(it)};
+  tree::iterator_range_for<tree::iterator_range_trait<sibling_iterator>>
+  childs() {
+    return {iuic::tree::childs_of(base_iterator{it})};
   };
 
   // this is joke...BUT
   struct : utils::adv_member_for<utils_base> {
-    style::value operator[](iterator el) {
-      return self().tenv.style.get(
-          tree::access_iterator{tree::shift(self().it, el)}->sid);
+    style::value operator[](base_iterator el) {
+      return element_access_iterator{tree::shift(self().it, el)}->style;
     };
   } style [[no_unique_address]];
 
@@ -67,41 +124,27 @@ struct utils_base {
 
 protected:
   environment::tmp &tenv;
-  scheme::blueprint::base_iterator it;
+  element_base_iterator it;
 };
 
 namespace measure {
 
-using result = units::ui::adaptive::size;
-
-struct unit {
-  style::sid sid{0};
-  result measure{units::ui::none{}, units::ui::none{}};
-  // приоритеты и требования ???
-};
-
-using tree = tree::flat_bfs_type<unit>;
-
 struct frame_utils : public utils_base {
-  frame_utils(environment::tmp &tenv, scheme::blueprint::base_iterator it,
-              measure::tree::base_iterator m_)
-      : utils_base{tenv, it}, m{m_} {};
+  frame_utils(environment::tmp &tenv, element_base_iterator it)
+      : utils_base{tenv, it} {};
 
   // this is joke...BUT
   struct : utils::adv_member_for<frame_utils> {
-    const measure::result &operator[](iterator el) {
-      return tree::access_iterator{iuic::tree::shift(self().m, el)}->measure;
+    const units::ui::adaptive::size &operator[](base_iterator el) {
+      return tree::access_iterator{iuic::tree::shift(self().it, el)}->measure;
     };
   } measure [[no_unique_address]];
-
-private:
-  measure::tree::base_iterator m;
 };
 
 struct text_utils : public utils_base {
   text_utils(environment::tmp &tenv,
              std::span<const iuic::text::raw::token> tokens_,
-             scheme::blueprint::base_iterator it)
+             element_base_iterator it)
       : utils_base{tenv, it}, tokens{tokens_} {};
 
   std::span<const iuic::text::raw::token> get_tokens() { return tokens; };
@@ -113,42 +156,40 @@ private:
 
 namespace arrange {
 struct frame_utils : public utils_base {
-  frame_utils(environment::tmp &tenv, scheme::blueprint::base_iterator it,
-              measure::tree::sibling_iterator m_)
-      : utils_base{tenv, it}, m{m_} {};
+  frame_utils(environment::tmp &tenv, element_base_iterator it)
+      : utils_base{tenv, it} {};
 
-  void apply_element(iterator el, units::ui::area a) {
+  void apply_element(base_iterator el, units::ui::area a) {
     tree::access_iterator ait{tree::shift(it, el)};
 
     if (ait) {
-      ait->area = a;
-      ait->meta.set(ait->meta.applied);
+      std::println("SIZE : w:{},h:{}", (unsigned)a.bordered.w,
+                   (unsigned)a.bordered.h);
+      ait->arrange = a;
+      ait->meta.set_applyed();
     }
   };
 
   // this is joke...BUT
   struct : utils::adv_member_for<frame_utils> {
-    const measure::result &operator[](iterator el) {
-      return tree::access_iterator{tree::shift(self().m, el)}->measure;
+    const units::ui::adaptive::size &operator[](base_iterator el) {
+      return tree::access_iterator{tree::shift(self().it, el)}->measure;
     };
   } measure [[no_unique_address]];
 
   const units::ui::area &self_area() const {
-    return (tree::access_iterator{it})->area;
+    return (tree::access_iterator{it})->arrange;
   };
-
-private:
-  measure::tree::sibling_iterator m;
 };
 
 struct text_utils : public utils_base {
   text_utils(environment::tmp &tenv,
              std::span<const iuic::text::raw::token> tokens_,
-             scheme::blueprint::base_iterator it)
+             element_base_iterator it)
       : utils_base{tenv, it}, tokens{tokens_} {};
 
   const units::ui::area &self_area() const {
-    return (tree::access_iterator{it})->area;
+    return (tree::access_iterator{it})->arrange;
   };
 
   std::span<const iuic::text::raw::token> get_tokens() { return tokens; };
@@ -220,7 +261,7 @@ struct frame {
 
   constexpr frame() noexcept {};
 
-  virtual std::optional<measure::result>
+  virtual std::optional<units::ui::adaptive::size>
   measure(measure::frame_utils utils) const = 0;
 
   virtual bool arrange(arrange::frame_utils utils) const = 0;
@@ -228,7 +269,7 @@ struct frame {
 
 struct text {
   virtual ~text() {};
-  virtual std::optional<measure::result>
+  virtual std::optional<units::ui::adaptive::size>
   measure(measure::text_utils utils) const = 0;
 
   virtual std::span<const iuic::text::present::token>

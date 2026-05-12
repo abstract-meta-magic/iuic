@@ -129,4 +129,49 @@ iterator_range_for(const flat_bfs_type<T> &, iterator_type<Iterator>)
 template <typename T, template <typename> typename Iterator>
 iterator_range_for(base_iterator<flat_bfs_type<T>>, iterator_type<Iterator>)
     -> iterator_range_for<container_range_trait<flat_bfs_type<T>>, Iterator>;
+
+template <typename T, template <typename> typename Iterator>
+struct iterator_range_for<reverse_bfs_range_trait<flat_bfs_type<T>>, Iterator> {
+  struct iterator : base_iterator<flat_bfs_type<T>> {
+    using base = base_iterator<flat_bfs_type<T>>;
+    using iterator_t = Iterator<flat_bfs_type<T>>;
+
+    iterator(base b) : base{b} {};
+
+    iterator(base::container_t::hierarchy::index_t i,
+             typename base::owner_t *owner)
+        : base{i, owner} {}
+
+    iterator &operator++() { return --base::self, *this; };
+
+    iterator_t operator*() { return base{*this}; };
+  };
+
+  iterator_range_for(const flat_bfs_type<T> &container, iterator_type<Iterator>,
+                     tag::reverse_levelorder)
+      : begin_{container.end()} {}
+
+  iterator_range_for(base_iterator<flat_bfs_type<T>> it,
+                     iterator_type<Iterator>, tag::reverse_levelorder)
+      : begin_{it} {}
+
+  iterator begin() { return begin_; };
+
+  sentinel<iterator> end() { return {}; };
+
+  std::pair<iterator, sentinel<iterator>> range() { return {begin_, {}}; };
+
+private:
+  iterator begin_;
+};
+
+template <typename T, template <typename> typename Iterator>
+iterator_range_for(const flat_bfs_type<T> &, iterator_type<Iterator>,
+                   tag::reverse_levelorder)
+    -> iterator_range_for<reverse_bfs_range_trait<flat_bfs_type<T>>, Iterator>;
+
+template <typename T, template <typename> typename Iterator>
+iterator_range_for(base_iterator<flat_bfs_type<T>>, iterator_type<Iterator>,
+                   tag::reverse_levelorder)
+    -> iterator_range_for<reverse_bfs_range_trait<flat_bfs_type<T>>, Iterator>;
 }; // namespace iuic::tree

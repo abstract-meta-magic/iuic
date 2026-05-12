@@ -27,6 +27,8 @@ enum class hash : std::uint64_t {};
 
 enum class weight : std::uint64_t {};
 
+enum class keycode : std::uint64_t {};
+
 struct angle {
   // Brads + LUT ???
   enum class impl_t : std::uint16_t {};

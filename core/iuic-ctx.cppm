@@ -4,7 +4,7 @@
 export module iuic.core:context;
 import std;
 import iuic.underlying;
-import :environment.persist;
+import iuic.env;
 import :scheme.builder;
 import :scheme.compute;
 import :scheme.explorer;

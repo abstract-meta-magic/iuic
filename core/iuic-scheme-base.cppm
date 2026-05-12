@@ -2,17 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export module iuic.core:scheme.base;
+import std;
 import iuic.underlying;
 import iuic.text;
-import :style;
-import :environment.tmp;
-import :environment.persist;
-
-// forward
-export namespace iuic::layout {
-struct frame;
-struct text;
-}; // namespace iuic::layout
+import iuic.layout;
+import iuic.style;
+import iuic.env;
 
 namespace iuic::scheme {
 
@@ -56,22 +51,6 @@ using sibling = tree::sibling_iterator<tree::hierarchy::bfs>;
 sibling childs_of(base it) { return tree::childs_of(it); };
 
 }; // namespace iterators
-
-export namespace props {
-struct base {};
-
-template <auto lhs, auto rhs> struct and__ : decltype(lhs), decltype(rhs) {};
-
-struct : base {
-} no_discarted;
-
-struct : base {
-} no_virtualized;
-
-struct : and__<no_virtualized, no_discarted> {
-} viewable;
-
-}; // namespace props
 
 export namespace ranges {
 // level_order
@@ -168,9 +147,9 @@ private:
 
 struct preorder {
   struct iterator : iterators::base {};
-  iterator begin();
+  iterator begin() { throw std::runtime_error{"Not impl"}; };
 
-  tree::sentinel<iterator> end();
+  tree::sentinel<iterator> end() { return {}; };
 };
 
 // post_order

@@ -4,9 +4,10 @@
 export module iuic.core:scheme.explorer;
 import std;
 import iuic.underlying;
+import iuic.state;
+import iuic.style;
+import iuic.events;
 import :policy;
-import :style;
-import :event;
 import :scheme.base;
 
 namespace iuic::scheme {
@@ -40,7 +41,8 @@ export struct explorer {
     }
 
     policy::hovered hovered_policy(iterators::base it) {
-      return self().tenv->policy.hovered(self().get_uid(it));
+      // TODO : fixme
+      return {};
     };
 
     bool has_text(iterators::base it) {
@@ -58,7 +60,9 @@ export struct explorer {
       return self().tenv->event.list_of(self().get_uid(it));
     };
 
-    void trigger(event::value &e) { event::trigger(e, *(self().penv)); }
+    void trigger(event::value &e) {
+      // TODO : fixme
+    }
   } event{*this};
 
   struct : utils::member_for<explorer> {
@@ -102,7 +106,9 @@ export struct explorer {
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
-    void set_key_code(key_code code) { self().penv->external.key_code = code; };
+    void set_key_code(units::keycode code) {
+      self().penv->external.key_code = code;
+    };
   } global{*this};
 
 public: // assign

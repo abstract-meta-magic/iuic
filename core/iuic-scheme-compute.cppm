@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export module iuic.core:scheme.compute;
+import iuic.env;
+import iuic.layout;
 import :scheme.base;
-import :environment.persist;
-import :environment.tmp;
-import :layout.utils;
 
 namespace iuic::scheme {
 

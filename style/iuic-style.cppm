@@ -1,10 +1,18 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.core:style;
+export module iuic.style;
 import std;
 import iuic.underlying;
-import :policy;
+
+export namespace iuic::policy {
+enum class usage {
+  unspecified,
+  unused,
+  optional,
+  required,
+};
+};
 
 export namespace iuic::style {
 
@@ -121,7 +129,7 @@ struct decl {
 };
 
 } // namespace iuic::style
-namespace iuic::style {
+export namespace iuic::style {
 struct sheet {
   std::vector<shape> shape;
   std::vector<decoration> decoration;
@@ -137,7 +145,7 @@ struct index {
   index_t advance;
 };
 
-export struct value {
+struct value {
   const shape &get_shape() const { return table->shape[index.shape]; };
 
   const decoration &get_decoration() const {

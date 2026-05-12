@@ -2,13 +2,28 @@ cmake_minimum_required(VERSION 3.31)
 
 project(iuic LANGUAGES CXX)
 
+## lvl - 0
 add_subdirectory(underlying)
+## lvl - 1
 add_subdirectory(text)
 add_subdirectory(state)
+add_subdirectory(style)
+## lvl - 3
+add_subdirectory(events)
+## lvl - 4
+add_subdirectory(env)
+add_subdirectory(layout)
 
 add_library(${PROJECT_NAME}_core STATIC)
 
-target_link_libraries(${PROJECT_NAME}_core iuic::underlying iuic::text iuic::state)
+target_link_libraries(${PROJECT_NAME}_core
+	iuic::underlying
+	iuic::text
+	iuic::state
+	iuic::style
+	iuic::env
+	iuic::layout
+)
 
 if(TARGET iuic_std_module)
 target_link_libraries(${PROJECT_NAME}_core iuic_std_module)
@@ -23,12 +38,6 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	FILE_SET iuic_core_modules 
 	TYPE CXX_MODULES
 	FILES
-	"core/iuic-style.cppm"
-	"core/iuic-environment-tmp.cppm"
-	"core/iuic-environment-persist.cppm"
-	"core/iuic-key-code.cppm"
-	"core/iuic-event.cppm"
-	"core/iuic-layout-utils.cppm"
 	"core/iuic-ctx.cppm"
 	"core/iuic-machine-dispatcher.cppm"
 	"core/iuic-policy.cppm"

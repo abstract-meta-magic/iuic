@@ -1,15 +1,13 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export module iuic.core:environment.persist;
+export module iuic.env:persist;
 import std;
 import iuic.underlying;
 import iuic.state;
-import :style;
-import :machine.dispatcher;
-import :key_code;
+import iuic.style;
 
-namespace iuic::environment {
+export namespace iuic::environment {
 
 struct object {
   void *data;
@@ -240,7 +238,7 @@ struct persist {
       old_pointer_position = std::exchange(pointer_position, ppos);
     };
 
-    key_code key_code;
+    units::keycode key_code;
 
   private:
     units::ui::position old_pointer_position;

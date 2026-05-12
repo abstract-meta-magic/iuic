@@ -6,7 +6,7 @@ import std;
 import iuic.underlying;
 import iuic.state;
 import iuic.text;
-import :event;
+import iuic.events;
 import :policy;
 import :machine.dispatcher;
 import :scheme.base;
@@ -583,11 +583,13 @@ builder_text_interface::dynamic_token(text::atlas::id, std::string_view) {
 // ---- IMPL [policy] ----
 
 void builder_policy_interface::hovered(policy::hovered h) {
-  tenv.policy.set(tree::access_iterator{it}->uid, h);
+  // TODO : fixme
+  // tenv.policy.set(tree::access_iterator{it}->uid, h);
 };
 
 void builder_policy_interface::event(policy::event e) {
-  tenv.policy.set(tree::access_iterator{it}->uid, e);
+  // TODO : fixme
+  // tenv.policy.set(tree::access_iterator{it}->uid, e);
 };
 
 }; // namespace iuic::scheme
