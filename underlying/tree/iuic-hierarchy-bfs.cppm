@@ -132,8 +132,11 @@ struct bfs : protected bfs_base {
         // sep
         if (parent != node_t::root) {
           auto &hnode = this->hierarchy__[parent];
-          hnode.ch_begin = ch_begin;
-          hnode.ch_end = this->hierarchy__.size();
+
+          if (ch_begin != this->hierarchy__.size()) {
+            hnode.ch_begin = ch_begin;
+            hnode.ch_end = this->hierarchy__.size();
+          }
           ++parent;
         } else {
           parent = 0;
