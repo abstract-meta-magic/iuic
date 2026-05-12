@@ -1,4 +1,4 @@
-// Copyright (c) 2026 abstract-meta-magic and contributors
+// Copyright (c) 2026 abstrachilct-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 
 export module iuic.underlying.tree:flat.bfs;
@@ -408,8 +408,10 @@ flat_bfs_type<T>::flat_bfs_type(tree::copy_iterator<Other> it) {
       // sep
       if (parent != hierarchy::node_t::root) {
         auto &hnode = this->hierarchy__[parent];
-        hnode.ch_begin = ch_begin;
-        hnode.ch_end = this->hierarchy__.size();
+        if (ch_begin != this->hierarchy__.size()) {
+          hnode.ch_begin = ch_begin;
+          hnode.ch_end = this->hierarchy__.size();
+        }
         ++parent;
       } else {
         parent = 0;
@@ -472,8 +474,10 @@ flat_bfs_type<T>::flat_bfs_type(tree::move_iterator<Other> it) {
       // sep
       if (parent != hierarchy::node_t::root) {
         auto &hnode = this->hierarchy__[parent];
-        hnode.ch_begin = ch_begin;
-        hnode.ch_end = this->hierarchy__.size();
+        if (ch_begin != this->hierarchy__.size()) {
+          hnode.ch_begin = ch_begin;
+          hnode.ch_end = this->hierarchy__.size();
+        }
         ++parent;
       } else {
         parent = 0;

@@ -116,6 +116,8 @@ void arrange_root(environment::tmp &tenv, scheme::sketch &sketch,
     area.bordered.y = area.bordered.y + cursor.y;
     area.borderless.y = area.borderless.y + cursor.y;
 
+    // TODO : calc margin
+
     tree_ait->arrange = area;
     tree_ait->meta.set_applyed();
 
@@ -133,12 +135,14 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
     auto sk_ait = tree::access_iterator{el};
     auto tree_ait = tree::access_iterator{tree::shift(tree.begin(), el)};
 
-    if (tree_ait->meta.is_discarted() || not tree_ait->meta.is_applyed()) {
-      for (auto ch : tree::iterator_range_for{
-               tree::childs_of(tree_ait),
-               tree::iterator_type<tree::base_iterator>{}}) {
-        tree::access_iterator{ch}->meta.set_discarted();
-      }
+    if (not tree_ait->meta.is_applyed()) {
+      tree_ait->meta.set_discarted();
+    } else if (auto rit = ++tree::root_iterator{tree_ait};
+               rit && tree::access_iterator{rit}->meta.is_discarted()) {
+      tree_ait->meta.set_discarted();
+    };
+
+    if (tree_ait->meta.is_discarted()) {
       continue;
     }
 
@@ -148,8 +152,7 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
             // frame
             if (not obj->arrange(iuic::layout::arrange::frame_utils{
                     tenv, tree::base_iterator{tree_ait}})) {
-              tree::access_iterator{tree::shift(tree.begin(), el)}
-                  ->meta.set_discarted();
+              tree_ait->meta.set_discarted();
               return;
             };
           } else {
@@ -179,6 +182,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
   arrange(tenv, sketch, layout_tree);
 
   // resolve
+  // TODO : optimize
   auto b = sketch.reflect([](sk_element sk) -> bp_element {
     return {.uid = sk.uid, .sid = sk.sid, .zorder = sk.zorder};
   });

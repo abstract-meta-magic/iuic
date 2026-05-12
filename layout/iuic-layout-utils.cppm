@@ -59,7 +59,7 @@ struct element {
       arranged,
       size__,
     };
-    std::bitset<static_cast<std::size_t>(map::size__)> value;
+    std::bitset<static_cast<std::size_t>(map::size__)> value{0};
   } meta;
 };
 
@@ -162,12 +162,22 @@ struct frame_utils : public utils_base {
   void apply_element(base_iterator el, units::ui::area a) {
     tree::access_iterator ait{tree::shift(it, el)};
 
-    if (ait) {
-      std::println("SIZE : w:{},h:{}", (unsigned)a.bordered.w,
-                   (unsigned)a.bordered.h);
+    auto &veu = *ait;
+
+    if (not ait->meta.is_applyed()) {
+      struct : decltype(el) {
+        std::size_t extract() { return self; };
+      } ext{el};
+
+      if (ext.extract() == 20) {
+        void *heh = nullptr;
+      };
+
       ait->arrange = a;
       ait->meta.set_applyed();
-    }
+    } else {
+      void *a = nullptr;
+    };
   };
 
   // this is joke...BUT
