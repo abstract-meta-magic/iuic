@@ -16,7 +16,7 @@ struct element {
   style::value style;
 
   struct meta {
-    void set_discarted() { value.set(static_cast<int>(map::discarted), true); };
+    void set_discarded() { value.set(static_cast<int>(map::discarded), true); };
 
     void set_virtualized() {
       value.set(static_cast<int>(map::virtualized), true);
@@ -30,8 +30,8 @@ struct element {
 
     void set_arranged() { value.set(static_cast<int>(map::arranged), true); };
 
-    bool is_discarted() {
-      return value.test(static_cast<int>(map::discarted));
+    bool is_discarded() {
+      return value.test(static_cast<int>(map::discarded));
     };
 
     bool is_virtualized() {
@@ -48,7 +48,7 @@ struct element {
 
   private:
     enum class map {
-      discarted = 0,
+      discarded = 0,
       text_mark,
       virtualized,
       measured,
