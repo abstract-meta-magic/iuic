@@ -61,6 +61,43 @@ template <typename T> copy_ctor_fptr_t move_assign_for() {
 
 // using args_ctor_fptr_t = void(void*memory,/* args ? */);
 
+using dtor_ptr = void (*)(const void *const);
+using deleter_ptr = void (*)(const void *const);
+using copy_ctor_ptr = void (*)(void *const, const void *const);
+using move_ctor_ptr = void (*)(void *const, void *const);
+
+template <is_pure_type T> consteval dtor_ptr get_dtor_for() {
+  return [](const void *const obj) static constexpr {
+    static_cast<const T *const>(obj)->~T();
+  };
+};
+
+template <is_pure_type T> consteval deleter_ptr get_deleter_for() {
+  return [](const void *const obj) static constexpr {
+    delete static_cast<const T *const>(obj);
+  };
+};
+
+template <is_pure_type T> consteval copy_ctor_ptr get_copy_ctor_for() {
+  if constexpr (std::is_copy_constructible_v<T>) {
+    return [](void *const lhs, const void *const rhs) static constexpr {
+      new (static_cast<T *>(lhs)) T{*static_cast<const T *>(rhs)};
+    };
+  } else {
+    return nullptr;
+  }
+};
+
+template <is_pure_type T> consteval move_ctor_ptr get_move_ctor_for() {
+  if constexpr (std::is_move_constructible_v<T>) {
+    return [](void *const lhs, void *const rhs) static constexpr {
+      new (static_cast<T *>(lhs)) T{std::move(*static_cast<T *>(rhs))};
+    };
+  } else {
+    return nullptr;
+  }
+};
+
 struct type {
   template <is_pure_type T> static const type *from() {
 
@@ -72,9 +109,10 @@ struct type {
                                 sizeof(T),
                                 alignof(T),
                                 T::livetime,
-                                [](const void *const obj) static {
-                                  delete static_cast<const T *const>(obj);
-                                }};
+                                get_dtor_for<T>(),
+                                get_deleter_for<T>(),
+                                get_copy_ctor_for<T>(),
+                                get_move_ctor_for<T>()};
       return &res;
     } else {
       static constexpr type res{&res,
@@ -82,9 +120,10 @@ struct type {
                                 sizeof(T),
                                 alignof(T),
                                 0,
-                                [](const void *const obj) static {
-                                  delete static_cast<const T *const>(obj);
-                                }};
+                                get_dtor_for<T>(),
+                                get_deleter_for<T>(),
+                                get_copy_ctor_for<T>(),
+                                get_move_ctor_for<T>()};
       return &res;
     }
   };
@@ -99,12 +138,18 @@ struct type {
   const std::size_t size;
   const std::size_t align;
   const std::size_t livetime; //  in frames
-  void (*const dctor)(const void *const);
+
+  dtor_ptr dtor;
+  deleter_ptr deleter;
+  copy_ctor_ptr copy_ctor;
+  move_ctor_ptr move_ctor;
 
 private:
   constexpr type(const void *const i, bool td, std::size_t s, std::size_t a,
-                 std::size_t lt, void (*const d)(const void *const)) noexcept
-      : id{i}, trivial_dctor{td}, size{s}, align{a}, livetime{lt}, dctor{d} {};
+                 std::size_t lt, dtor_ptr dtor_, deleter_ptr deleter_,
+                 copy_ctor_ptr copy_ctor_, move_ctor_ptr move_ctor_) noexcept
+      : id{i}, trivial_dctor{td}, size{s}, align{a}, livetime{lt}, dtor{dtor_},
+        deleter{deleter_}, copy_ctor{copy_ctor_}, move_ctor{move_ctor_} {};
 };
 
 template <typename T> struct is_function_signature : std::false_type {};
@@ -257,17 +302,76 @@ struct visited {
   struct as_const_sync;
   struct as_mutable;
   struct as_mutable_sync;
+  struct as_garbage;
+  struct as_factory;
 
   template <typename T> bool as() const noexcept;
 
   bool as(const type *) const noexcept;
 
+  // TODO : add ctor from lvalue
+  // TODO : add ctor from rvalue
+
+  template <is_pure_type T>
+  visited(const T *data_)
+      : data{static_cast<void *>(const_cast<T *>(data_))},
+        type{type::from<T>()} {};
+
   visited(const void *data_, const type *type_)
       : data{const_cast<void *>(data_)}, type{type_} {};
+
+  visited(std::nullptr_t) : data{nullptr}, type{type::none()} {};
 
 private:
   void *data;
   const type *type;
+};
+
+struct visited::as_factory : private visited {
+  as_factory(visited v) : visited{v} {};
+  template <typename T>
+  as_factory(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
+
+  as_factory(std::nullptr_t) : visited{nullptr, type::none()} {};
+
+  bool is_copyable() { return type->copy_ctor; };
+  bool is_movable() { return type->move_ctor; };
+
+  template <typename Alloc> visited copy(Alloc &&alloc) {
+    // make assert for nullptr copy_ctor ?
+    // make exception safe
+    void *placement = alloc.allocate(type->size, type->align);
+    if (placement) {
+      type->copy_ctor(placement, data);
+      return visited{placement, type};
+    } else {
+      return visited{nullptr};
+    };
+  };
+
+  template <typename Alloc> visited move(Alloc &&alloc) {
+    // make assert for nullptr move_ctor ?
+    // make exception safe
+    void *placement = alloc.allocate(type->size, type->align);
+    if (placement) {
+      type->move_ctor(placement, data);
+      return visited{placement, type};
+    } else {
+      return visited{nullptr};
+    };
+  };
+};
+
+struct visited::as_garbage : private visited {
+  as_garbage(visited v) : visited{v} {};
+  template <typename T>
+  as_garbage(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
+
+  as_garbage(std::nullptr_t) : visited{nullptr, type::none()} {};
+
+  void free() { type->deleter(data); };
+
+  void destruct() { type->dtor(data); };
 };
 
 struct visited::as_const : private visited {
@@ -293,7 +397,7 @@ struct visited::as_const : private visited {
     return false;
   };
 
-  decltype(auto) unsafe_visit(func_as_decoy<decoy(const decoy &)> auto &&call) {
+  decltype(auto) unsafe_visit(auto &&call) {
     using traits = decltype(func_type{call})::traits;
 
     using arg_t = traits::func_args::template arg_t<0>;
@@ -350,7 +454,7 @@ struct visited::as_mutable : private visited {
     return false;
   };
 
-  decltype(auto) unsafe_visit(func_as_decoy<decoy(decoy &)> auto &&call) {
+  decltype(auto) unsafe_visit(auto &&call) {
     using traits = decltype(func_type{call})::traits;
 
     using arg_t = traits::func_args::template arg_t<0>;
@@ -381,9 +485,9 @@ struct visited::as_mutable : private visited {
   visited::as_const as_const() const { return visited{*this}; };
 };
 
-void hehh(visited::as_mutable m) {
-  m.try_visit([](std::vector<int> &vec) {
-    // job
-  });
-}
+struct vector {
+  // erasure vecotr
+  // move -> visited|free_space|data <- move
+  // TODO : someday
+};
 }; // namespace iuic::erasure

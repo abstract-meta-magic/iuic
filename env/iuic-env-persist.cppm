@@ -85,11 +85,11 @@ struct persist {
       if (cur.contains(uid)) {
         auto ex = cur.extract(uid);
         auto &obj = ex.mapped();
-        obj.type->dctor(obj.data);
+        obj.type->deleter(obj.data);
       } else if (old.contains(uid)) {
         auto ex = old.extract(uid);
         auto &obj = ex.mapped();
-        obj.type->dctor(obj.data);
+        obj.type->deleter(obj.data);
       }
     };
 

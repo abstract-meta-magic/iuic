@@ -6,8 +6,10 @@ import :decl;
 
 export namespace iuic::event {
 
-template <channel ch> struct pool {
+template <channel ch> struct pool : advance::interface {
+  pool(advance::pool &p) { rebind(p); };
   // default
+  pool();
 
   void push(package p) {};
 };

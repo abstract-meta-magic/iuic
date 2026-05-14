@@ -32,7 +32,7 @@ struct package {
 
 namespace policy {
 struct thread {
-  bool multythread{false};
+  bool multithread{false};
   // lock-policy
   // etc
 };

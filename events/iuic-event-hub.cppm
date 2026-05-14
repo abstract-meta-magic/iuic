@@ -12,13 +12,13 @@ import :factory;
 
 export namespace iuic::event {
 
-struct hub : advance::interface {
+struct hub : protected advance::interface {
   template <channel CH, typename EVENT_TYPE, typename... PKGR_ARGS>
   void emit(EVENT_TYPE &&event, PKGR_ARGS &&...pkg_args) {
     packager<CH> pkgr{std::forward<PKGR_ARGS>(pkg_args)...};
 
     event::pool<CH> &pool = get_pool__<CH>();
-    allocator<CH> &alloc = get_allocator__<CH>(pool);
+    allocator<CH> &alloc = get_allocator__<CH>();
 
     factory<EVENT_TYPE, CH>::process(std::forward<EVENT_TYPE>(event), pool,
                                      pkgr, alloc);
@@ -31,14 +31,60 @@ struct hub : advance::interface {
     return call(q);
   }; // mb return proxy
 
-  void reset();
+  void reset() {
+    pool_adv__.advance();
+    allocs_adv__.advance();
+  };
+
+  hub() {};
+  hub(advance::pool &p) { rebind(p); };
+  // TODO : NEED BIG-V
+  hub(const hub &) = delete;            // hard
+  hub &operator=(const hub &) = delete; // hard
+  hub(hub &&) = delete;                 // mid
+  hub &operator=(hub &&) = delete;      // mid
+  ~hub() {
+    for (auto &[_, obj] : pools__) {
+      erasure::visited::as_garbage{obj}.free();
+    };
+
+    for (auto &[_, obj] : allocs__) {
+      erasure::visited::as_garbage{obj}.free();
+    };
+  };
 
 private:
-  template <channel CH> event::pool<CH> &get_pool__();
-  template <channel CH> allocator<CH> &get_allocator__(event::pool<CH> &pool);
+  template <channel CH> event::pool<CH> &get_pool__() {
+    auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
 
-  // mem
-  // mem_adv_pool
-  // pool_adv_pool
+    if (auto find = pools__.find(index); find != pools__.end()) {
+      return erasure::visited::as_mutable{find->second}.unsafe_visit(
+          [](event::pool<CH> &p) -> event::pool<CH> & { return p; });
+    } else {
+      auto ins = pools__.insert(
+          {index, erasure::visited{new event::pool<CH>{pool_adv__}}});
+      return erasure::visited::as_mutable{ins.first->second}.unsafe_visit(
+          [](event::pool<CH> &p) -> event::pool<CH> & { return p; });
+    };
+  };
+
+  template <channel CH> allocator<CH> &get_allocator__() {
+    auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
+
+    if (auto find = allocs__.find(index); find != allocs__.end()) {
+      return erasure::visited::as_mutable{find->second}.unsafe_visit(
+          [](event::allocator<CH> &p) -> event::allocator<CH> & { return p; });
+    } else {
+      auto ins = allocs__.insert(
+          {index, erasure::visited{new event::allocator<CH>{allocs_adv__}}});
+      return erasure::visited::as_mutable{ins.first->second}.unsafe_visit(
+          [](event::allocator<CH> &p) -> event::allocator<CH> & { return p; });
+    };
+  };
+
+  std::unordered_map<std::size_t, erasure::visited> allocs__;
+  std::unordered_map<std::size_t, erasure::visited> pools__;
+  advance::pool allocs_adv__;
+  advance::pool pool_adv__;
 };
 }; // namespace iuic::event
