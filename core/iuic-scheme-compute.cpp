@@ -77,7 +77,7 @@ void measure(environment::tmp &tenv, scheme::sketch &sketch,
                     tenv, tree::base_iterator{tree_ait}})) {
               tree_ait->measure = res.value();
             } else {
-              tree_ait->meta.set_discarted();
+              tree_ait->meta.set_discarded();
               return;
             };
           } else {
@@ -86,7 +86,7 @@ void measure(environment::tmp &tenv, scheme::sketch &sketch,
               tree_ait->measure = res.value();
               tree_ait->meta.set_text_mark();
             } else {
-              tree_ait->meta.set_discarted();
+              tree_ait->meta.set_discarded();
               return;
             };
           };
@@ -136,13 +136,13 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
     auto tree_ait = tree::access_iterator{tree::shift(tree.begin(), el)};
 
     // TODO : DISCARTED | VIRTUALIZED
-    if (tree_ait->meta.is_discarted() || not tree_ait->meta.is_applyed()) {
-      tree_ait->meta.set_discarted();
+    if (tree_ait->meta.is_discarded() || not tree_ait->meta.is_applyed()) {
+      tree_ait->meta.set_discarded();
 
       for (auto ch : tree::iterator_range_for{
                tree::childs_of(tree_ait),
                tree::iterator_type<tree::access_iterator>{}}) {
-        ch->meta.set_discarted();
+        ch->meta.set_discarded();
       };
     };
 
@@ -152,7 +152,7 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
             // frame
             if (not obj->arrange(iuic::layout::arrange::frame_utils{
                     tenv, tree::base_iterator{tree_ait}})) {
-              tree_ait->meta.set_discarted();
+              tree_ait->meta.set_discarded();
               return;
             };
           } else {

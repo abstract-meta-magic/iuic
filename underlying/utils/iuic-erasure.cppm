@@ -293,6 +293,32 @@ struct visited::as_const : private visited {
     return false;
   };
 
+  decltype(auto) unsafe_visit(func_as_decoy<decoy(const decoy &)> auto &&call) {
+    using traits = decltype(func_type{call})::traits;
+
+    using arg_t = traits::func_args::template arg_t<0>;
+    using arg_ptr = std::remove_reference_t<arg_t> *;
+
+    return call(*static_cast<arg_ptr>(data));
+  };
+
+  auto try_visit_opt(func_as_decoy<decoy(const decoy &)> auto &&call) {
+    using traits = decltype(func_type{call})::traits;
+
+    using arg_t = traits::func_args::template arg_t<0>;
+    using arg_ptr = std::remove_reference_t<arg_t> *;
+
+    using ret_type = std::optional<decltype(call(*static_cast<arg_ptr>(data)))>;
+
+    const erasure::type *otype = type::from<std::remove_cvref_t<arg_t>>();
+
+    if (otype == type) {
+      return ret_type{call(*static_cast<arg_ptr>(data))};
+    } else {
+      return ret_type{std::nullopt};
+    }
+  }
+
   bool visit_any(func_as_decoy<decoy(const decoy &)> auto &&...calls) {
     return (try_visit(std::forward<decltype(calls)>(calls)) || ...);
   };
@@ -323,6 +349,32 @@ struct visited::as_mutable : private visited {
 
     return false;
   };
+
+  decltype(auto) unsafe_visit(func_as_decoy<decoy(decoy &)> auto &&call) {
+    using traits = decltype(func_type{call})::traits;
+
+    using arg_t = traits::func_args::template arg_t<0>;
+    using arg_ptr = std::remove_reference_t<arg_t> *;
+
+    return call(*static_cast<arg_ptr>(data));
+  };
+
+  auto try_visit_opt(func_as_decoy<decoy(decoy &)> auto &&call) {
+    using traits = decltype(func_type{call})::traits;
+
+    using arg_t = traits::func_args::template arg_t<0>;
+    using arg_ptr = std::remove_reference_t<arg_t> *;
+
+    using ret_type = std::optional<decltype(call(*static_cast<arg_ptr>(data)))>;
+
+    const erasure::type *otype = type::from<std::remove_cvref_t<arg_t>>();
+
+    if (otype == type) {
+      return ret_type{call(*static_cast<arg_ptr>(data))};
+    } else {
+      return ret_type{std::nullopt};
+    }
+  }
 
   decltype(auto) visit_or(auto, auto);
 

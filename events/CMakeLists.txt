@@ -4,6 +4,13 @@ target_sources(${PROJECT_NAME}_events PUBLIC
 	FILE_SET iuic_events_modules
 	TYPE CXX_MODULES
 	FILES
+	"iuic-event-decl.cppm"
+	"iuic-event-pool.cppm"
+	"iuic-event-allocator.cppm"
+	"iuic-event-packager.cppm"
+	"iuic-event-query.cppm"
+	"iuic-event-factory.cppm"
+	"iuic-event-hub.cppm"
 	"iuic-events.cppm"
 	"iuic-event.cppm"
 )

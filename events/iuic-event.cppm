@@ -6,7 +6,11 @@ import iuic.underlying;
 
 export namespace iuic {
 
+// event bus
+
 namespace event {
+
+// allocator && pool -> advance::interface
 
 struct utils_base {
 

@@ -15,20 +15,11 @@ struct frame_utils : public utils_base {
 
     auto &veu = *ait;
 
+    // make assert ??
     if (not ait->meta.is_applyed()) {
-      struct : decltype(el) {
-        std::size_t extract() { return self; };
-      } ext{el};
-
-      if (ext.extract() == 20) {
-        void *heh = nullptr;
-      };
-
       ait->arrange = a;
       ait->meta.set_applyed();
-    } else {
-      void *a = nullptr;
-    };
+    }
   };
 
   // this is joke...BUT
