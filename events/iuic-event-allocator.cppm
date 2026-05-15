@@ -6,7 +6,7 @@ import :decl;
 
 export namespace iuic::event {
 
-template <channel ch> struct allocator : advance::interface {
+template <const channel &ch> struct allocator : advance::interface {
   static_assert(ch.memory.only_trivially_destructible,
                 "support only trivially destructible allocation");
 

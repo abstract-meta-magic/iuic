@@ -18,7 +18,6 @@ template <typename T>
 concept is_base_event_type = requires(T e) {
   { e.type } -> std::same_as<const erasure::type *&>;
   { e.call } -> std::same_as<call &>;
-  e.meta;
 }; // use advance::interface && ect
 
 struct bus;
@@ -44,11 +43,18 @@ struct memory {
   // alloc exception policy
   // etc
 };
+
+struct hub_provide {
+  enum class status { none, front, back };
+  status factory{status::none};
+  status packanger{status::none};
+};
 }; // namespace policy
 
 struct channel {
   policy::thread thread;
   policy::memory memory;
+  policy::hub_provide hub_provide;
   // etc
 };
 }; // namespace iuic::event

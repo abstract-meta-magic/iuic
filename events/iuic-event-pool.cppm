@@ -6,12 +6,17 @@ import :decl;
 
 export namespace iuic::event {
 
-template <channel ch> struct pool : advance::interface {
+template <const channel &ch> struct pool : advance::interface {
   pool(advance::pool &p) { rebind(p); };
   // default
   pool();
 
-  void push(package p) {};
+  void push(package p) { pkgs.push_back(p); };
+
+  std::span<package> list() { return pkgs; };
+
+private:
+  std::vector<package> pkgs;
 };
 
 }; // namespace iuic::event

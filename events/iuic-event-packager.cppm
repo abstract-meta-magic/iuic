@@ -5,20 +5,33 @@ import :decl;
 import :allocator;
 
 namespace iuic::event {
-template <channel ch> struct packager {
+template <const channel &ch> struct packager {
   template <is_base_event_type EVENT_TYPE>
   package make(EVENT_TYPE &&e, allocator<ch> &alloc) {
-    using meta_type = std::remove_cvref_t<decltype(e.meta)>;
 
-    auto *ptr = alloc.template allocate<meta_type>();
+    // TODO : подумать о том
+    // что call может быть обычным вызовом
+    // или лямбдой\функтором
+    // в таком случае его нужно будет
+    // упаковать
 
-    new (ptr) std::remove_cvref_t<meta_type>{std::move(e.meta)};
+    if constexpr (requires { e.meta; }) {
+      using meta_type = std::remove_cvref_t<decltype(e.meta)>;
+      auto *ptr = alloc.template allocate<meta_type>();
 
-    return package{
-        .meta = ptr,
-        .type = e.type,
-        .call = e.call,
-    };
+      new (ptr) std::remove_cvref_t<meta_type>{std::move(e.meta)};
+      return package{
+          .meta = ptr,
+          .type = e.type,
+          .call = e.call,
+      };
+    } else {
+      return package{
+          .meta = nullptr,
+          .type = e.type,
+          .call = e.call,
+      };
+    }
   };
 };
 }; // namespace iuic::event

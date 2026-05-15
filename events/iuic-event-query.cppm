@@ -3,18 +3,36 @@
 export module iuic.events:query;
 import :decl;
 import :pool;
+import :dispatcher;
 
 namespace iuic::event {
-template <channel CH> struct query {
+template <const channel &CH> struct query {
   // struct proxy for query result
+
+  struct result {
+
+    template <typename T> result type();
+
+    result meta(auto &&call);
+
+    template <typename... ARGS> void trigger(ARGS... args) {
+      for (auto pkg : pkgs) {
+        dispatcher<CH>::trigger(pkg, args...);
+      }
+    };
+
+    // TODO : make proxy range for unique trigger args
+
+    std::vector<package> pkgs;
+  };
 
   query(pool<CH> &);
 
   // sort by meta
-  template <typename T> void type();
+  template <typename T> result type();
 
   // sort by meta
-  void meta(auto &&call);
+  result meta(auto &&call);
 
   // etc
 };

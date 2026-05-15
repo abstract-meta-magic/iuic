@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}_events PUBLIC
 	"iuic-event-pool.cppm"
 	"iuic-event-allocator.cppm"
 	"iuic-event-packager.cppm"
+	"iuic-event-dispatcher.cppm"
 	"iuic-event-query.cppm"
 	"iuic-event-factory.cppm"
 	"iuic-event-hub.cppm"
