@@ -1,6 +1,6 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-export module iuic.events:factory;
+export module iuic.event:factory;
 import std;
 import iuic.underlying;
 import :decl;

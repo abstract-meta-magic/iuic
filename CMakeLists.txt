@@ -41,6 +41,7 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"core/iuic-ctx.cppm"
 	"core/iuic-machine-dispatcher.cppm"
 	"core/iuic-policy.cppm"
+	"core/iuic-proto-base.cppm"
 	"core/iuic-scheme-base.cppm"
 	"core/iuic-scheme-compute.cppm"
 	"core/iuic-scheme-explorer.cppm"

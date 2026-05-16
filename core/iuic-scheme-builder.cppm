@@ -6,10 +6,11 @@ import std;
 import iuic.underlying;
 import iuic.state;
 import iuic.text;
-import iuic.events;
+import iuic.event;
 import :policy;
 import :machine.dispatcher;
 import :scheme.base;
+import :proto.base;
 
 export namespace iuic::scheme {
 
@@ -138,11 +139,36 @@ struct builder_event_interface : protected virtual builder_base {
                           insert_iterator it_, struct builder &builder_)
       : builder_base{tenv_, penv_, it_, builder_} {}
 
-  template <event::callback_cpt Call>
-  void attach(Call &&call, units::uid object = units::uid{0});
+  void local(units::uid obj,
+             std::invocable<iuic::proto::base::event::key &> auto &&e) {
 
-  void operator()(event::callback_cpt auto &&call,
-                  units::uid object = units::uid{0});
+    iuic::proto::base::event::pkg_meta meta{
+        .owner = tree::access_iterator{it}->uid, .obj = obj};
+
+    iuic::proto::base::event::pkg_source src{
+        .meta = meta,
+        .type = erasure::type::from<iuic::proto::base::event::key>(),
+        .call = std::forward<decltype(e)>(e)};
+
+    tenv.event.emit<iuic::proto::base::event::local>(src);
+  };
+
+  void local(units::uid obj,
+             std::invocable<iuic::proto::base::event::pointer &> auto &&e) {
+    tenv.event.emit<iuic::proto::base::event::local>(e);
+  };
+
+  void global(units::uid obj,
+              std::invocable<iuic::proto::base::event::key &> auto &&e) {
+    tenv.event.emit<iuic::proto::base::event::global>(e);
+  };
+
+  void global(units::uid obj,
+              std::invocable<iuic::proto::base::event::pointer &> auto &&e) {
+    tenv.event.emit<iuic::proto::base::event::global>(e);
+  };
+
+  // custom
 };
 
 struct builder_text_interface : protected virtual builder_base {
@@ -463,15 +489,7 @@ void utils::type_of<&builder_state_interface::machine>::transition(
 };
 
 // ---- IMPL [event] ----
-template <event::callback_cpt Call>
-void builder_event_interface::attach(Call &&call, units::uid object) {
-  tenv.event.attach({call, tree::access_iterator{it}->uid, object});
-};
 
-void builder_event_interface::operator()(event::callback_cpt auto &&call,
-                                         units::uid uid) {
-  attach(std::forward<decltype(call)>(call), uid);
-};
 // ---- IMPL [style] ----
 
 style::sid builder_style_interface::self() {

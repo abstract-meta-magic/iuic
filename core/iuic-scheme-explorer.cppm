@@ -6,7 +6,7 @@ import std;
 import iuic.underlying;
 import iuic.state;
 import iuic.style;
-import iuic.events;
+import iuic.event;
 import :policy;
 import :scheme.base;
 
@@ -56,13 +56,7 @@ export struct explorer {
   } props{*this};
 
   struct : utils::member_for<explorer> {
-    std::span<event::value> list(iterators::base it) {
-      return self().tenv->event.list_of(self().get_uid(it));
-    };
-
-    void trigger(event::value &e) {
-      // TODO : fixme
-    }
+    // TODO :
   } event{*this};
 
   struct : utils::member_for<explorer> {

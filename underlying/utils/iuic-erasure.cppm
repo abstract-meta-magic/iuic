@@ -298,6 +298,8 @@ concept func_as_strong = requires(T call, D strong) {
 };
 
 struct visited {
+  // TODO : replace to env or cenv or macros
+  static constexpr bool unsafe_check{true};
   struct as_const;
   struct as_const_sync;
   struct as_mutable;
@@ -309,8 +311,11 @@ struct visited {
 
   bool as(const type *) const noexcept;
 
-  // TODO : add ctor from lvalue
-  // TODO : add ctor from rvalue
+  template <is_pure_type T>
+  visited(const T &data_)
+      : data{static_cast<void *>(const_cast<T *>(std::addressof(data_)))},
+        type{type::from<T>()} {};
+  // TODO : add ctor from rvalue is bad idia ?
 
   template <is_pure_type T>
   visited(const T *data_)
@@ -328,6 +333,7 @@ private:
 };
 
 struct visited::as_factory : private visited {
+
   as_factory(visited v) : visited{v} {};
   template <typename T>
   as_factory(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
@@ -375,6 +381,10 @@ struct visited::as_garbage : private visited {
 };
 
 struct visited::as_const : private visited {
+  template <is_pure_type T>
+  as_const(const T &data_)
+      : visited{static_cast<void *>(const_cast<T *>(std::addressof(data_))),
+                type::from<T>()} {};
   as_const(visited v) : visited{v} {};
   template <typename T>
   as_const(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
@@ -389,7 +399,7 @@ struct visited::as_const : private visited {
 
     const erasure::type *otype = type::from<std::remove_cvref_t<arg_t>>();
 
-    if (otype == type) {
+    if (otype != type) {
       call(*static_cast<arg_ptr>(data));
       return true;
     }
@@ -402,6 +412,17 @@ struct visited::as_const : private visited {
 
     using arg_t = traits::func_args::template arg_t<0>;
     using arg_ptr = std::remove_reference_t<arg_t> *;
+
+    using ret_type = std::optional<decltype(call(*static_cast<arg_ptr>(data)))>;
+
+    if constexpr (unsafe_check) {
+      const erasure::type *otype =
+          erasure::type::from<std::remove_cvref_t<arg_t>>();
+
+      if (otype != type) {
+        throw std::logic_error{"visited contains other type."};
+      }
+    }
 
     return call(*static_cast<arg_ptr>(data));
   };
@@ -432,6 +453,11 @@ struct visited::as_const : private visited {
 };
 
 struct visited::as_mutable : private visited {
+  template <is_pure_type T>
+  as_mutable(const T &data_)
+      : visited{static_cast<void *>(const_cast<T *>(std::addressof(data_))),
+                type::from<T>()} {};
+
   as_mutable(visited v) : visited{v} {};
   template <typename T>
   as_mutable(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
@@ -459,6 +485,17 @@ struct visited::as_mutable : private visited {
 
     using arg_t = traits::func_args::template arg_t<0>;
     using arg_ptr = std::remove_reference_t<arg_t> *;
+
+    using ret_type = std::optional<decltype(call(*static_cast<arg_ptr>(data)))>;
+
+    if constexpr (unsafe_check) {
+      const erasure::type *otype =
+          erasure::type::from<std::remove_cvref_t<arg_t>>();
+
+      if (otype != type) {
+        throw std::logic_error{"visited contains other type."};
+      }
+    }
 
     return call(*static_cast<arg_ptr>(data));
   };

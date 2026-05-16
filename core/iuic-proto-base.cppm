@@ -1,0 +1,118 @@
+// Copyright (c) 2026 abstract-meta-magic and contributors
+// SPDX-License-Identifier: Apache-2.0
+
+export module iuic.core:proto.base;
+import std;
+import iuic.underlying;
+import iuic.event;
+import iuic.env;
+
+namespace iuic::proto::base {
+namespace event {
+
+export constexpr iuic::event::channel local;
+export constexpr iuic::event::channel global;
+export constexpr iuic::event::channel global_state;
+constexpr iuic::event::channel global_cmd;
+
+struct utils {
+  utils(iuic::environment::persist *penv_, iuic::environment::tmp *tenv_,
+        units::uid owner_, units::uid obj_)
+      : penv{penv_}, tenv{tenv_}, owner{owner_}, obj{obj_} {};
+
+private:
+  iuic::environment::persist *penv{nullptr};
+  iuic::environment::tmp *tenv{nullptr};
+  units::uid owner;
+  units::uid obj;
+};
+
+struct pkg_meta {
+  units::uid owner;
+  units::uid obj;
+};
+
+struct meta_call {
+  erasure::visited::as_mutable call;
+  erasure::visited::as_mutable arg;
+};
+
+export struct key {
+  utils utils;
+  units::keycode key;
+};
+export struct pointer {
+  utils utils;
+  units::ui::position position;
+  // old\current ???
+};
+
+template <typename T> struct pkg_source {
+  struct pkg_meta meta;
+  const erasure::type *type;
+  T call;
+};
+}; // namespace event
+}; // namespace iuic::proto::base
+
+export namespace iuic::event {
+
+template <> struct packager<iuic::proto::base::event::local> {
+  // DO JOB
+  template <typename T>
+  package make(iuic::proto::base::event::pkg_source<T> src,
+               allocator<iuic::proto::base::event::local> &alloc) {
+    // DO PACK
+    package pkg;
+
+    // alloc in tpm
+    auto meta_call = [call = src.call](erasure::visited::as_mutable arg) {
+      arg.try_visit([&](iuic::proto::base::event::key &e) { call(e); });
+    };
+
+    // set meta
+    pkg.meta = new (alloc.allocate<decltype(meta_call)>()) decltype(meta_call){
+        std::move(meta_call)};
+
+    // set type
+    pkg.type = src.type;
+
+    // make call
+    pkg.call = [](erasure::visited::as_mutable meta) static {
+      // WARN
+      meta.unsafe_visit([](iuic::proto::base::event::meta_call &src) {
+        // WARN
+        src.call.unsafe_visit(
+            [&](decltype(meta_call) &call) { call(src.arg); });
+      });
+    };
+
+    return pkg;
+  };
+};
+
+template <> struct dispatcher<iuic::proto::base::event::local> {
+  static void trigger(package pkg, units::keycode key,
+                      environment::persist *penv, environment::tmp *tenv) {
+
+    // WARN
+    pkg.meta.unsafe_visit([&](iuic::proto::base::event::pkg_meta &meta) {
+      iuic::proto::base::event::key e{.utils =
+                                          iuic::proto::base::event::utils{
+                                              penv,
+                                              tenv,
+                                              meta.owner,
+                                              meta.obj,
+                                          },
+                                      .key = key};
+
+      iuic::proto::base::event::meta_call meta_call{
+          .call = pkg.meta,
+          .arg = e,
+      };
+
+      pkg.call(erasure::visited::as_mutable{meta_call});
+    });
+  };
+};
+}; // namespace iuic::event

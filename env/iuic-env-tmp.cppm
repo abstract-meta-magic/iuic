@@ -6,7 +6,7 @@ import std;
 import iuic.underlying;
 import iuic.state;
 import iuic.style;
-import iuic.events;
+import iuic.event;
 
 export namespace iuic::environment {
 struct tmp : iuic::advance::interface {
@@ -135,24 +135,7 @@ struct tmp : iuic::advance::interface {
     std::unordered_map<const style::decl *, style::sid> indexed_decl;
   } style;
 
-  struct : private advance::interface {
-    friend tmp;
-    void attach(event::value e) { data[e.uid].push_back(e); };
-
-    std::span<event::value> list_of(units::uid uid) {
-      if (auto it = data.find(uid); it != data.end()) {
-        return it->second;
-      } else {
-        return {};
-      };
-    };
-
-  private:
-    void advance() override { data.clear(); };
-
-  private:
-    std::map<units::uid, std::vector<event::value>> data;
-  } event;
+  event::hub event;
 
   struct : private advance::interface {
     friend tmp;
@@ -188,9 +171,8 @@ struct tmp : iuic::advance::interface {
     units::upixel segment_size{4};
   } meta; // frame meta
 
-  tmp(advance::pool &adp) {
+  tmp(advance::pool &adp) : event{adp} {
     rebind(adp);
-
     policy.rebind(adp);
     style.rebind(adp);
     memory.rebind(adp);

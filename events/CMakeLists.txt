@@ -12,7 +12,6 @@ target_sources(${PROJECT_NAME}_events PUBLIC
 	"iuic-event-query.cppm"
 	"iuic-event-factory.cppm"
 	"iuic-event-hub.cppm"
-	"iuic-events.cppm"
 	"iuic-event.cppm"
 )
 

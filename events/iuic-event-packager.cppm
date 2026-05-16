@@ -1,10 +1,10 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-export module iuic.events:packager;
+export module iuic.event:packager;
 import :decl;
 import :allocator;
 
-namespace iuic::event {
+export namespace iuic::event {
 template <const channel &ch> struct packager {
   template <is_base_event_type EVENT_TYPE>
   package make(EVENT_TYPE &&e, allocator<ch> &alloc) {
