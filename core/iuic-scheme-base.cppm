@@ -9,6 +9,8 @@ import iuic.layout;
 import iuic.style;
 import iuic.env;
 
+import iuic.state; // tmp
+
 namespace iuic::scheme {
 
 struct sk_element {
@@ -154,5 +156,75 @@ struct preorder {
 
 // post_order
 }; // namespace ranges
+
+export namespace query {
+
+struct hit {
+  units::ui::position point;
+};
+
+struct has_state {
+  iuic::state::value state;
+};
+
+struct valid_t {
+} constexpr valid;
+
+template <typename EXPR> struct qnot {
+  EXPR expr;
+};
+
+template <typename LEXPR, typename REXPR> struct qor {
+  LEXPR lexpr;
+  REXPR rexpr;
+};
+
+struct branch {
+  // later
+};
+
+template <typename... Ts> struct expr_t {
+
+  constexpr expr_t() {};
+
+  template <typename T, typename... OTs>
+  constexpr expr_t(expr_t<OTs...> &&other, T &&v)
+      : value{std::tuple_cat(std::move(other.value),
+                             std::make_tuple(std::forward<T>(v)))} {};
+
+  template <typename T, typename... OTs>
+  constexpr expr_t(const expr_t<OTs...> &other, T &&v)
+      : value{std::tuple_cat(other.value,
+                             std::make_tuple(std::forward<T>(v)))} {};
+
+  template <std::size_t index> const auto &at() const {
+    return std::get<index>(value);
+  };
+
+  static constexpr std::size_t size() { return sizeof...(Ts); };
+
+private:
+  template <typename...> friend struct expr_t;
+  std::tuple<Ts...> value;
+};
+
+template <typename T, typename... Ts>
+expr_t(expr_t<Ts...> &&, T &&) -> expr_t<Ts..., T>;
+
+template <typename T, typename... Ts>
+expr_t(const expr_t<Ts...> &, T &&) -> expr_t<Ts..., T>;
+
+constexpr expr_t<> expr{};
+
+template <typename... Ts, typename T>
+auto operator|(expr_t<Ts...> expr, T val) {
+  return expr_t{std::move(expr), std::move(val)};
+}
+
+// simple
+
+constexpr has_state hovered{iuic::state::base::hovered};
+
+}; // namespace query
 
 }; // namespace iuic::scheme

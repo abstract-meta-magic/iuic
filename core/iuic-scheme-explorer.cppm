@@ -8,6 +8,7 @@ import iuic.state;
 import iuic.style;
 import iuic.event;
 import :policy;
+import :proto.base;
 import :scheme.base;
 
 namespace iuic::scheme {
@@ -100,9 +101,68 @@ export struct explorer {
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
-    void event();
+    void event() {
+      // DO
+    };
 
-    void element();
+    template <typename... Ts>
+    std::vector<scheme::iterators::base> element(query::expr_t<Ts...> &&expr) {
+      // TODO : make parallel ???
+      std::vector<scheme::iterators::base> res;
+      // unexpected expression
+      auto &penv = *self().penv;
+      auto bit = self().begin_;
+      for (auto it : self().ranges.level_order()) {
+        if (expect(expr, tree::shift(bit, it), penv)) {
+          res.push_back(it);
+        };
+      }
+      return res;
+    };
+
+    template <typename... ARGS>
+    static constexpr bool expect(const auto &pred, blueprint::base_iterator it,
+                                 environment::persist &penv) {
+
+      static constexpr auto in__ =
+          [](const units::ui::rect &area,
+
+             const units::ui::position point__) static constexpr {
+            return point__.x >= area.x && point__.x <= area.x + area.w &&
+
+                   point__.y >= area.y && point__.y <= area.y + area.h;
+          };
+
+      static constexpr auto not__ =
+          []<typename T>(const query::qnot<T> &qnot,
+                         blueprint::base_iterator it,
+                         environment::persist &penv) constexpr static {
+            return not expect(qnot.expr, it, penv);
+          };
+
+      using type = std::remove_cvref_t<decltype(pred)>;
+      tree::access_iterator ait{it};
+      if constexpr (std::same_as<type, query::valid_t>) {
+        return not ait->meta.has(ait->meta.discarded);
+      } else if constexpr (std::same_as<type, query::hit>) {
+        return in__(tree::access_iterator{it}->area.bordered, pred.point);
+      } else if constexpr (std::same_as<type, query::has_state>) {
+        return penv.state.has(ait->uid, pred.state);
+      } else if constexpr (requires { not__(pred, it, penv); }) {
+        return not expect(pred.expr, it, penv);
+      } else {
+        return false;
+      };
+    };
+
+    template <typename... Ts>
+    static constexpr bool expect(const query::expr_t<Ts...> &expr,
+                                 blueprint::base_iterator it,
+                                 environment::persist &penv) {
+      return [&]<std::size_t... I>(std::index_sequence<I...>) {
+        return (expect(expr.template at<I>(), it, penv) && ...);
+      }(std::make_index_sequence<expr.size()>{});
+    };
   } queries{*this};
 
   struct : utils::member_for<explorer> {

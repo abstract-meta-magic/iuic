@@ -160,5 +160,4 @@ iterator_range_for(sibling_iterator<T>, iterator_type<Iterator>)
 template <typename T, template <typename> typename Iterator>
 iterator_range_for(root_iterator<T>, iterator_type<Iterator>)
     -> iterator_range_for<iterator_range_trait<root_iterator<T>>, Iterator>;
-
 }; // namespace iuic::tree
