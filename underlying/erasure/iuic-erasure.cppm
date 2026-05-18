@@ -1,8 +1,7 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-
-export module iuic.underlying.utils;
-
+export module iuic.underlying.erasure;
 export import :decl;
-export import :external;
-export import :advance;
+export import :property;
+export import :type;
+export import :visited;

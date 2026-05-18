@@ -30,6 +30,7 @@ target_sources(${PROJECT_NAME}_underlying__tree PUBLIC
 
 target_link_libraries(${PROJECT_NAME}_underlying__tree
 	PUBLIC ${PROJECT_NAME}_underlying__utils
+	PUBLIC ${PROJECT_NAME}_underlying__erasure
 )
 
 target_compile_features(${PROJECT_NAME}_underlying__tree

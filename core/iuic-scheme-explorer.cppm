@@ -100,6 +100,12 @@ export struct explorer {
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
+    void event();
+
+    void element();
+  } queries{*this};
+
+  struct : utils::member_for<explorer> {
     void set_key_code(units::keycode code) {
       self().penv->external.key_code = code;
     };

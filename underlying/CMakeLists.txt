@@ -4,6 +4,7 @@ add_library(${PROJECT_NAME}_underlying STATIC)
 add_subdirectory(utils)
 add_subdirectory(tree)
 add_subdirectory(units)
+add_subdirectory(erasure)
 
 target_sources(${PROJECT_NAME}_underlying PUBLIC
 	FILE_SET iuic_underlying_modules

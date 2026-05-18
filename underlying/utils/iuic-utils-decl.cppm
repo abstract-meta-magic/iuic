@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 export module iuic.underlying.utils:decl;
 import std;
-import :erasure;
+import iuic.underlying.erasure;
 
 export namespace iuic::utils {
 

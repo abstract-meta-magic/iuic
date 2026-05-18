@@ -6,8 +6,17 @@ import std;
 import iuic.underlying;
 import iuic.event;
 import iuic.env;
+import iuic.state;
 
 namespace iuic::proto::base {
+
+// base define state
+namespace state {
+export iuic::state::decl hovered{iuic::state::decl::instance_of<hovered>()};
+
+export iuic::state::decl active{iuic::state::decl::instance_of<hovered>()};
+}; // namespace state
+
 namespace event {
 
 export constexpr iuic::event::channel local;

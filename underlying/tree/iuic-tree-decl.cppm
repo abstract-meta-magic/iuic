@@ -4,6 +4,7 @@
 export module iuic.underlying.tree:decl;
 import std;
 import iuic.underlying.utils;
+import iuic.underlying.erasure;
 
 namespace iuic::tree::tag {
 struct tag_qualifier__ {};
