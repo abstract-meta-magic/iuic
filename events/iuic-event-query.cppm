@@ -11,7 +11,14 @@ template <const channel &CH> struct query {
 
   struct result {
 
-    template <typename T> result type();
+    template <erasure::is_pure_type T> result type() {
+      std::vector<package> res;
+      std::copy_if(pkgs.begin(), pkgs.end(), std::back_inserter(res),
+                   [](const package &pkg) {
+                     return pkg.type == erasure::type::from<T>();
+                   });
+      return result{res};
+    };
 
     result meta(auto &&call);
 
@@ -26,14 +33,35 @@ template <const channel &CH> struct query {
     std::vector<package> pkgs;
   };
 
-  query(pool<CH> &);
+  query(pool<CH> &pool_) : pool{pool_} {};
 
   // sort by meta
-  template <typename T> result type();
+  template <typename T> result type() {
+    auto pkgs = pool.list();
+    std::vector<package> res;
+    std::copy_if(pkgs.begin(), pkgs.end(), std::back_inserter(res),
+                 [](const package &pkg) {
+                   return pkg.type == erasure::type::from<T>();
+                 });
+    return result{res};
+  };
 
   // sort by meta
-  result meta(auto &&call);
+  result meta(auto &&call) {
+    auto pkgs = pool.list();
+    std::vector<package> res;
+
+    std::copy_if(
+        pkgs.begin(), pkgs.end(), std::back_inserter(res), [&](package &pkg) {
+          return pkg.meta.try_visit_opt(std::forward<decltype(call)>(call))
+              .value_or(false);
+        });
+
+    return result{res};
+  };
 
   // etc
+private:
+  pool<CH> &pool;
 };
 }; // namespace iuic::event

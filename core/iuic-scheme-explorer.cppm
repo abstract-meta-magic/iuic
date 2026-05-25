@@ -101,8 +101,112 @@ export struct explorer {
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
-    void event() {
+  private:
+    static constexpr bool eval(const query::hit &hit,
+                               blueprint::access_iterator it,
+                               environment::persist &penv) {
+      auto in__ = [](const units::ui::rect area,
+                     const units::ui::position pointer) static constexpr {
+        return pointer.x >= area.x && pointer.x <= area.x + area.w &&
+               pointer.y >= area.y && pointer.y <= area.y + area.h;
+      };
+
+      return in__(tree::access_iterator{it}->area.bordered, hit.point);
+    };
+
+    static constexpr bool eval(query::valid_t _, blueprint::access_iterator it,
+                               environment::persist &penv) {
+      return not it->meta.has(it->meta.discarded);
+    };
+    static constexpr bool eval(const query::has_state &st,
+                               blueprint::access_iterator it,
+                               environment::persist &penv) {
+      return penv.state.has(it->uid, st.state);
+    };
+
+    template <typename T>
+    static constexpr bool eval(const query::qnot<T> &expr,
+                               blueprint::access_iterator it,
+                               environment::persist &penv) {
+      return not eval(expr.expr, it, penv);
+    };
+
+  public:
+    template <typename... Ts>
+    decltype(auto) operator()(query::expr<query::tag::element, Ts...> expr) {
+      // do element job
+
+      std::vector<iterators::base> res;
+
+      auto bit = self().begin_;
+      auto &penv = *self().penv;
+
+      for (auto it : self().ranges.level_order()) {
+        auto ait = tree::access_iterator{tree::shift(bit, it)};
+
+        if ([&]<std::size_t... I>(std::index_sequence<I...>) {
+              return (eval(expr.template at<I>(), ait, penv) && ...);
+            }(expr.index_sequence())) {
+          res.push_back(it);
+        }
+      };
+
+      return res;
+    };
+
+    template <typename... Ts>
+    decltype(auto) operator()(query::expr<query::tag::event_local, Ts...> expr,
+                              units::keycode key) {
+      // do element job
+      self().tenv->event.query<proto::base::event::local>([&](auto &q) {
+        q.meta([&](proto::base::event::pkg_meta &meta) {
+           return self().penv->state.has(meta.obj, state::base::hovered);
+         })
+            .template type<proto::base::event::key>()
+            .trigger(key, self().penv, self().tenv);
+      });
+    };
+
+    template <typename... Ts>
+    decltype(auto) operator()(query::expr<query::tag::event_local, Ts...> expr,
+                              units::ui::position pointer) {
+      // do element job
+    };
+
+    template <typename... Ts>
+    decltype(auto) operator()(query::expr<query::tag::event_global, Ts...> expr,
+                              units::keycode key) {
+      // do element job
+    };
+
+    template <typename... Ts>
+    decltype(auto) operator()(query::expr<query::tag::event_global, Ts...> expr,
+                              units::ui::position pointer) {
+      // do element job
+    };
+
+    /*
+    template <typename... Ts> void event(query::expr_t<Ts...> &&expr) {
+      using type = std::remove_cvref_t<decltype(expr.template at<0>())>;
+      if constexpr (std::same_as<type, query::event_local_t>) {
+        //
+        self().tenv->event.query<proto::base::event::local>([](auto &q) {
+          // do q
+          // q.meta()
+        });
+      } else if constexpr (std::same_as<type, query::event_global_t>) {
+        self().tenv->event.query<proto::base::event::global>([](auto &q) {
+          // do q
+          // q.meta()
+        });
+        //
+      } else {
+        // error ?
+      };
       // DO
+      // self().tenv->event.query<local>([](auto& q) {
+      //        DO Q
+      //    });
     };
 
     template <typename... Ts>
@@ -163,7 +267,8 @@ export struct explorer {
         return (expect(expr.template at<I>(), it, penv) && ...);
       }(std::make_index_sequence<expr.size()>{});
     };
-  } queries{*this};
+    */
+  } query{*this};
 
   struct : utils::member_for<explorer> {
     void set_key_code(units::keycode code) {

@@ -91,6 +91,8 @@ struct hub : protected advance::interface {
   };
 
 private:
+  void advance() override { reset(); };
+
   template <const channel &CH> event::pool<CH> &get_pool__() {
     auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
 

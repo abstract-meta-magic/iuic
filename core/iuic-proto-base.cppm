@@ -29,6 +29,10 @@ struct utils {
         units::uid owner_, units::uid obj_)
       : penv{penv_}, tenv{tenv_}, owner{owner_}, obj{obj_} {};
 
+  void try_visit_object(auto &&call) {
+    penv->object.get(obj).try_visit(std::forward<decltype(call)>(call));
+  };
+
 private:
   iuic::environment::persist *penv{nullptr};
   iuic::environment::tmp *tenv{nullptr};
@@ -39,6 +43,7 @@ private:
 struct pkg_meta {
   units::uid owner;
   units::uid obj;
+  erasure::visited::as_mutable meta{nullptr};
 };
 
 struct meta_call {
@@ -72,6 +77,7 @@ template <> struct packager<iuic::proto::base::event::local> {
   package make(iuic::proto::base::event::pkg_source<T> src,
                allocator<iuic::proto::base::event::local> &alloc) {
     // DO PACK
+    using namespace iuic::proto::base::event;
     package pkg;
 
     // alloc in tpm
@@ -79,9 +85,9 @@ template <> struct packager<iuic::proto::base::event::local> {
       arg.try_visit([&](iuic::proto::base::event::key &e) { call(e); });
     };
 
+    src.meta.meta = meta_call;
     // set meta
-    pkg.meta = new (alloc.allocate<decltype(meta_call)>()) decltype(meta_call){
-        std::move(meta_call)};
+    pkg.meta = new (alloc.allocate<pkg_meta>()) pkg_meta{src.meta};
 
     // set type
     pkg.type = src.type;
@@ -116,7 +122,7 @@ template <> struct dispatcher<iuic::proto::base::event::local> {
                                       .key = key};
 
       iuic::proto::base::event::meta_call meta_call{
-          .call = pkg.meta,
+          .call = meta.meta,
           .arg = e,
       };
 

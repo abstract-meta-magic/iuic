@@ -161,8 +161,10 @@ struct tmp : iuic::advance::interface {
     void advance() override { allocator.release(); };
 
   private:
-    std::array<std::byte, tmp_buff_size> tmp_buff;
-    std::pmr::monotonic_buffer_resource allocator{&tmp_buff, tmp_buff_size};
+    std::array<std::byte, iuic::cenv::num("iuic::sizeof::buff::tmp")
+                              .value_or(1024 * 1024 * 4)>
+        tmp_buff;
+    std::pmr::monotonic_buffer_resource allocator{&tmp_buff, tmp_buff.size()};
 
   } memory;
 

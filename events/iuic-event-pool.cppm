@@ -15,6 +15,8 @@ template <const channel &ch> struct pool : advance::interface {
 
   std::span<package> list() { return pkgs; };
 
+  void advance() override { pkgs.clear(); };
+
 private:
   std::vector<package> pkgs;
 };
