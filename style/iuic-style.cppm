@@ -7,8 +7,8 @@ import iuic.underlying;
 
 export namespace iuic::policy {
 enum class usage {
+  unused = 0,
   unspecified,
-  unused,
   optional,
   required,
 };

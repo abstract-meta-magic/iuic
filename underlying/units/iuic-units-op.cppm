@@ -88,7 +88,7 @@ constexpr inline upixel operator*(segment lhs, upixel rhs) {
 }
 
 constexpr inline upixel operator*(upixel lhs, segment rhs) {
-  return upixel{std::to_underlying(lhs) * std::to_underlying(rhs)};
+  return upixel{std::to_underlying(rhs) * std::to_underlying(lhs)};
 }
 
 constexpr inline pixel operator+(pixel lhs, pixel rhs) {

@@ -17,6 +17,12 @@ export iuic::state::decl hovered{iuic::state::decl::instance_of<hovered>()};
 export iuic::state::decl active{iuic::state::decl::instance_of<hovered>()};
 }; // namespace state
 
+namespace capabilities {
+export constexpr iuic::external::capabilities::decl scissor;
+
+export constexpr iuic::external::capabilities::decl color;
+}; // namespace capabilities
+
 namespace event {
 
 export constexpr iuic::event::channel local;
@@ -82,7 +88,11 @@ template <> struct packager<iuic::proto::base::event::local> {
 
     // alloc in tpm
     auto meta_call = [call = src.call](erasure::visited::as_mutable arg) {
-      arg.try_visit([&](iuic::proto::base::event::key &e) { call(e); });
+      if constexpr (requires(iuic::proto::base::event::key &e) { call(e); }) {
+        arg.try_visit([&](iuic::proto::base::event::key &e) { call(e); });
+      } else {
+        arg.try_visit([&](iuic::proto::base::event::pointer &e) { call(e); });
+      }
     };
 
     src.meta.meta = meta_call;
@@ -129,5 +139,116 @@ template <> struct dispatcher<iuic::proto::base::event::local> {
       pkg.call(erasure::visited::as_mutable{meta_call});
     });
   };
+
+  static void trigger(package pkg, units::ui::position pointer,
+                      environment::persist *penv, environment::tmp *tenv) {
+
+    // WARN
+    pkg.meta.unsafe_visit([&](iuic::proto::base::event::pkg_meta &meta) {
+      iuic::proto::base::event::pointer e{.utils =
+                                              iuic::proto::base::event::utils{
+                                                  penv,
+                                                  tenv,
+                                                  meta.owner,
+                                                  meta.obj,
+                                              },
+                                          .position = pointer};
+
+      iuic::proto::base::event::meta_call meta_call{
+          .call = meta.meta,
+          .arg = e,
+      };
+
+      pkg.call(erasure::visited::as_mutable{meta_call});
+    });
+  };
 };
+
+template <> struct packager<iuic::proto::base::event::global> {
+  // DO JOB
+  template <typename T>
+  package make(iuic::proto::base::event::pkg_source<T> src,
+               allocator<iuic::proto::base::event::global> &alloc) {
+    // DO PACK
+    using namespace iuic::proto::base::event;
+    package pkg;
+
+    // alloc in tpm
+    auto meta_call = [call = src.call](erasure::visited::as_mutable arg) {
+      if constexpr (requires(iuic::proto::base::event::key &e) { call(e); }) {
+        arg.try_visit([&](iuic::proto::base::event::key &e) { call(e); });
+      } else {
+        arg.try_visit([&](iuic::proto::base::event::pointer &e) { call(e); });
+      }
+    };
+
+    src.meta.meta = meta_call;
+    // set meta
+    pkg.meta = new (alloc.allocate<pkg_meta>()) pkg_meta{src.meta};
+
+    // set type
+    pkg.type = src.type;
+
+    // make call
+    pkg.call = [](erasure::visited::as_mutable meta) static {
+      // WARN
+      meta.unsafe_visit([](iuic::proto::base::event::meta_call &src) {
+        // WARN
+        src.call.unsafe_visit(
+            [&](decltype(meta_call) &call) { call(src.arg); });
+      });
+    };
+
+    return pkg;
+  };
+};
+
+template <> struct dispatcher<iuic::proto::base::event::global> {
+  static void trigger(package pkg, units::keycode key,
+                      environment::persist *penv, environment::tmp *tenv) {
+
+    // WARN
+    pkg.meta.unsafe_visit([&](iuic::proto::base::event::pkg_meta &meta) {
+      iuic::proto::base::event::key e{.utils =
+                                          iuic::proto::base::event::utils{
+                                              penv,
+                                              tenv,
+                                              meta.owner,
+                                              meta.obj,
+                                          },
+                                      .key = key};
+
+      iuic::proto::base::event::meta_call meta_call{
+          .call = meta.meta,
+          .arg = e,
+      };
+
+      pkg.call(erasure::visited::as_mutable{meta_call});
+    });
+  };
+
+  static void trigger(package pkg, units::ui::position pointer,
+                      environment::persist *penv, environment::tmp *tenv) {
+
+    // WARN
+    pkg.meta.unsafe_visit([&](iuic::proto::base::event::pkg_meta &meta) {
+      iuic::proto::base::event::pointer e{.utils =
+                                              iuic::proto::base::event::utils{
+                                                  penv,
+                                                  tenv,
+                                                  meta.owner,
+                                                  meta.obj,
+                                              },
+                                          .position = pointer};
+
+      iuic::proto::base::event::meta_call meta_call{
+          .call = meta.meta,
+          .arg = e,
+      };
+
+      pkg.call(erasure::visited::as_mutable{meta_call});
+    });
+  };
+};
+
 }; // namespace iuic::event

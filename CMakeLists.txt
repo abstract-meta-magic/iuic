@@ -39,7 +39,6 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"core/iuic-ctx.cppm"
-	"core/iuic-machine-dispatcher.cppm"
 	"core/iuic-policy.cppm"
 	"core/iuic-proto-base.cppm"
 	"core/iuic-scheme-base.cppm"

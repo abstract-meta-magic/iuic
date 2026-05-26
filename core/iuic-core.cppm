@@ -15,5 +15,4 @@ export import :scheme.builder;
 export import :scheme.explorer;
 export import :policy;
 export import :proto.base;
-export import :machine.dispatcher;
 export import :context;

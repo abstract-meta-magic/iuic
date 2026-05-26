@@ -8,7 +8,6 @@ import iuic.state;
 import iuic.text;
 import iuic.event;
 import :policy;
-import :machine.dispatcher;
 import :scheme.base;
 import :proto.base;
 
@@ -155,17 +154,41 @@ struct builder_event_interface : protected virtual builder_base {
 
   void local(units::uid obj,
              std::invocable<iuic::proto::base::event::pointer &> auto &&e) {
-    tenv.event.emit<iuic::proto::base::event::local>(e);
+    iuic::proto::base::event::pkg_meta meta{
+        .owner = tree::access_iterator{it}->uid, .obj = obj};
+
+    iuic::proto::base::event::pkg_source src{
+        .meta = meta,
+        .type = erasure::type::from<iuic::proto::base::event::pointer>(),
+        .call = std::forward<decltype(e)>(e)};
+
+    tenv.event.emit<iuic::proto::base::event::local>(src);
   };
 
   void global(units::uid obj,
               std::invocable<iuic::proto::base::event::key &> auto &&e) {
-    tenv.event.emit<iuic::proto::base::event::global>(e);
+    iuic::proto::base::event::pkg_meta meta{
+        .owner = tree::access_iterator{it}->uid, .obj = obj};
+
+    iuic::proto::base::event::pkg_source src{
+        .meta = meta,
+        .type = erasure::type::from<iuic::proto::base::event::key>(),
+        .call = std::forward<decltype(e)>(e)};
+
+    tenv.event.emit<iuic::proto::base::event::global>(src);
   };
 
   void global(units::uid obj,
               std::invocable<iuic::proto::base::event::pointer &> auto &&e) {
-    tenv.event.emit<iuic::proto::base::event::global>(e);
+    iuic::proto::base::event::pkg_meta meta{
+        .owner = tree::access_iterator{it}->uid, .obj = obj};
+
+    iuic::proto::base::event::pkg_source src{
+        .meta = meta,
+        .type = erasure::type::from<iuic::proto::base::event::pointer>(),
+        .call = std::forward<decltype(e)>(e)};
+
+    tenv.event.emit<iuic::proto::base::event::global>(src);
   };
 
   // custom

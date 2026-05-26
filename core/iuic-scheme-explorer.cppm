@@ -160,10 +160,11 @@ export struct explorer {
       // do element job
       self().tenv->event.query<proto::base::event::local>([&](auto &q) {
         q.meta([&](proto::base::event::pkg_meta &meta) {
-           return self().penv->state.has(meta.obj, state::base::hovered);
+           return self().penv->state.has(meta.obj, state::base::local);
          })
             .template type<proto::base::event::key>()
             .trigger(key, self().penv, self().tenv);
+        // add expr eval
       });
     };
 
@@ -171,103 +172,35 @@ export struct explorer {
     decltype(auto) operator()(query::expr<query::tag::event_local, Ts...> expr,
                               units::ui::position pointer) {
       // do element job
+      self().tenv->event.query<proto::base::event::local>([&](auto &q) {
+        q.meta([&](proto::base::event::pkg_meta &meta) {
+           return self().penv->state.has(meta.obj, state::base::local);
+         })
+            .template type<proto::base::event::pointer>()
+            .trigger(pointer, self().penv, self().tenv);
+        // add expr eval
+      });
     };
 
     template <typename... Ts>
     decltype(auto) operator()(query::expr<query::tag::event_global, Ts...> expr,
                               units::keycode key) {
-      // do element job
+      self().tenv->event.query<proto::base::event::global>([&](auto &q) {
+        q.template type<proto::base::event::key>().trigger(key, self().penv,
+                                                           self().tenv);
+        // add expr eval
+      });
     };
 
     template <typename... Ts>
     decltype(auto) operator()(query::expr<query::tag::event_global, Ts...> expr,
                               units::ui::position pointer) {
-      // do element job
+      self().tenv->event.query<proto::base::event::global>([&](auto &q) {
+        q.template type<proto::base::event::pointer>().trigger(
+            pointer, self().penv, self().tenv);
+        // add expr eval
+      });
     };
-
-    /*
-    template <typename... Ts> void event(query::expr_t<Ts...> &&expr) {
-      using type = std::remove_cvref_t<decltype(expr.template at<0>())>;
-      if constexpr (std::same_as<type, query::event_local_t>) {
-        //
-        self().tenv->event.query<proto::base::event::local>([](auto &q) {
-          // do q
-          // q.meta()
-        });
-      } else if constexpr (std::same_as<type, query::event_global_t>) {
-        self().tenv->event.query<proto::base::event::global>([](auto &q) {
-          // do q
-          // q.meta()
-        });
-        //
-      } else {
-        // error ?
-      };
-      // DO
-      // self().tenv->event.query<local>([](auto& q) {
-      //        DO Q
-      //    });
-    };
-
-    template <typename... Ts>
-    std::vector<scheme::iterators::base> element(query::expr_t<Ts...> &&expr) {
-      // TODO : make parallel ???
-      std::vector<scheme::iterators::base> res;
-      // unexpected expression
-      auto &penv = *self().penv;
-      auto bit = self().begin_;
-      for (auto it : self().ranges.level_order()) {
-        if (expect(expr, tree::shift(bit, it), penv)) {
-          res.push_back(it);
-        };
-      }
-      return res;
-    };
-
-    template <typename... ARGS>
-    static constexpr bool expect(const auto &pred, blueprint::base_iterator it,
-                                 environment::persist &penv) {
-
-      static constexpr auto in__ =
-          [](const units::ui::rect &area,
-
-             const units::ui::position point__) static constexpr {
-            return point__.x >= area.x && point__.x <= area.x + area.w &&
-
-                   point__.y >= area.y && point__.y <= area.y + area.h;
-          };
-
-      static constexpr auto not__ =
-          []<typename T>(const query::qnot<T> &qnot,
-                         blueprint::base_iterator it,
-                         environment::persist &penv) constexpr static {
-            return not expect(qnot.expr, it, penv);
-          };
-
-      using type = std::remove_cvref_t<decltype(pred)>;
-      tree::access_iterator ait{it};
-      if constexpr (std::same_as<type, query::valid_t>) {
-        return not ait->meta.has(ait->meta.discarded);
-      } else if constexpr (std::same_as<type, query::hit>) {
-        return in__(tree::access_iterator{it}->area.bordered, pred.point);
-      } else if constexpr (std::same_as<type, query::has_state>) {
-        return penv.state.has(ait->uid, pred.state);
-      } else if constexpr (requires { not__(pred, it, penv); }) {
-        return not expect(pred.expr, it, penv);
-      } else {
-        return false;
-      };
-    };
-
-    template <typename... Ts>
-    static constexpr bool expect(const query::expr_t<Ts...> &expr,
-                                 blueprint::base_iterator it,
-                                 environment::persist &penv) {
-      return [&]<std::size_t... I>(std::index_sequence<I...>) {
-        return (expect(expr.template at<I>(), it, penv) && ...);
-      }(std::make_index_sequence<expr.size()>{});
-    };
-    */
   } query{*this};
 
   struct : utils::member_for<explorer> {

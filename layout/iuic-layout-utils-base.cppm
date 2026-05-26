@@ -36,7 +36,7 @@ struct utils_base {
   struct : utils::adv_member_for<utils_base> {
     template <typename... FMT_ARG>
     void error(std::format_string<FMT_ARG...> fs, FMT_ARG &&...args) {
-      // TODO : body
+      // TODO : afther iuic.logger
       std::println("\x1B[31m[IUIC-LAYOUT-ERROR]>>>");
       std::println(std::move(fs), std::forward<FMT_ARG>(args)...);
       std::println("\033[0m\n");
@@ -44,7 +44,7 @@ struct utils_base {
 
     template <typename... FMT_ARG>
     void warn(std::format_string<FMT_ARG...> fs, FMT_ARG &&...args) {
-      // TODO : body
+      // TODO : afther iuic.logger
       std::println("\x1B[33m[IUIC-LAYOUT-WARNING]>>>");
       std::println(std::move(fs), std::forward<FMT_ARG>(args)...);
       std::println("\033[0m\n");
@@ -52,7 +52,7 @@ struct utils_base {
 
     template <typename... FMT_ARG>
     void info(std::format_string<FMT_ARG...> fs, FMT_ARG &&...args) {
-      // TODO : body
+      // TODO : afther iuic.logger
       std::println("\x1B[34m[IUIC-LAYOUT-INFO]>>>");
       std::println(std::move(fs), std::forward<FMT_ARG>(args)...);
       std::println("\033[0m\n");

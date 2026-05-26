@@ -5,9 +5,9 @@
 
 # Интерфейсы строителя
 Используются для создания и настройки элементов.
-- [[builder-uid]]
-- [[builder-element]]
-- [[builder-policy]]
-- [[builder-event]]
-- [[builder-state]]
-- [[builder-style]]
+- [[builder/uid]]
+- [[builder/element]]
+- [[policy]]
+- [[event]]
+- [[state]]
+- [[builder/style]]
