@@ -52,6 +52,11 @@ struct hub_provide {
 }; // namespace policy
 
 struct channel {
+  // TODO : in alpha or beta
+  enum class type_e {
+    passive, // событие ожидает .trigger(..)
+    active   // события является отправленным. Просто данные в пуле
+  } type{channel::type_e::passive};
   policy::thread thread;
   policy::memory memory;
   policy::hub_provide hub_provide;

@@ -50,14 +50,14 @@ constexpr sid operator-(sid lhs, sid rhs) noexcept {
 
 // limit 128
 struct shape {
-  units::ui::adaptive::size min_size, max_size;
+  units::ui::adaptive::size size;
 
   units::ui::indent border;
 
-  units::ui::indent padding;
-
-  units::ui::indent margin;
+  // 16 bytes free
 };
+
+// запрес на динамическое изменение
 
 // limit 64
 struct decoration {
@@ -94,6 +94,19 @@ struct transform {
 
 // static - unlimited
 struct advanced {
+  struct {
+    policy::usage usage{policy::usage::unspecified};
+
+    units::ui::adaptive::size min_size{units::ui::none{}, units::ui::none{}},
+        max_size{units::ui::none{}, units::ui::none{}};
+
+    units::ui::indent padding{units::ui::none{}, units::ui::none{},
+                              units::ui::none{}, units::ui::none{}};
+
+    units::ui::indent margin{units::ui::none{}, units::ui::none{},
+                             units::ui::none{}, units::ui::none{}};
+  } constraint;
+
   struct {
     policy::usage usage{policy::usage::unspecified};
 

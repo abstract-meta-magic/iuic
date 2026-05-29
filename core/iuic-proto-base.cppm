@@ -39,6 +39,28 @@ struct utils {
     penv->object.get(obj).try_visit(std::forward<decltype(call)>(call));
   };
 
+  struct : iuic::utils::member_for<utils> {
+
+  } memory{*this};
+
+  struct : iuic::utils::member_for<utils> {
+    bool has(iuic::state::value value) {
+      return self().penv->state.has(self().owner, value);
+    };
+
+    void attach(iuic::state::value value) {
+      self().penv->state.attach(self().owner, value);
+    };
+    void detach(iuic::state::value value) {
+      self().penv->state.detach(self().owner, value);
+    };
+  } state{*this};
+
+  struct : iuic::utils::member_for<utils> {
+
+    template <const iuic::event::channel &ch> void emit(auto &&) {};
+  } event{*this};
+
 private:
   iuic::environment::persist *penv{nullptr};
   iuic::environment::tmp *tenv{nullptr};
