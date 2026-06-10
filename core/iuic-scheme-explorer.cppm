@@ -102,7 +102,7 @@ export struct explorer {
 
   struct : utils::member_for<explorer> {
   private:
-    static constexpr bool eval(const query::hit &hit,
+    static constexpr bool eval(const proto::base::query::hit &hit,
                                blueprint::access_iterator it,
                                environment::persist &penv) {
       auto in__ = [](const units::ui::rect area,
@@ -114,26 +114,40 @@ export struct explorer {
       return in__(tree::access_iterator{it}->area.bordered, hit.point);
     };
 
-    static constexpr bool eval(query::valid_t _, blueprint::access_iterator it,
+    static constexpr bool eval(proto::base::query::valid_t _,
+                               blueprint::access_iterator it,
                                environment::persist &penv) {
       return not it->meta.has(it->meta.discarded);
     };
-    static constexpr bool eval(const query::has_state &st,
+    static constexpr bool eval(const proto::base::query::has_state &st,
                                blueprint::access_iterator it,
                                environment::persist &penv) {
       return penv.state.has(it->uid, st.state);
     };
 
     template <typename T>
-    static constexpr bool eval(const query::qnot<T> &expr,
+    static constexpr bool eval(const iuic::query::qnot<T> &expr,
                                blueprint::access_iterator it,
                                environment::persist &penv) {
       return not eval(expr.expr, it, penv);
     };
 
   public:
+    template <const event::channel &EC, typename... Ts, typename... ARGS>
+    decltype(auto) operator()(
+        iuic::query::expr<proto::base::query::tag::event<EC>, Ts...> expr,
+        ARGS &&...args) {
+      if constexpr (EC.type == event::channel::type_e::active) {
+        // TODO : do job
+        self().tenv->event.query<EC>([](auto &q) {});
+      } else {
+        // TODO : do job
+      }
+    };
+
     template <typename... Ts>
-    decltype(auto) operator()(query::expr<query::tag::element, Ts...> expr) {
+    decltype(auto) operator()(
+        iuic::query::expr<proto::base::query::tag::element, Ts...> expr) {
       // do element job
 
       std::vector<iterators::base> res;
@@ -155,12 +169,13 @@ export struct explorer {
     };
 
     template <typename... Ts>
-    decltype(auto) operator()(query::expr<query::tag::event_local, Ts...> expr,
-                              units::keycode key) {
+    decltype(auto) operator()(
+        iuic::query::expr<proto::base::query::tag::event_local, Ts...> expr,
+        units::keycode key) {
       // do element job
       self().tenv->event.query<proto::base::event::local>([&](auto &q) {
         q.meta([&](proto::base::event::pkg_meta &meta) {
-           return self().penv->state.has(meta.obj, state::base::local);
+           return self().penv->state.has(meta.obj, proto::base::state::local);
          })
             .template type<proto::base::event::key>()
             .trigger(key, self().penv, self().tenv);
@@ -169,12 +184,13 @@ export struct explorer {
     };
 
     template <typename... Ts>
-    decltype(auto) operator()(query::expr<query::tag::event_local, Ts...> expr,
-                              units::ui::position pointer) {
+    decltype(auto) operator()(
+        iuic::query::expr<proto::base::query::tag::event_local, Ts...> expr,
+        units::ui::position pointer) {
       // do element job
       self().tenv->event.query<proto::base::event::local>([&](auto &q) {
         q.meta([&](proto::base::event::pkg_meta &meta) {
-           return self().penv->state.has(meta.obj, state::base::local);
+           return self().penv->state.has(meta.obj, proto::base::state::local);
          })
             .template type<proto::base::event::pointer>()
             .trigger(pointer, self().penv, self().tenv);
@@ -183,8 +199,9 @@ export struct explorer {
     };
 
     template <typename... Ts>
-    decltype(auto) operator()(query::expr<query::tag::event_global, Ts...> expr,
-                              units::keycode key) {
+    decltype(auto) operator()(
+        iuic::query::expr<proto::base::query::tag::event_global, Ts...> expr,
+        units::keycode key) {
       self().tenv->event.query<proto::base::event::global>([&](auto &q) {
         q.template type<proto::base::event::key>().trigger(key, self().penv,
                                                            self().tenv);
@@ -193,8 +210,9 @@ export struct explorer {
     };
 
     template <typename... Ts>
-    decltype(auto) operator()(query::expr<query::tag::event_global, Ts...> expr,
-                              units::ui::position pointer) {
+    decltype(auto) operator()(
+        iuic::query::expr<proto::base::query::tag::event_global, Ts...> expr,
+        units::ui::position pointer) {
       self().tenv->event.query<proto::base::event::global>([&](auto &q) {
         q.template type<proto::base::event::pointer>().trigger(
             pointer, self().penv, self().tenv);

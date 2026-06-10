@@ -22,6 +22,7 @@ concept is_base_event_type = requires(T e) {
 
 struct bus;
 
+// for active events(trigger)
 struct package {
   erasure::visited::as_mutable meta{nullptr};
   const erasure::type *type{nullptr};
@@ -29,7 +30,14 @@ struct package {
   // 32 byte
 };
 
+// for passive events(read)
+struct archive {
+  erasure::visited::as_mutable data{nullptr};
+  const erasure::type *type{nullptr};
+};
+
 namespace policy {
+
 struct thread {
   bool multithread{false};
   // lock-policy
@@ -54,9 +62,9 @@ struct hub_provide {
 struct channel {
   // TODO : in alpha or beta
   enum class type_e {
-    passive, // событие ожидает .trigger(..)
-    active   // события является отправленным. Просто данные в пуле
-  } type{channel::type_e::passive};
+    active,  // событие ожидает .trigger(..)
+    passive, // события является отправленным. Просто данные в пуле
+  } type{channel::type_e::active};
   policy::thread thread;
   policy::memory memory;
   policy::hub_provide hub_provide;

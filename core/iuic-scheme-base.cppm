@@ -8,6 +8,7 @@ import iuic.text;
 import iuic.layout;
 import iuic.style;
 import iuic.env;
+import iuic.event;
 
 import iuic.state; // tmp
 
@@ -156,101 +157,4 @@ struct preorder {
 
 // post_order
 }; // namespace ranges
-
-export namespace query {
-
-struct hit {
-  units::ui::position point;
-};
-
-struct has_state {
-  iuic::state::value state;
-};
-
-struct valid_t {
-} constexpr valid;
-
-template <typename EXPR> struct qnot {
-  EXPR expr;
-};
-
-template <typename LEXPR, typename REXPR> struct qor {
-  LEXPR lexpr;
-  REXPR rexpr;
-};
-
-struct branch {
-  // later
-};
-// expr<typename T,typename ...Ts>
-
-template <typename T, typename... Ts> struct expr {
-
-  constexpr expr() {};
-
-  // TODO : make normal copy\move\forward\cat
-
-  template <typename New, typename... OTs>
-  constexpr expr(expr<T, OTs...> &&other, New &&v)
-      : expr{make_expr(std::move(other), std::forward<New>(v))} {};
-
-  template <typename New, typename... OTs>
-  constexpr expr(const expr<T, OTs...> &other, New &&v)
-      : expr{make_expr(other, std::forward<New>(v))} {};
-
-  template <std::size_t index> constexpr const auto &at() const {
-    return std::get<index>(value);
-  };
-
-  template <typename TAG, typename... ARGS>
-  constexpr expr(TAG, ARGS &&...args) : value{std::forward<ARGS>(args)...} {}
-
-  static constexpr std::size_t size() { return sizeof...(Ts); };
-
-  static constexpr auto index_sequence() {
-    return std::make_index_sequence<size()>{};
-  };
-
-private:
-  template <typename New, typename... OTs>
-  static constexpr auto make_expr(expr<T, OTs...> other, New &&n) {
-    if constexpr (sizeof...(OTs) == 0) {
-      return expr{T{}, std::forward<New>(n)};
-    } else {
-      return [&]<std::size_t... I>(std::index_sequence<I...>) {
-        return expr{T{}, std::get<I>(other.value)..., std::forward<New>(n)};
-      }(std::make_index_sequence<sizeof...(OTs)>{});
-    }
-  };
-  template <typename, typename...> friend struct expr;
-  std::tuple<Ts...> value;
-};
-
-namespace tag {
-struct element {};
-struct event_local {};
-struct event_global {};
-}; // namespace tag
-
-template <typename T, typename New, typename... Ts>
-expr(expr<T, Ts...> &&, New &&) -> expr<T, Ts..., New>;
-
-template <typename T, typename New, typename... Ts>
-expr(const expr<T, Ts...> &, New &&) -> expr<T, Ts..., New>;
-
-template <typename TAG, typename... ARGS>
-expr(TAG, ARGS &&...) -> expr<TAG, ARGS...>;
-
-constexpr expr<tag::element> element{};
-constexpr expr<tag::event_local> event_local{};
-constexpr expr<tag::event_global> event_global{};
-
-template <typename... Ts, typename T, typename New>
-constexpr auto operator|(expr<T, Ts...> lhs, New &&rhs) {
-  return expr<T, Ts..., New>{std::move(lhs), std::forward<New>(rhs)};
-}
-
-constexpr has_state hovered{iuic::state::base::hovered};
-}; // namespace query
-
 }; // namespace iuic::scheme

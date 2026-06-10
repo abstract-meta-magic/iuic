@@ -5,7 +5,6 @@ export module iuic.text;
 export import :glyph;
 export import :atlas;
 export import :token;
-export import :i18n;
 
 // atlas
 // glyph

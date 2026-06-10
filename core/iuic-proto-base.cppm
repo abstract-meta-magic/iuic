@@ -12,9 +12,14 @@ namespace iuic::proto::base {
 
 // base define state
 namespace state {
-export iuic::state::decl hovered{iuic::state::decl::instance_of<hovered>()};
+export constexpr iuic::state::decl hovered{
+    iuic::state::decl::instance_of<hovered>()};
 
-export iuic::state::decl active{iuic::state::decl::instance_of<hovered>()};
+export constexpr iuic::state::decl local{
+    iuic::state::decl::instance_of<hovered>()};
+
+export constexpr iuic::state::decl active{
+    iuic::state::decl::instance_of<hovered>()};
 }; // namespace state
 
 namespace capabilities {
@@ -95,6 +100,42 @@ template <typename T> struct pkg_source {
   T call;
 };
 }; // namespace event
+
+export namespace query {
+
+namespace tag {
+struct element : iuic::query::tag {};
+struct event_local : iuic::query::tag {};
+struct event_global : iuic::query::tag {};
+
+template <const iuic::event::channel &channel__> struct event {
+  static constexpr auto &channel = channel__;
+};
+
+}; // namespace tag
+
+constexpr iuic::query::expr<tag::event_global> event_global{};
+constexpr iuic::query::expr<tag::event_local> event_local{};
+constexpr iuic::query::expr<tag::element> element{};
+template <const iuic::event::channel &channel__>
+constexpr iuic::query::expr<tag::event<channel__>> event{};
+
+struct hit {
+  using type_tag = iuic::query::type;
+  units::ui::position point;
+};
+
+struct has_state {
+  using type_tag = iuic::query::type;
+  iuic::state::value state;
+};
+
+struct valid_t {
+  using type_tag = iuic::query::type;
+} constexpr valid;
+
+constexpr has_state hovered{state::hovered};
+}; // namespace query
 }; // namespace iuic::proto::base
 
 export namespace iuic::event {
@@ -272,5 +313,17 @@ template <> struct dispatcher<iuic::proto::base::event::global> {
     });
   };
 };
-
 }; // namespace iuic::event
+
+namespace iuic::proto::advanced {
+namespace event {
+
+export struct quick_sound {
+  std::string_view name;
+  float volume;
+};
+
+export constexpr iuic::event::channel sound{
+    .type = iuic::event::channel::type_e::passive};
+}; // namespace event
+}; // namespace iuic::proto::advanced
