@@ -1,7 +1,7 @@
 add_library(${PROJECT_NAME}_text)
 
 target_sources(${PROJECT_NAME}_text PUBLIC
-	FILE_SET iuic_underlying_modules
+	FILE_SET iuic_text_modules
 	TYPE CXX_MODULES
 	FILES
 	"iuic-text.cppm"
@@ -15,7 +15,7 @@ target_sources(${PROJECT_NAME}_text PUBLIC
 )
 
 if(TARGET iuic_std_module)
-		target_link_libraries(${PROJECT_NAME}_underlying PUBLIC iuic_std_module)
+	target_link_libraries(${PROJECT_NAME}_text iuic_std_module)
 endif()
 
 target_link_libraries(${PROJECT_NAME}_text iuic::underlying)

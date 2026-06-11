@@ -6,6 +6,7 @@ project(iuic LANGUAGES CXX)
 add_subdirectory(underlying)
 ## lvl - 1
 add_subdirectory(text)
+add_subdirectory(symbol)
 add_subdirectory(state)
 add_subdirectory(style)
 ## lvl - 3
@@ -19,6 +20,7 @@ add_library(${PROJECT_NAME}_core STATIC)
 target_link_libraries(${PROJECT_NAME}_core
 	iuic::underlying
 	iuic::text
+	iuic::symbol
 	iuic::state
 	iuic::style
 	iuic::env
