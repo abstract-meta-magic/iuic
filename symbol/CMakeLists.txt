@@ -4,6 +4,7 @@ target_sources(${PROJECT_NAME}_symbol PUBLIC
 	FILE_SET iuic_symbol_modules
 	TYPE CXX_MODULES
 	FILES
+	"iuic-symbol-handle.cppm"
 	"iuic-symbol-decl.cppm"
 	"iuic-symbol-api-private.cppm"
 	"iuic-symbol-api-public.cppm"

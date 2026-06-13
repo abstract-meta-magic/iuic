@@ -3,56 +3,132 @@
 
 export module iuic.symbol:decl;
 import std;
+import :handle;
+import :api.PRIVATE;
 
 export namespace iuic::symbol {
 
-enum class scheme_handle : std::uint64_t {};
-enum class pack_handle : std::uint64_t {};
-
 struct locked {
-  std::string string_view() const;
 
-  bool is_outdated() const;
+  bool is_valid() const { return api::is_valid_lock(lock); };
 
-  void retire();
+  std::string_view view() const { return api::lock_data(lock); };
+
+  std::string_view view_or(std::string_view fallback) const {
+    if (is_valid()) {
+      return view();
+    } else {
+      return fallback;
+    }
+  };
+
+  bool is_outdated() const { return api::is_lock_outdated(lock); };
+
+  void retire() { api::retire(lock); }; // double free race ??
+
+  // TODO : BIG-V
+  locked(lock_handle lock_) : lock{lock_} {};
+  locked() : lock{symbol::invalid_handle<lock_handle>} {};
+  ~locked() { retire(); }
+  locked(const locked &other) : lock{api::lock(other.lock)} {};
+  locked &operator=(const locked &other) {
+    if (std::addressof(other) != this) {
+      auto tmp = lock;
+      lock = api::lock(other.lock);
+      api::retire(tmp);
+    }
+
+    return *this;
+  };
+  locked(locked &&other) : lock{symbol::invalid_handle<lock_handle>} {
+    std::swap(lock, other.lock);
+  };
+  locked &operator=(locked &&other) {
+    std::swap(lock, other.lock);
+    return *this;
+  };
+
+private:
+  lock_handle lock;
 };
 
 struct link {
-  locked lock() const;
+  locked lock() const {
+    return api::lock(scheme_h, api::resolve_link(scheme_h, slot_h, link_h));
+  };
 
-  locked lock_or(std::string_view fallback) const;
+  bool is_resolved() const {
+    return api::resolve_link(scheme_h, slot_h, link_h) !=
+           symbol::invalid_handle<slot_handle>;
+  };
 
-  bool is_resolved() const;
+  link(scheme_handle scheme_, slot_handle slot_, link_handle link_)
+      : scheme_h{scheme_}, slot_h{slot_}, link_h{link_} {}
+
+  link()
+      : scheme_h{symbol::invalid_handle<scheme_handle>},
+        slot_h{symbol::invalid_handle<slot_handle>},
+        link_h{symbol::invalid_handle<link_handle>} {}
+
+private:
+  scheme_handle scheme_h;
+  slot_handle slot_h;
+  link_handle link_h;
+};
+
+// символический ключ
+// для использования в lock
+// будет сделать для горячих путей
+// for с unresolved-link\dynamic
+struct key {
+  // TODO : key chache system
 };
 
 struct dynamic {
-  dynamic(std::string_view scheme, std::string_view id);
-  dynamic(std::string_view scheme, std::size_t id);
-  dynamic(scheme_handle scheme, std::string_view id);
+  dynamic(std::string_view scheme_, std::string_view key)
+      : scheme_h{api::reserve_scheme(scheme_)},
+        slot_h{api::reserve_slot(scheme_h, key)} {};
 
-  std::string string() const;
+  dynamic(scheme_handle scheme_, std::string_view key)
+      : scheme_h{scheme_}, slot_h{api::reserve_slot(scheme_h, key)} {};
 
-  std::string string_or(std::string_view fallback) const;
+  std::string string() const { return std::string{lock().view()}; };
 
-  locked lock() const;
+  std::string string_or(std::string_view fallback) const {
+    return std::string{lock().view_or(fallback)};
+  };
 
-  locked lock_or(std::string_view fallback) const;
+  locked lock() const { return api::lock(scheme_h, slot_h); };
 
-  link link(std::string_view name);
+  symbol::link link(std::string_view name) {
+    return symbol::link{scheme_h, slot_h,
+                        api::reserve_slot_link(scheme_h, slot_h, name)};
+  };
 
-  std::string_view unsafe_view() const;
+  symbol::link link(const key &) {
+    // TODO : key impl
+    return {};
+  };
 
-  bool is_resolved() const;
+  bool is_resolved() const { return api::is_resolved(scheme_h, slot_h); };
 
 private:
-  std::uint64_t dy_id, table_id, syb_id;
+  scheme_handle scheme_h;
+  slot_handle slot_h;
 };
 
-// TODO : Make iuic.symbol:api.private_;
-
-// TODO : Move to iuic.symbol:api.public_;
-
+// resolved_sym_id_eq
+bool operator==(dynamic, locked);
+// resolved_sym_id_eq
+bool operator==(dynamic, link);
 }; // namespace iuic::symbol
+
+void hehe() {
+  iuic::symbol::dynamic dy{"base", "text::main"};
+
+  dy.lock().view_or("##test##");
+  dy.link("font").lock().view_or("##test##");
+};
 
 /* example
 void test() {
@@ -84,6 +160,14 @@ void test() {
   i18n::load_pack("./base.pack", "base", "ru_RU");
 
   i18n::switch_pack("base", "ru_RU");
+
+  static i18n::dynamic g{scheme, "type::cmd"};
+
+  dynmic action = ...;
+
+  if(auto t = action.link("type");type == g) {
+
+  }
 };
 
 */
