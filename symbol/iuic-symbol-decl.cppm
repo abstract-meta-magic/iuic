@@ -76,12 +76,32 @@ private:
   link_handle link_h;
 };
 
-// символический ключ
-// для использования в lock
-// будет сделать для горячих путей
-// for с unresolved-link\dynamic
+/* символический ключ
+для использования в lock
+будет сделать для горячих путей
+for с unresolved-link
+
+std::vector<dynamic> dys;
+key k{"font"};
+for(auto dy : dys) {
+  dy.link(k); <- для более быстрого разрешения
+}
+*/
 struct key {
   // TODO : key chache system
+};
+
+/* так же как и key
+используется в местах
+для оптимизаций
+
+prefetch p{"base","text::"};
+for(auto str : ...) {
+  dynamic dy{"base",str};
+}
+*/
+struct prefetch {
+  // TODO : prefetch chache system
 };
 
 struct dynamic {

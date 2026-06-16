@@ -9,6 +9,8 @@ target_sources(${PROJECT_NAME}_symbol PUBLIC
 	"iuic-symbol-api-private.cppm"
 	"iuic-symbol-api-public.cppm"
 	"iuic-symbol.cppm"
+	PRIVATE
+	"iuic-symbol-api-private-impl.23.cpp"
 )
 
 if(TARGET iuic_std_module)
