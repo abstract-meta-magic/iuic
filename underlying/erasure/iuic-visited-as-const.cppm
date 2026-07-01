@@ -7,16 +7,17 @@ export namespace iuic::erasure {
 
 struct visited::as_const : private visited {
   template <is_pure_type T>
-  as_const(const T &data_)
+  constexpr as_const(const T &data_)
       : visited{static_cast<void *>(const_cast<T *>(std::addressof(data_))),
                 type::from<T>()} {};
-  as_const(visited v) : visited{v} {};
-  template <typename T>
-  as_const(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
+  constexpr as_const(visited v) : visited{v} {};
+  template <is_pure_type T>
+  constexpr as_const(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
 
-  as_const(std::nullptr_t) : visited{nullptr, type::none()} {};
+  constexpr as_const(std::nullptr_t) : visited{nullptr, type::none()} {};
 
-  bool try_visit(func_as_decoy<decoy(const decoy &)> auto &&call) {
+  constexpr bool
+  try_visit(func_as_decoy<decoy(const decoy &)> auto &&call) const {
     using traits = decltype(func_type{call})::traits;
 
     using arg_t = traits::func_args::template arg_t<0>;
@@ -24,7 +25,7 @@ struct visited::as_const : private visited {
 
     const erasure::type *otype = type::from<std::remove_cvref_t<arg_t>>();
 
-    if (otype != type) {
+    if (otype == type) {
       call(*static_cast<arg_ptr>(data));
       return true;
     }
@@ -32,7 +33,7 @@ struct visited::as_const : private visited {
     return false;
   };
 
-  decltype(auto) unsafe_visit(auto &&call) {
+  decltype(auto) unsafe_visit(auto &&call) const {
     using traits = decltype(func_type{call})::traits;
 
     using arg_t = traits::func_args::template arg_t<0>;
@@ -52,7 +53,7 @@ struct visited::as_const : private visited {
     return call(*static_cast<arg_ptr>(data));
   };
 
-  auto try_visit_opt(func_as_decoy<decoy(const decoy &)> auto &&call) {
+  auto try_visit_opt(func_as_decoy<decoy(const decoy &)> auto &&call) const {
     using traits = decltype(func_type{call})::traits;
 
     using arg_t = traits::func_args::template arg_t<0>;
@@ -69,7 +70,7 @@ struct visited::as_const : private visited {
     }
   }
 
-  bool visit_any(func_as_decoy<decoy(const decoy &)> auto &&...calls) {
+  bool visit_any(func_as_decoy<decoy(const decoy &)> auto &&...calls) const {
     return (try_visit(std::forward<decltype(calls)>(calls)) || ...);
   };
 

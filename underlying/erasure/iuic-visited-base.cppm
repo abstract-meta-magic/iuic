@@ -15,25 +15,27 @@ struct visited {
   struct as_garbage;
   struct as_factory;
 
-  template <typename T> bool as() const noexcept;
+  template <is_pure_type T> bool as() const noexcept {
+    return type::from<T>() == type;
+  };
 
-  bool as(const type *) const noexcept;
+  bool as(const type *t) const noexcept { return t == type; };
 
   template <is_pure_type T>
-  visited(const T &data_)
+  constexpr visited(const T &data_)
       : data{static_cast<void *>(const_cast<T *>(std::addressof(data_)))},
         type{type::from<T>()} {};
   // TODO : add ctor from rvalue is bad idia ?
 
   template <is_pure_type T>
-  visited(const T *data_)
+  constexpr visited(const T *data_)
       : data{static_cast<void *>(const_cast<T *>(data_))},
         type{type::from<T>()} {};
 
-  visited(const void *data_, const type *type_)
+  constexpr visited(const void *data_, const type *type_)
       : data{const_cast<void *>(data_)}, type{type_} {};
 
-  visited(std::nullptr_t) : data{nullptr}, type{type::none()} {};
+  constexpr visited(std::nullptr_t) : data{nullptr}, type{type::none()} {};
 
 private:
   void *data;

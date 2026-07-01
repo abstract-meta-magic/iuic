@@ -44,7 +44,16 @@ template <is_pure_type T> consteval move_ctor_fptr get_move_ctor_for() {
 };
 
 struct type {
-  template <is_pure_type T> static const type *from() {
+private:
+  constexpr type(const void *id_, bool td, std::size_t s, std::size_t a,
+                 std::size_t lt, dtor_fptr dtor_, deleter_fptr deleter_,
+                 copy_ctor_fptr copy_ctor_, move_ctor_fptr move_ctor_) noexcept
+      : id{id_}, trivial_dctor{td}, size{s}, align{a}, livetime{lt},
+        dtor{dtor_}, deleter{deleter_}, copy_ctor{copy_ctor_},
+        move_ctor{move_ctor_} {};
+
+public:
+  template <is_pure_type T> static constexpr const type *from() {
 
     if constexpr (requires() {
                     { T::livetime } -> std::convertible_to<std::size_t>;
@@ -73,12 +82,9 @@ struct type {
     }
   };
 
-  static const type *none() {
-    struct _ {};
-    return from<_>();
-  };
+  static constexpr const type *none() { return from<std::nullptr_t>(); };
 
-  const void *const id;
+  const void *id;
   const bool trivial_dctor;
   const std::size_t size;
   const std::size_t align;
@@ -89,11 +95,5 @@ struct type {
   copy_ctor_fptr copy_ctor;
   move_ctor_fptr move_ctor;
   // conts *type inner...or...child
-private:
-  constexpr type(const void *const i, bool td, std::size_t s, std::size_t a,
-                 std::size_t lt, dtor_fptr dtor_, deleter_fptr deleter_,
-                 copy_ctor_fptr copy_ctor_, move_ctor_fptr move_ctor_) noexcept
-      : id{i}, trivial_dctor{td}, size{s}, align{a}, livetime{lt}, dtor{dtor_},
-        deleter{deleter_}, copy_ctor{copy_ctor_}, move_ctor{move_ctor_} {};
 };
 }; // namespace iuic::erasure

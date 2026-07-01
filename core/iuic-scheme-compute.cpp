@@ -191,6 +191,13 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
            layout_tree, tree::iterator_type<tree::base_iterator>{}}) {
     tree::access_iterator{tree::shift(b.begin(), el)}->area =
         tree::access_iterator{el}->arrange;
+    {
+      // BAG
+      // TODO : copy meta
+      auto &c_meta = tree::access_iterator{tree::shift(b.begin(), el)}->meta;
+      auto &bp_meta = tree::access_iterator{el}->meta;
+      c_meta.set(c_meta.discarded, bp_meta.is_discarded());
+    }
 
     tree::access_iterator{tree::shift(b.begin(), el)}->text =
         tree::access_iterator{el}->text;

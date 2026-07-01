@@ -94,6 +94,12 @@ export struct pointer {
   // old\current ???
 };
 
+export struct state {
+  utils utils;
+  enum { attach, detach } type;
+  iuic::state::value value;
+};
+
 template <typename T> struct pkg_source {
   struct pkg_meta meta;
   const erasure::type *type;

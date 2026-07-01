@@ -84,9 +84,34 @@ struct size {
 };
 } // namespace adaptive
 
-struct indent {
-  adaptive::unit top{upixel{0}}, bottom{upixel{0}}, left{upixel{0}},
-      right{upixel{0}};
+// template use for lock cast
+template <typename T> struct tblr_adaptr_crtp {
+  adaptive::unit top{ui::none{}}, bottom{ui::none{}}, left{ui::none{}},
+      right{ui::none{}};
+
+  constexpr T &operator=(this auto &self, const adaptive::unit &unit) {
+    self.top = unit;
+    self.bottom = unit;
+    self.left = unit;
+    self.right = unit;
+    return self;
+  };
+
+  constexpr T &operator=(this auto &self, adaptive::unit &&unit) {
+    self.top = unit;
+    self.bottom = unit;
+    self.left = unit;
+    self.right = unit;
+    return self;
+  };
+};
+
+struct indent : tblr_adaptr_crtp<indent> {
+  using tblr_adaptr_crtp<indent>::operator=;
+};
+
+struct rounding : tblr_adaptr_crtp<rounding> {
+  using tblr_adaptr_crtp<rounding>::operator=;
 };
 
 struct aspect_ratio {

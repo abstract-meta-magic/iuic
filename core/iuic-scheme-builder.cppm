@@ -124,13 +124,16 @@ struct builder_memory_interface : protected virtual builder_base {
                            insert_iterator it_, struct builder &builder_)
       : builder_base{tenv_, penv_, it_, builder_} {}
 
+  // TODO : MB replace to decoy
   template <typename T>
-  void try_visit(units::uid uid, std::invocable<T &> auto &&call);
+  bool try_visit(units::uid uid, std::invocable<T &> auto &&call);
 
   void init_if_not(units::uid uid, std::invocable<> auto &&call);
 
   template <typename T>
   void persist(units::uid uid, std::type_identity<T> = {});
+
+  template <typename T> T &tmp(T &&);
 };
 
 struct builder_event_interface : protected virtual builder_base {
@@ -189,6 +192,12 @@ struct builder_event_interface : protected virtual builder_base {
         .call = std::forward<decltype(e)>(e)};
 
     tenv.event.emit<iuic::proto::base::event::global>(src);
+  };
+
+  // должен иметь поддержку внутри библиотеки
+  void state(units::uid obj,
+             std::invocable<iuic::proto::base::event::state &> auto &&e) {
+    // TODO : DO IMPL
   };
 
   // custom
@@ -550,6 +559,12 @@ style::sid builder_style_interface::make(style::sid sid,
 };
 
 // ---- IMPL [memory] ----
+template <typename T> T &builder_memory_interface::tmp(T &&value) {
+  T *ptr = static_cast<T *>(tenv.memory.allocate(sizeof(T), alignof(T)));
+  new (ptr) T{std::move(value)};
+  return *ptr;
+};
+
 template <typename T>
 void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
   auto state = penv.object.state<T>(uid);
@@ -560,7 +575,7 @@ void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
 };
 
 template <typename T>
-void builder_memory_interface::try_visit(units::uid uid,
+bool builder_memory_interface::try_visit(units::uid uid,
                                          std::invocable<T &> auto &&call) {
   return penv.object.get(uid).try_visit(std::forward<decltype(call)>(call));
 };

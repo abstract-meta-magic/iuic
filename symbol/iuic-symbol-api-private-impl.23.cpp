@@ -50,9 +50,10 @@ struct alignas(128) index_ll {
   std::uint8_t str[str_size];
 };
 
+struct symbol_table {};
+
 // дерево символов\ссылок + index в symbol_data
 // для поиска и разрешения
-struct scheme {};
 
 struct symbol_location {
   std::int64_t offset;
@@ -65,6 +66,16 @@ struct symbol_data {
   const std::uint8_t *data;
 };
 
+struct rcu_block {};
+
+struct alignas(16) scheme {
+  std::atomic<std::uint64_t> default_symbol_data_index; // table + symdata
+  std::atomic<std::uint64_t> pack_symbol_data_index;
+  // важно всегда атомарно выставлять сначала
+  // default и только потом pack(если есть)
+  // default - как атомарный индикатор готовности
+};
+
 struct resolution_table {
   std::vector<std::size_t> result; // slot + link
   std::size_t links_offset;
@@ -73,25 +84,72 @@ struct resolution_table {
 struct prediction {
   std::vector<slot> slot;
   std::vector<link> link; // later
+
+  // добавить слот
+  // добавить в слот ссылку
+  // получить слот
+  // получить сслку из слота
+};
+
+// Нужно больше почитать про RCU
+struct access_block {
+  std::uint64_t prediction;
+  std::uint64_t resolution;
+  std::uint64_t scheme;
 };
 
 // prediction - resolution   - scheme
 // slot       - index\offset - symbol
 
+struct page {};
+
+struct page_allocator {
+  static constexpr std::size_t segment_size{1024 * 64};
+
+  page *allocate(std::size_t);
+
+  void deallocate(page *);
+} epoch_page_allocator; // ~2M ?
+
 struct {
-  std::vector<prediction> pre;
-} scheme_registry;
+} prediction_store;
+
+struct {
+} resolution_store;
+
+struct {
+} scheme_store;
+
+struct {
+} epoch;
+
+struct {
+  iuic::symbol::scheme_handle get_scheme_handle(std::string_view);
+  iuic::symbol::slot_handle get_slot_handle(iuic::symbol::scheme_handle,
+                                            std::string_view);
+  iuic::symbol::link_handle get_link_handle(iuic::symbol::scheme_handle,
+                                            iuic::symbol::slot_handle,
+                                            std::string_view);
+  // all maps here
+} handle_registry;
 
 }; // namespace
 
 namespace iuic::symbol::api {
 
-scheme_handle reserve_scheme(std::string_view);
+scheme_handle reserve_scheme(std::string_view alias) {
+  return handle_registry.get_scheme_handle(alias);
+};
 
-slot_handle reserve_slot(scheme_handle, std::string_view);
+slot_handle reserve_slot(scheme_handle scheme, std::string_view alias) {
+  return handle_registry.get_slot_handle(scheme, alias);
+};
 
 // return link id
-link_handle reserve_slot_link(scheme_handle, slot_handle, std::string_view str);
+link_handle reserve_slot_link(scheme_handle scheme, slot_handle slot,
+                              std::string_view alias) {
+  return handle_registry.get_link_handle(scheme, slot, alias);
+};
 
 std::size_t slot_links_count(scheme_handle, slot_handle);
 

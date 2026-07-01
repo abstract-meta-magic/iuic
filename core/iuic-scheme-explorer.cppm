@@ -175,7 +175,7 @@ export struct explorer {
       // do element job
       self().tenv->event.query<proto::base::event::local>([&](auto &q) {
         q.meta([&](proto::base::event::pkg_meta &meta) {
-           return self().penv->state.has(meta.obj, proto::base::state::local);
+           return self().penv->state.has(meta.owner, proto::base::state::local);
          })
             .template type<proto::base::event::key>()
             .trigger(key, self().penv, self().tenv);
@@ -190,7 +190,7 @@ export struct explorer {
       // do element job
       self().tenv->event.query<proto::base::event::local>([&](auto &q) {
         q.meta([&](proto::base::event::pkg_meta &meta) {
-           return self().penv->state.has(meta.obj, proto::base::state::local);
+           return self().penv->state.has(meta.owner, proto::base::state::local);
          })
             .template type<proto::base::event::pointer>()
             .trigger(pointer, self().penv, self().tenv);

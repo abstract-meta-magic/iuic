@@ -61,18 +61,7 @@ struct shape {
 
 // limit 64
 struct decoration {
-  struct {
-    struct {
-      units::ui::adaptive::unit left{units::ui::none{}};
-      units::ui::adaptive::unit right{units::ui::none{}};
-    } top;
-    struct {
-      units::ui::adaptive::unit left{units::ui::none{}};
-      units::ui::adaptive::unit right{units::ui::none{}};
-    } bottom;
-    units::color color;
-  } border_radius; // decorations
-
+  units::ui::rounding rounding;
   units::ui::fill background{units::ui::none{}};
   units::ui::fill foreground{units::ui::none{}};
   units::ui::fill border{units::ui::none{}};

@@ -5,21 +5,23 @@ export module iuic.underlying.utils:external;
 import std;
 import :decl;
 
+// TODO : need full REWORK
+// Чего я хочу
+// runtime\ct дискрипторы
+// для возможности ссылаться на ассеты или ресурсы
 export namespace iuic::external {
+namespace type {
+using decl = utils::ctype<utils::anonim_tag()>;
 
-using type = utils::ctype<utils::anonim_tag()>;
+struct value {
+  constexpr auto operator<=>(const value &) const = default;
+  const decl *decl{nullptr};
+};
+}; // namespace type
 
-constexpr inline type extern_null{};
-
-struct binding {
-
-  constexpr virtual ~binding() = default;
-
-  constexpr virtual const type &type() const noexcept { return extern_null; };
-
-  constexpr virtual std::string_view info() const noexcept {
-    return "Extern binding interface";
-  };
+struct binding final {
+  type::value type;
+  erasure::visited::as_const args;
 };
 
 namespace capabilities {

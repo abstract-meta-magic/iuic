@@ -5,6 +5,7 @@ import :visited.base;
 
 export namespace iuic::erasure {
 
+// TODO : make contsexpr
 struct visited::as_mutable : private visited {
   template <is_pure_type T>
   as_mutable(const T &data_)
