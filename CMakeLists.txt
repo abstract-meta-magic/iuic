@@ -54,3 +54,5 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 
 ## Main alias
 add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
+
+# target_compile_options(${PROJECT_NAME}_core PRIVATE -O2)

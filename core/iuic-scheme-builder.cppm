@@ -46,6 +46,9 @@ protected: // builder unit stack
 
 struct builder_element_interface : protected virtual builder_base {
 
+  // TODO :
+  // Разделить 64 hash на 32(группа)|32(елемент)
+
   builder_element_interface(environment::tmp &tenv_,
                             environment::persist &penv_, insert_iterator it_,
                             struct builder &builder_)
@@ -92,9 +95,7 @@ struct builder_policy_interface : protected virtual builder_base {
                            insert_iterator it_, struct builder &builder_)
       : builder_base{tenv_, penv_, it_, builder_} {}
 
-  void hovered(policy::hovered p);
-
-  void event(policy::event p);
+  void set(auto p);
 };
 
 struct builder_uid_interface : protected virtual builder_base {
@@ -600,10 +601,15 @@ void builder_memory_interface::init_if_not(units::uid uid,
 const text::raw::token &
 builder_text_interface::static_token(text::atlas::id id,
                                      std::string_view text) {
+  struct data {
+    text::raw::token token;
+    std::vector<iuic::text::glyph::id_t> memory;
+  };
+
   static text::raw::token inv{.atlas_id = text::atlas::invalid_id};
   static std::unordered_map<text::atlas::id,
-                            std::unordered_map<std::string, text::raw::token>>
-      chache;
+                            std::unordered_map<std::string, data>>
+      cache;
   auto &atlas = text::atlas::by_id(id);
 
   if (atlas.get_id() == text::atlas::invalid_id || text.size() > 50) {
@@ -611,10 +617,10 @@ builder_text_interface::static_token(text::atlas::id id,
   }
 
   if (atlas.decoder->capabilities().is_std_char_support()) {
-    if (auto map = chache.find(id); map != chache.end()) {
+    if (auto map = cache.find(id); map != cache.end()) {
       if (auto token = map->second.find(std::string{text});
           token != map->second.end()) {
-        return token->second;
+        return token->second.token;
       }
     }
     // wrap to try-block ??
@@ -622,9 +628,16 @@ builder_text_interface::static_token(text::atlas::id id,
 
     text::raw::token tk{.atlas_id = id, .glyphs = res};
 
-    auto it = chache[id].insert({std::string{text}, std::move(tk)});
+    auto it = cache[id].insert({std::string{text}, {}});
 
-    return it.first->second;
+    if (it.second) {
+      auto &d = it.first->second;
+      d.memory = res;
+      d.token.atlas_id = id;
+      d.token.glyphs = d.memory;
+    }
+
+    return it.first->second.token;
   }
 
   return inv;
@@ -632,20 +645,44 @@ builder_text_interface::static_token(text::atlas::id id,
 
 // UTF-8
 const text::raw::token &
-builder_text_interface::dynamic_token(text::atlas::id, std::string_view) {
+builder_text_interface::dynamic_token(text::atlas::id id,
+                                      std::string_view text) {
   static text::raw::token inv{.atlas_id = text::atlas::invalid_id};
+
+  auto &atlas = text::atlas::by_id(id);
+
+  if (atlas.get_id() == text::atlas::invalid_id || text.size() > 50) {
+    return inv;
+  }
+
+  if (atlas.decoder->capabilities().is_std_char_support()) {
+    auto res = atlas.decoder->decode(text); // exceptions
+
+    text::raw::token tk{.atlas_id = id, .glyphs = res};
+
+    auto *tk_mem = static_cast<text::raw::token *>(tenv.memory.allocate(
+        sizeof(text::raw::token), alignof(text::raw::token)));
+
+    auto *gl_mem = static_cast<text::glyph::id_t *>(tenv.memory.allocate(
+        sizeof(text::glyph::id_t), alignof(text::glyph::id_t), res.size()));
+
+    if (gl_mem) {
+      for (std::size_t i{0}; i < res.size(); ++i) {
+        gl_mem[i] = res[i];
+      }
+    }
+
+    tk_mem->atlas_id = id;
+    tk_mem->glyphs = {gl_mem, res.size()};
+
+    return *tk_mem;
+  }
+
   return inv;
 };
 // ---- IMPL [policy] ----
 
-void builder_policy_interface::hovered(policy::hovered h) {
-  // TODO : fixme
-  // tenv.policy.set(tree::access_iterator{it}->uid, h);
+void builder_policy_interface::set(auto p) {
+  tenv.policy.set(tree::access_iterator{it}->uid, p);
 };
-
-void builder_policy_interface::event(policy::event e) {
-  // TODO : fixme
-  // tenv.policy.set(tree::access_iterator{it}->uid, e);
-};
-
 }; // namespace iuic::scheme

@@ -9,9 +9,11 @@ import :glyph;
 export namespace iuic::text {
 
 namespace raw {
+
+// NO OWN
 struct token {
   std::size_t atlas_id;
-  std::vector<glyph::id_t> glyphs;
+  std::span<const glyph::id_t> glyphs;
 };
 }; // namespace raw
 namespace present {

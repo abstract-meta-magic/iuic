@@ -20,7 +20,35 @@ template <const channel &CH> struct query {
       return result{res};
     };
 
-    result meta(auto &&call);
+    result meta(auto &&call) {
+      std::vector<package> res;
+
+      std::copy_if(
+          pkgs.begin(), pkgs.end(), std::back_inserter(res), [&](package &pkg) {
+            return pkg.meta.try_visit_opt(std::forward<decltype(call)>(call))
+                .value_or(false);
+          });
+
+      return result{res};
+    };
+
+    result &reverse() && {
+      std::reverse(pkgs.begin(), pkgs.end());
+      return *this;
+    };
+
+    result break_after(auto &&call) {
+      auto it = std::find_if(pkgs.begin(), pkgs.end(), [&](package &pkg) {
+        return pkg.meta.try_visit_opt(std::forward<decltype(call)>(call))
+            .value_or(false);
+      });
+
+      if (it != pkgs.end()) {
+        return result{std::vector<package>{pkgs.begin(), it + 1}};
+      } else {
+        return result{pkgs};
+      }
+    };
 
     template <typename... ARGS> void trigger(ARGS... args) {
       for (auto pkg : pkgs) {

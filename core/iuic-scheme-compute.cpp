@@ -144,6 +144,7 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
                tree::iterator_type<tree::access_iterator>{}}) {
         ch->meta.set_discarded();
       };
+      continue;
     };
 
     std::visit(

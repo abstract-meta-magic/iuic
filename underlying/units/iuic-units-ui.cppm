@@ -4,6 +4,7 @@
 export module iuic.underlying.units:ui;
 import std;
 import iuic.underlying.utils;
+import iuic.underlying.erasure;
 import :decl;
 import :op;
 
@@ -15,6 +16,9 @@ struct upm {
 };
 
 namespace ui {
+
+struct copy {};
+
 struct zorder {
   std::uint16_t group;
   std::uint16_t priority;
@@ -69,7 +73,7 @@ struct inherit {};
 
 struct adapt {};
 
-using fill = std::variant<none, color, external::binding>;
+using fill = std::variant<none, color, iuic::erasure::visited>;
 
 struct border_radius {
   // TODO : body
@@ -89,15 +93,7 @@ template <typename T> struct tblr_adaptr_crtp {
   adaptive::unit top{ui::none{}}, bottom{ui::none{}}, left{ui::none{}},
       right{ui::none{}};
 
-  constexpr T &operator=(this auto &self, const adaptive::unit &unit) {
-    self.top = unit;
-    self.bottom = unit;
-    self.left = unit;
-    self.right = unit;
-    return self;
-  };
-
-  constexpr T &operator=(this auto &self, adaptive::unit &&unit) {
+  constexpr T &operator=(this auto &self, adaptive::unit unit) {
     self.top = unit;
     self.bottom = unit;
     self.left = unit;
@@ -110,8 +106,138 @@ struct indent : tblr_adaptr_crtp<indent> {
   using tblr_adaptr_crtp<indent>::operator=;
 };
 
-struct rounding : tblr_adaptr_crtp<rounding> {
-  using tblr_adaptr_crtp<rounding>::operator=;
+struct rounding {
+  adaptive::unit av{ui::none{}}, ah{ui::none{}}, bv{ui::none{}}, bh{ui::none{}},
+      cv{ui::none{}}, ch{ui::none{}}, dv{ui::none{}}, dh{ui::none{}};
+
+  constexpr auto ab() {
+    struct _ {
+      constexpr _(rounding &r) : value{r} {};
+      constexpr _ &operator=(adaptive::unit rhs) {
+        value.av = rhs;
+        value.ah = rhs;
+        value.bv = rhs;
+        value.bh = rhs;
+        return *this;
+      };
+
+    private:
+      rounding &value;
+    };
+
+    return _{*this};
+  };
+
+  constexpr auto cd() {
+    struct _ {
+      constexpr _(rounding &r) : value{r} {};
+      constexpr _ &operator=(adaptive::unit rhs) {
+        value.cv = rhs;
+        value.ch = rhs;
+        value.dv = rhs;
+        value.dh = rhs;
+        return *this;
+      };
+
+    private:
+      rounding &value;
+    };
+
+    return _{*this};
+  };
+
+  constexpr auto ac() {
+    struct _ {
+      constexpr _(rounding &r) : value{r} {};
+      constexpr _ &operator=(adaptive::unit rhs) {
+        value.av = rhs;
+        value.ah = rhs;
+        value.cv = rhs;
+        value.ch = rhs;
+        return *this;
+      };
+
+    private:
+      rounding &value;
+    };
+    return _{*this};
+  };
+
+  constexpr auto bd() {
+    struct _ {
+      constexpr _(rounding &r) : value{r} {};
+      constexpr _ &operator=(adaptive::unit rhs) {
+        value.bv = rhs;
+        value.bh = rhs;
+        value.dv = rhs;
+        value.dh = rhs;
+        return *this;
+      };
+
+    private:
+      rounding &value;
+    };
+
+    return _{*this};
+  };
+
+  constexpr auto h() {
+    struct _ {
+      constexpr _(rounding &r) : value{r} {};
+      constexpr _ &operator=(adaptive::unit rhs) {
+        value.ah = rhs;
+        value.bh = rhs;
+        value.ch = rhs;
+        value.dh = rhs;
+        return *this;
+      };
+
+    private:
+      rounding &value;
+    };
+
+    return _{*this};
+  };
+
+  constexpr auto v() {
+    struct _ {
+      constexpr _(rounding &r) : value{r} {};
+      constexpr _ &operator=(adaptive::unit rhs) {
+        value.av = rhs;
+        value.bv = rhs;
+        value.cv = rhs;
+        value.dv = rhs;
+        return *this;
+      };
+
+    private:
+      rounding &value;
+    };
+
+    return _{*this};
+  };
+
+  constexpr auto abcd() {
+    struct _ {
+      constexpr _(rounding &r) : value{r} {};
+      constexpr _ &operator=(adaptive::unit rhs) {
+        value.av = rhs;
+        value.ah = rhs;
+        value.bv = rhs;
+        value.bh = rhs;
+        value.cv = rhs;
+        value.ch = rhs;
+        value.dv = rhs;
+        value.dh = rhs;
+        return *this;
+      };
+
+    private:
+      rounding &value;
+    };
+
+    return _{*this};
+  };
 };
 
 struct aspect_ratio {

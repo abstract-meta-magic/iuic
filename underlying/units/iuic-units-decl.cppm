@@ -13,9 +13,26 @@ enum class percent : std::uint8_t {};
 // global setted segment size in upixel
 enum class segment : std::uint32_t {};
 
+// view height
 enum class vh : std::uint8_t {};
 
+// view width
 enum class vw : std::uint8_t {};
+
+// parent height : TODO IMPL
+enum class ph : std::uint8_t {};
+
+// parent width : TODO IMPL
+enum class pw : std::uint8_t {};
+
+/*
+  еще нужно добавить
+
+
+  большая сторона у view,parent
+  меньшая сторона у view,parent
+
+ */
 
 enum class pixel : std::int32_t {};
 
@@ -88,6 +105,8 @@ consteval inline color operator""_rgb8(const char *cstr, std::size_t size) {
     return {0, 0, 0, 255};
   } else if (name == "white") {
     return {255, 255, 255, 255};
+  } else if (name == "red") {
+    return {255, 0, 0, 255};
   } else if (name == "pink") {
     return {255, 139, 150, 255};
   } else if (name == "orange") {
@@ -110,6 +129,5 @@ consteval inline color operator""_rgb8(const char *cstr, std::size_t size) {
     throw "Undefined color";
   }
 };
-
 }; // namespace literals
 }; // namespace iuic::units

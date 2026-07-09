@@ -41,9 +41,8 @@ export struct explorer {
       return el.meta.has(el.meta.discarded);
     }
 
-    policy::hovered hovered_policy(iterators::base it) {
-      // TODO : fixme
-      return {};
+    template <typename T> T policy(iterators::base it) {
+      return self().tenv->policy.get<T>(self().get_uid(it));
     };
 
     bool has_text(iterators::base it) {
@@ -173,11 +172,24 @@ export struct explorer {
         iuic::query::expr<proto::base::query::tag::event_local, Ts...> expr,
         units::keycode key) {
       // do element job
+
+      // TODO : Rework
       self().tenv->event.query<proto::base::event::local>([&](auto &q) {
         q.meta([&](proto::base::event::pkg_meta &meta) {
            return self().penv->state.has(meta.owner, proto::base::state::local);
          })
             .template type<proto::base::event::key>()
+            // .order(); sort by order (index + zorder) later
+            .reverse()
+            .break_after([&](proto::base::event::pkg_meta &meta) {
+              bool res =
+                  self().tenv->policy.get<iuic::proto::base::policy::event>(
+                      meta.owner) == iuic::proto::base::policy::event::block;
+              if (res) {
+                std::println("try block");
+              }
+              return res;
+            })
             .trigger(key, self().penv, self().tenv);
         // add expr eval
       });

@@ -9,6 +9,16 @@ import iuic.env;
 import iuic.state;
 
 namespace iuic::proto::base {
+// base define state
+namespace policy {
+export enum class hovered : std::uint8_t {
+  none,
+  propagate,
+  block,
+};
+
+export enum class event : std::uint8_t { none, propagate, block };
+}; // namespace policy
 
 // base define state
 namespace state {
