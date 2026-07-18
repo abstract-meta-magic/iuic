@@ -23,6 +23,7 @@ concept is_query_tag =
     std::is_base_of_v<tag, T> ||
     std::same_as<typename std::remove_cvref_t<T>::type_tag, tag>;
 
+// template <is_query_tag T, is_query_branch = no_branch, is_query_type... Ts>
 template <is_query_tag T, is_query_type... Ts> struct expr {
 
   constexpr expr() {};
@@ -41,9 +42,9 @@ template <is_query_tag T, is_query_type... Ts> struct expr {
     return std::get<index>(value);
   };
 
-  constexpr bool unroll(auto &&call) {
+  constexpr bool unroll(auto &&call) const {
     return [&]<std::size_t... I>(std::index_sequence<I...>) {
-      return (call(at<I>()) | ...);
+      return (call(at<I>()...));
     }(index_sequence());
   };
 
@@ -104,6 +105,7 @@ std::tuple<EXPR...> expr;
 struct branch {
 std::tuple<EXPR...> expr;
 // bind
+
 };
 */
 }; // namespace iuic::query

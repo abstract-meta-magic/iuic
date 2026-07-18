@@ -6,7 +6,7 @@ import :pool;
 import :dispatcher;
 
 namespace iuic::event {
-template <const channel &CH> struct query {
+export template <const channel &CH> struct query {
   // struct proxy for query result
 
   struct result {

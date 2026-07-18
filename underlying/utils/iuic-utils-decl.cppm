@@ -39,7 +39,7 @@ protected:
     if constexpr (offset == 0) {
       return *static_cast<Owner *>(static_cast<void *>(this));
     } else {
-      void *adv_ptr = static_cast<char *>(this) - offset;
+      void *adv_ptr = static_cast<char *>(static_cast<void *>(this)) - offset;
       return *static_cast<Owner *>(adv_ptr);
     }
   };

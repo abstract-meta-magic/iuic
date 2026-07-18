@@ -9,7 +9,7 @@ import iuic.text;
 import iuic.event;
 import :policy;
 import :scheme.base;
-import :proto.base;
+// import :proto.base;
 
 export namespace iuic::scheme {
 
@@ -42,6 +42,7 @@ protected: // builder unit stack
   insert_iterator it;
   builder &builder;
   std::vector<std::size_t> unique_uid;
+  std::uint32_t index{0};
 };
 
 struct builder_element_interface : protected virtual builder_base {
@@ -142,63 +143,8 @@ struct builder_event_interface : protected virtual builder_base {
                           insert_iterator it_, struct builder &builder_)
       : builder_base{tenv_, penv_, it_, builder_} {}
 
-  void local(units::uid obj,
-             std::invocable<iuic::proto::base::event::key &> auto &&e) {
-
-    iuic::proto::base::event::pkg_meta meta{
-        .owner = tree::access_iterator{it}->uid, .obj = obj};
-
-    iuic::proto::base::event::pkg_source src{
-        .meta = meta,
-        .type = erasure::type::from<iuic::proto::base::event::key>(),
-        .call = std::forward<decltype(e)>(e)};
-
-    tenv.event.emit<iuic::proto::base::event::local>(src);
-  };
-
-  void local(units::uid obj,
-             std::invocable<iuic::proto::base::event::pointer &> auto &&e) {
-    iuic::proto::base::event::pkg_meta meta{
-        .owner = tree::access_iterator{it}->uid, .obj = obj};
-
-    iuic::proto::base::event::pkg_source src{
-        .meta = meta,
-        .type = erasure::type::from<iuic::proto::base::event::pointer>(),
-        .call = std::forward<decltype(e)>(e)};
-
-    tenv.event.emit<iuic::proto::base::event::local>(src);
-  };
-
-  void global(units::uid obj,
-              std::invocable<iuic::proto::base::event::key &> auto &&e) {
-    iuic::proto::base::event::pkg_meta meta{
-        .owner = tree::access_iterator{it}->uid, .obj = obj};
-
-    iuic::proto::base::event::pkg_source src{
-        .meta = meta,
-        .type = erasure::type::from<iuic::proto::base::event::key>(),
-        .call = std::forward<decltype(e)>(e)};
-
-    tenv.event.emit<iuic::proto::base::event::global>(src);
-  };
-
-  void global(units::uid obj,
-              std::invocable<iuic::proto::base::event::pointer &> auto &&e) {
-    iuic::proto::base::event::pkg_meta meta{
-        .owner = tree::access_iterator{it}->uid, .obj = obj};
-
-    iuic::proto::base::event::pkg_source src{
-        .meta = meta,
-        .type = erasure::type::from<iuic::proto::base::event::pointer>(),
-        .call = std::forward<decltype(e)>(e)};
-
-    tenv.event.emit<iuic::proto::base::event::global>(src);
-  };
-
-  // должен иметь поддержку внутри библиотеки
-  void state(units::uid obj,
-             std::invocable<iuic::proto::base::event::state &> auto &&e) {
-    // TODO : DO IMPL
+  template <const iuic::event::channel &ch> void emit(auto &&data) {
+    tenv.event.emit<ch>(data);
   };
 
   // custom
@@ -346,7 +292,8 @@ void builder_element_interface::frame(style::sid sid_,
       sketch::value_t{.layout = &layout,
                       .uid = ait ? ait->uid : units::uid{0},
                       .sid = sid_,
-                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
+                      .order = ait ? units::ui::order{index++, ait->order.layer}
+                                   : units::ui::order{index++, 0}});
 
   std::swap(nit, it);
   call(builder);
@@ -362,7 +309,8 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
       sketch::value_t{.layout = &layout_,
                       .uid = uid_,
                       .sid = sid_,
-                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
+                      .order = ait ? units::ui::order{index++, ait->order.layer}
+                                   : units::ui::order{index++, 0}});
 
   std::swap(nit, it);
   call(builder);
@@ -376,7 +324,8 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
       sketch::value_t{.layout = &layout_,
                       .uid = uid_,
                       .sid = sid_,
-                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
+                      .order = ait ? units::ui::order{index++, ait->order.layer}
+                                   : units::ui::order{index++, 0}});
 };
 
 void builder_element_interface::frame(style::sid sid_,
@@ -388,7 +337,8 @@ void builder_element_interface::frame(style::sid sid_,
       sketch::value_t{.layout = &layout_,
                       .uid = ait ? ait->uid : units::uid{0},
                       .sid = sid_,
-                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0}});
+                      .order = ait ? units::ui::order{index++, ait->order.layer}
+                                   : units::ui::order{index++, 0}});
 };
 
 void builder_element_interface::text(const iuic::text::raw::token &token,
@@ -400,7 +350,8 @@ void builder_element_interface::text(const iuic::text::raw::token &token,
       .layout = &layout_,
       .uid = ait ? ait->uid : units::uid{0},
       .sid = sid_,
-      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0},
+      .order = ait ? units::ui::order{index++, ait->order.layer}
+                   : units::ui::order{index++, 0},
       .text = {&token, 1} // SINGLE TOKEN SPAN
   });
 };
@@ -414,7 +365,8 @@ void builder_element_interface::text(
       sketch::value_t{.layout = &layout_,
                       .uid = ait ? ait->uid : units::uid{0},
                       .sid = iuic::style::sid{0},
-                      .zorder = ait ? ait->zorder : units::ui::zorder{0, 0},
+                      .order = ait ? units::ui::order{index++, ait->order.layer}
+                                   : units::ui::order{index++, 0},
                       .text = tokens
 
       });

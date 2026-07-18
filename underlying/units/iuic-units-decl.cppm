@@ -46,6 +46,11 @@ enum class weight : std::uint64_t {};
 
 enum class keycode : std::uint64_t {};
 
+struct protocol_ptr_t {
+  consteval protocol_ptr_t() noexcept : self{this} {};
+  const protocol_ptr_t *const self;
+};
+
 struct angle {
   // Brads + LUT ???
   enum class impl_t : std::uint16_t {};

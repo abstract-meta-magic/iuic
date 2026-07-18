@@ -19,9 +19,9 @@ namespace ui {
 
 struct copy {};
 
-struct zorder {
-  std::uint16_t group;
-  std::uint16_t priority;
+struct order {
+  std::uint32_t index;
+  std::uint32_t layer;
 };
 
 struct position {
@@ -80,7 +80,7 @@ struct border_radius {
 };
 
 namespace adaptive {
-using unit = std::variant<none, adapt, upixel, percent, vw, vh, segment>;
+using unit = std::variant<none, copy, adapt, upixel, percent, vw, vh, segment>;
 
 struct size {
   unit width;
@@ -89,21 +89,19 @@ struct size {
 } // namespace adaptive
 
 // template use for lock cast
-template <typename T> struct tblr_adaptr_crtp {
+template <typename T> struct tblr_adaptr_crtp {};
+
+struct indent {
   adaptive::unit top{ui::none{}}, bottom{ui::none{}}, left{ui::none{}},
       right{ui::none{}};
 
-  constexpr T &operator=(this auto &self, adaptive::unit unit) {
-    self.top = unit;
-    self.bottom = unit;
-    self.left = unit;
-    self.right = unit;
-    return self;
+  constexpr indent &operator=(adaptive::unit unit) {
+    top = unit;
+    bottom = unit;
+    left = unit;
+    right = unit;
+    return *this;
   };
-};
-
-struct indent : tblr_adaptr_crtp<indent> {
-  using tblr_adaptr_crtp<indent>::operator=;
 };
 
 struct rounding {

@@ -167,6 +167,7 @@ public:
       : name{std::move(other.name)}, glyph__{std::move(other.glyph__)},
         meta__{std::move(other.meta__)}, handler__{nullptr, registry_detach} {
     std::swap(decoder, other.decoder);
+    std::swap(binding, other.binding);
     std::swap(text_height, other.text_height);
     std::swap(baseline_offset, other.baseline_offset);
     std::swap(handler__, other.handler__);
@@ -181,6 +182,7 @@ public:
     std::swap(glyph__, other.glyph__);
     std::swap(meta__, other.meta__);
     std::swap(decoder, other.decoder);
+    std::swap(binding, other.binding);
     std::swap(text_height, other.text_height);
     std::swap(baseline_offset, other.baseline_offset);
     std::swap(handler__, other.handler__);
@@ -234,11 +236,18 @@ struct atlas::builder {
   builder &set_monospace() { return meta__.is_monospace = true, *this; };
 
   template <typename T>
-
   builder &set_decoder(T &&decoder)
     requires std::is_base_of_v<iuic::text::decoder, T>
   {
     decoder__.reset(new T{std::forward<T>(decoder)});
+    return *this;
+  };
+
+  template <typename T>
+  builder &set_binding(T &&binding)
+    requires std::is_base_of_v<iuic::external::binding, T>
+  {
+    binding__.reset(new T{std::forward<T>(binding)});
     return *this;
   };
 
@@ -269,7 +278,9 @@ struct atlas::builder {
 
     res.baseline_offset = baseline_offset__;
     res.text_height = text_height__;
-    res.decoder = std::move(decoder__);
+    res.decoder.swap(decoder__);
+    res.binding.swap(binding__);
+    std::println("FINI bind : {}", (bool)res.binding);
 
     return res;
   };
@@ -278,6 +289,7 @@ struct atlas::builder {
 
 private:
   std::unique_ptr<iuic::text::decoder> decoder__;
+  std::unique_ptr<iuic::external::binding> binding__;
   std::string name;
   iuic::units::upixel text_height__{8};
   iuic::units::upixel baseline_offset__{8};

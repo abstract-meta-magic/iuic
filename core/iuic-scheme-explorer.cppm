@@ -8,10 +8,61 @@ import iuic.state;
 import iuic.style;
 import iuic.event;
 import :policy;
-import :proto.base;
+// import :proto.base;
 import :scheme.base;
 
 namespace iuic::scheme {
+
+namespace query {
+namespace tag {
+
+export struct element : iuic::query::tag {};
+
+export template <const iuic::event::channel &channel__>
+struct event : iuic::query::tag {
+  static constexpr auto &channel = channel__;
+};
+} // namespace tag
+
+export template <const iuic::event::channel &channel__>
+constexpr iuic::query::expr<tag::event<channel__>> event{};
+
+export constexpr iuic::query::expr<tag::element> element;
+
+export struct hit {
+  using type_tag = iuic::query::type;
+  units::ui::position point;
+};
+export struct has_state {
+  using type_tag = iuic::query::type;
+  iuic::state::value state;
+};
+
+export struct valid_t {
+  using type_tag = iuic::query::type;
+} valid;
+
+export template <erasure::is_pure_type T> struct type {
+  using type_tag = iuic::query::type;
+};
+
+export struct state {
+  using type_tag = iuic::query::type;
+  iuic::state::value value;
+};
+
+export template <typename EXPR> struct qnot {
+  using type_tag = iuic::query::type;
+  EXPR expr;
+};
+}; // namespace query
+
+export struct base {
+
+protected:
+  environment::tmp *tenv;
+  environment::persist *penv;
+};
 
 struct explorer_assign {
   blueprint::base_iterator it;
@@ -19,10 +70,73 @@ struct explorer_assign {
   environment::persist *penv;
 };
 
-export struct explorer {
+export struct partition : base {
+  // API
+  partition(base &b, units::uid owner_) : base{b}, owner{owner_} {}
+
+  struct : utils::member_for<partition> {
+    bool has(state::value v) {
+      return self().penv->state.has(self().owner, v);
+    };
+    void attach(state::value v) { self().penv->state.attach(self().owner, v); };
+    void detach(state::value v) { self().penv->state.detach(self().owner, v); };
+  } state{*this};
+
+private:
+  units::uid owner;
+};
+
+export struct capture : base {
+  // API
+  capture(base &b, units::uid owner__, units::uid obj__)
+      : base{b}, owner_{owner__}, obj_{obj__} {}
+
+  struct : utils::member_for<capture> {
+    struct : utils::member_for<capture> {
+      bool has(state::value v) {
+        return self().penv->state.has(self().owner_, v);
+      };
+      void attach(state::value v) {
+        self().penv->state.attach(self().owner_, v);
+      };
+      void detach(state::value v) {
+        self().penv->state.detach(self().owner_, v);
+      };
+    } state{self()};
+
+    struct : utils::member_for<capture> {
+
+    } memory{self()};
+
+    struct : utils::member_for<capture> {
+      // emit ??
+      // only archive(passive) ???
+    } event{self()};
+  } owner{*this};
+
+  struct : utils::member_for<capture> {
+    struct : utils::member_for<capture> {
+      void try_visit(auto &&call) {
+        self()
+            .penv->object.get(self().obj_)
+            .try_visit(std::forward<decltype(call)>(call));
+      };
+    } memory{self()};
+  } obj{*this};
+
+private:
+  units::uid owner_;
+  units::uid obj_;
+};
+
+export struct explorer : base {
   struct : utils::member_for<explorer> {
     style::value style(iterators::base it) {
       return self().tenv->style.get(self().get_sid(it));
+    };
+
+    units::ui::order order(iterators::base it) {
+      return self().get_element(it).order;
     };
 
     const units::ui::area &area(iterators::base it) {
@@ -100,137 +214,82 @@ export struct explorer {
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
-  private:
-    static constexpr bool eval(const proto::base::query::hit &hit,
-                               blueprint::access_iterator it,
-                               environment::persist &penv) {
-      auto in__ = [](const units::ui::rect area,
-                     const units::ui::position pointer) static constexpr {
-        return pointer.x >= area.x && pointer.x <= area.x + area.w &&
-               pointer.y >= area.y && pointer.y <= area.y + area.h;
-      };
+    // TODO : REIMPL
 
-      return in__(tree::access_iterator{it}->area.bordered, hit.point);
-    };
-
-    static constexpr bool eval(proto::base::query::valid_t _,
-                               blueprint::access_iterator it,
-                               environment::persist &penv) {
-      return not it->meta.has(it->meta.discarded);
-    };
-    static constexpr bool eval(const proto::base::query::has_state &st,
-                               blueprint::access_iterator it,
-                               environment::persist &penv) {
-      return penv.state.has(it->uid, st.state);
-    };
-
-    template <typename T>
-    static constexpr bool eval(const iuic::query::qnot<T> &expr,
-                               blueprint::access_iterator it,
-                               environment::persist &penv) {
-      return not eval(expr.expr, it, penv);
-    };
-
-  public:
-    template <const event::channel &EC, typename... Ts, typename... ARGS>
-    decltype(auto) operator()(
-        iuic::query::expr<proto::base::query::tag::event<EC>, Ts...> expr,
-        ARGS &&...args) {
-      if constexpr (EC.type == event::channel::type_e::active) {
-        // TODO : do job
-        self().tenv->event.query<EC>([](auto &q) {});
+    template <const iuic::event::channel &ch> void event(auto &&...args) {
+      if constexpr (requires() {
+                      self().tenv->event.query<ch>(
+                          static_cast<base &>(self()),
+                          std::forward<decltype(args)>(args)...);
+                    }) {
+        self().tenv->event.query<ch>(static_cast<base &>(self()),
+                                     std::forward<decltype(args)>(args)...);
       } else {
-        // TODO : do job
+        self().tenv->event.query<ch>(std::forward<decltype(args)>(args)...);
       }
     };
 
-    template <typename... Ts>
-    decltype(auto) operator()(
-        iuic::query::expr<proto::base::query::tag::element, Ts...> expr) {
-      // do element job
+    void element(auto &&...args) {
+      // do search element
 
-      std::vector<iterators::base> res;
+    };
 
-      auto bit = self().begin_;
-      auto &penv = *self().penv;
+    bool eval(scheme::iterators::base it, query::valid_t t) {
+      auto &el = self().get_element(it);
+      return not(el.meta.has(el.meta.discarded) ||
+                 el.meta.has(el.meta.virtualized));
+    };
 
-      for (auto it : self().ranges.level_order()) {
-        auto ait = tree::access_iterator{tree::shift(bit, it)};
+    bool eval(scheme::iterators::base it, query::hit t) {
+      auto &el = self().get_element(it);
 
-        if ([&]<std::size_t... I>(std::index_sequence<I...>) {
-              return (eval(expr.template at<I>(), ait, penv) && ...);
-            }(expr.index_sequence())) {
-          res.push_back(it);
-        }
+      constexpr auto in__ =
+          [](const units::ui::position &p,
+             const units::ui::rect &r) static constexpr noexcept -> bool {
+        return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
       };
 
+      /*
+      bool pointInRect(float px, float py, float rx, float ry, float w, float h)
+    { return px >= rx && px <= rx + w && py >= ry && py <= ry + h;
+    }
+      */
+
+      return in__(t.point, el.area.bordered);
+    };
+
+    template <typename EXPR>
+    bool eval(scheme::iterators::base it, query::qnot<EXPR> expr) {
+      return not eval(it, expr.expr);
+    };
+
+    template <const iuic::event::channel &ch, typename... EXPR>
+    decltype(auto)
+    operator()(const iuic::query::expr<query::tag::event<ch>, EXPR...> &expr) {
+
+      return self().tenv->event.query<ch>([&](iuic::event::query<ch> &q) {
+        if constexpr (requires() { q(static_cast<base &>(self()), expr); }) {
+          return q(static_cast<base &>(self()), expr);
+        } else {
+          return q(expr);
+        }
+      });
+    }
+
+    template <typename... EXPR>
+    std::vector<scheme::iterators::base>
+    operator()(const iuic::query::expr<query::tag::element, EXPR...> &expr) {
+
+      std::vector<scheme::iterators::base> res;
+      for (auto el : self().ranges.level_order()) {
+        if (expr.unroll([&](auto &&...args) {
+              return (true && ... && eval(el, args));
+            })) {
+          res.push_back(el);
+        };
+      }
       return res;
-    };
-
-    template <typename... Ts>
-    decltype(auto) operator()(
-        iuic::query::expr<proto::base::query::tag::event_local, Ts...> expr,
-        units::keycode key) {
-      // do element job
-
-      // TODO : Rework
-      self().tenv->event.query<proto::base::event::local>([&](auto &q) {
-        q.meta([&](proto::base::event::pkg_meta &meta) {
-           return self().penv->state.has(meta.owner, proto::base::state::local);
-         })
-            .template type<proto::base::event::key>()
-            // .order(); sort by order (index + zorder) later
-            .reverse()
-            .break_after([&](proto::base::event::pkg_meta &meta) {
-              bool res =
-                  self().tenv->policy.get<iuic::proto::base::policy::event>(
-                      meta.owner) == iuic::proto::base::policy::event::block;
-              if (res) {
-                std::println("try block");
-              }
-              return res;
-            })
-            .trigger(key, self().penv, self().tenv);
-        // add expr eval
-      });
-    };
-
-    template <typename... Ts>
-    decltype(auto) operator()(
-        iuic::query::expr<proto::base::query::tag::event_local, Ts...> expr,
-        units::ui::position pointer) {
-      // do element job
-      self().tenv->event.query<proto::base::event::local>([&](auto &q) {
-        q.meta([&](proto::base::event::pkg_meta &meta) {
-           return self().penv->state.has(meta.owner, proto::base::state::local);
-         })
-            .template type<proto::base::event::pointer>()
-            .trigger(pointer, self().penv, self().tenv);
-        // add expr eval
-      });
-    };
-
-    template <typename... Ts>
-    decltype(auto) operator()(
-        iuic::query::expr<proto::base::query::tag::event_global, Ts...> expr,
-        units::keycode key) {
-      self().tenv->event.query<proto::base::event::global>([&](auto &q) {
-        q.template type<proto::base::event::key>().trigger(key, self().penv,
-                                                           self().tenv);
-        // add expr eval
-      });
-    };
-
-    template <typename... Ts>
-    decltype(auto) operator()(
-        iuic::query::expr<proto::base::query::tag::event_global, Ts...> expr,
-        units::ui::position pointer) {
-      self().tenv->event.query<proto::base::event::global>([&](auto &q) {
-        q.template type<proto::base::event::pointer>().trigger(
-            pointer, self().penv, self().tenv);
-        // add expr eval
-      });
-    };
+    }
   } query{*this};
 
   struct : utils::member_for<explorer> {
@@ -263,7 +322,5 @@ private:
 
 private:
   blueprint::base_iterator begin_{};
-  environment::tmp *tenv{nullptr};
-  environment::persist *penv{nullptr};
 };
 } // namespace iuic::scheme

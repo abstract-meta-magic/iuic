@@ -185,7 +185,7 @@ blueprint compute(sketch &sketch, environment::tmp &tenv,
   // resolve
   // TODO : optimize
   auto b = sketch.reflect([](sk_element sk) -> bp_element {
-    return {.uid = sk.uid, .sid = sk.sid, .zorder = sk.zorder};
+    return {.uid = sk.uid, .sid = sk.sid, .order = sk.order};
   });
 
   for (auto el : tree::iterator_range_for{

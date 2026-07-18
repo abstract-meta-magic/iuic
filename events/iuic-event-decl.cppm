@@ -70,4 +70,5 @@ struct channel {
   policy::hub_provide hub_provide;
   // etc
 };
+
 }; // namespace iuic::event
