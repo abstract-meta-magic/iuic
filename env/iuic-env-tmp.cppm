@@ -10,9 +10,6 @@ import iuic.event;
 
 export namespace iuic::environment {
 struct tmp : iuic::advance::interface {
-  struct {
-  } text;
-
   struct : private advance::interface {
     friend tmp;
 
@@ -139,7 +136,7 @@ struct tmp : iuic::advance::interface {
 
   struct : private advance::interface {
     friend tmp;
-    // DEADCODE
+
     struct policy {
       const erasure::type *type;
       std::uint64_t value;
@@ -164,7 +161,11 @@ struct tmp : iuic::advance::interface {
       }
     };
 
-    template <typename T> T get(units::uid uid) {
+    template <typename T>
+    T get(units::uid uid)
+      requires(sizeof(T) < sizeof(std::uint64_t) && std::is_enum_v<T>)
+    {
+
       auto *type = erasure::type::from<T>();
       if (auto it = std::find_if(
               data.begin(), data.end(),
@@ -178,6 +179,8 @@ struct tmp : iuic::advance::interface {
       };
     };
 
+    void advance() override { data.clear(); };
+
   private:
     std::vector<policy> data;
   } policy;
@@ -186,18 +189,15 @@ struct tmp : iuic::advance::interface {
 
   struct : private advance::interface {
     friend tmp;
-    void *allocate(std::size_t size, std::size_t align, std::size_t count = 1) {
-      return allocator.allocate(size * count, align);
-    };
 
-    template <typename T>
-    std::span<T> allocate(std::size_t count = 1)
-      requires std::is_trivially_destructible_v<T>
-    {
+    template <typename T> std::span<T> allocate(std::size_t count = 1) {
       return {static_cast<T *>(allocate(sizeof(T), alignof(T), count)), count};
     };
 
   private:
+    void *allocate(std::size_t size, std::size_t align, std::size_t count = 1) {
+      return allocator.allocate(size * count, align);
+    };
     void advance() override { allocator.release(); };
 
   private:

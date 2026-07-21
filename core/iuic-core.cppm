@@ -13,6 +13,8 @@ export import iuic.layout;
 // this-export
 export import :scheme.base;
 export import :scheme.builder;
+export import :scheme.query;
+export import :scheme.shared;
 export import :scheme.explorer;
 export import :policy;
 export import :context;

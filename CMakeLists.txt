@@ -44,6 +44,8 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"core/iuic-policy.cppm"
 	"core/iuic-scheme-base.cppm"
 	"core/iuic-scheme-compute.cppm"
+	"core/iuic-scheme-query.cppm"
+	"core/iuic-scheme-shared.cppm"
 	"core/iuic-scheme-explorer.cppm"
 	"core/iuic-scheme-builder.cppm"
 	"core/iuic-core.cppm"

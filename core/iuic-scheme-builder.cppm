@@ -75,7 +75,13 @@ struct builder_element_interface : protected virtual builder_base {
   void text(const iuic::text::raw::token &token, iuic::style::sid sid,
             const layout::text &);
 
+  void text(const iuic::text::raw::token &token, units::uid uid,
+            iuic::style::sid sid, const layout::text &);
+
   void text(std::span<const iuic::text::raw::token> tokens,
+            iuic::style::sid sid, const layout::text &);
+
+  void text(std::span<const iuic::text::raw::token> tokens, units::uid uid,
             iuic::style::sid sid, const layout::text &);
 };
 
@@ -343,12 +349,21 @@ void builder_element_interface::frame(style::sid sid_,
 
 void builder_element_interface::text(const iuic::text::raw::token &token,
                                      iuic::style::sid sid_,
+
+                                     const layout::text &layout_) {
+  auto ait = tree::access_iterator{it};
+  text(token, (ait ? ait->uid : units::uid{0}), sid_, layout_);
+};
+
+void builder_element_interface::text(const iuic::text::raw::token &token,
+                                     iuic::units::uid uid_,
+                                     iuic::style::sid sid_,
                                      const layout::text &layout_) {
   auto ait = tree::access_iterator{it};
 
   auto nit = it.at(sketch::value_t{
       .layout = &layout_,
-      .uid = ait ? ait->uid : units::uid{0},
+      .uid = uid_,
       .sid = sid_,
       .order = ait ? units::ui::order{index++, ait->order.layer}
                    : units::ui::order{index++, 0},
@@ -436,17 +451,17 @@ units::uid builder_uid_interface::self() const noexcept {
 // ---- IMPL [state] ----
 
 void builder_state_interface::attach(units::uid uid, state::value v) {
-  penv.state.attach(uid, v);
+  penv.state.access(uid).attach(v);
 };
 void builder_state_interface::detach(units::uid uid, state::value v) {
-  penv.state.detach(uid, v);
+  penv.state.access(uid).detach(v);
 };
 bool builder_state_interface::has(units::uid uid, state::value v) {
-  return penv.state.has(uid, v);
+  return penv.state.access(uid).has(v);
 };
 
 void builder_state_interface::persist(units::uid uid) {
-  penv.state.update_lifetime(uid);
+  penv.state.access(uid).update_lifetime();
 };
 
 void utils::type_of<&builder_state_interface::machine>::use(const auto &proto) {
@@ -513,39 +528,45 @@ style::sid builder_style_interface::make(style::sid sid,
 
 // ---- IMPL [memory] ----
 template <typename T> T &builder_memory_interface::tmp(T &&value) {
-  T *ptr = static_cast<T *>(tenv.memory.allocate(sizeof(T), alignof(T)));
-  new (ptr) T{std::move(value)};
-  return *ptr;
+  T &ptr = tenv.memory.allocate<T>()[0];
+  new (&ptr) T{std::move(value)};
+  return ptr;
 };
 
 template <typename T>
 void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
-  auto state = penv.object.state<T>(uid);
+  const erasure::type *type{erasure::type::from<T>()};
 
-  if (state == penv.object.non_exist || state == penv.object.deleted) {
-    penv.object.reserve<T>(uid);
+  auto access = penv.object.access(uid, type);
+
+  if (auto state = access.state();
+      state == environment::object_state::non_exist) {
+    access.reserve();
   }
 };
 
 template <typename T>
 bool builder_memory_interface::try_visit(units::uid uid,
                                          std::invocable<T &> auto &&call) {
-  return penv.object.get(uid).try_visit(std::forward<decltype(call)>(call));
+  return erasure::visited::as_mutable{
+      penv.object.access(uid, erasure::type::from<T>()).get()}
+      .try_visit(std::forward<decltype(call)>(call));
 };
 
 void builder_memory_interface::init_if_not(units::uid uid,
                                            std::invocable<> auto &&call) {
   using traits = typename decltype(erasure::func_type{call})::traits;
 
-  auto state =
-      penv.object.state<std::remove_cvref_t<typename traits::return_t>>(uid);
+  using type = std::remove_cvref_t<typename traits::return_t>;
 
-  if (state == penv.object.reserve_this_type ||
-      state == penv.object.reserve_undefined_type) {
-    penv.object.construct(uid, std::forward<decltype(call)>(call));
-  } else if (state == penv.object.alive_this_type ||
-             state == penv.object.outdated_this_type) {
-    penv.object.update_lifetime(uid);
+  auto access = penv.object.access(uid, erasure::type::from<type>());
+
+  if (auto state = access.state();
+      state == environment::object_state::reserve_this_type) {
+    access.allocate();
+    access.construct([&](void *mem) { new (mem) type{call()}; });
+  } else if (state == environment::object_state::alive_this_type) {
+    access.update_lifetime();
   }
 };
 
@@ -612,22 +633,20 @@ builder_text_interface::dynamic_token(text::atlas::id id,
 
     text::raw::token tk{.atlas_id = id, .glyphs = res};
 
-    auto *tk_mem = static_cast<text::raw::token *>(tenv.memory.allocate(
-        sizeof(text::raw::token), alignof(text::raw::token)));
+    text::raw::token &tk_mem = tenv.memory.allocate<text::raw::token>()[0];
 
-    auto *gl_mem = static_cast<text::glyph::id_t *>(tenv.memory.allocate(
-        sizeof(text::glyph::id_t), alignof(text::glyph::id_t), res.size()));
+    auto gl_mem = tenv.memory.allocate<text::glyph::id_t>(res.size());
 
-    if (gl_mem) {
+    if (not gl_mem.empty()) {
       for (std::size_t i{0}; i < res.size(); ++i) {
         gl_mem[i] = res[i];
       }
     }
 
-    tk_mem->atlas_id = id;
-    tk_mem->glyphs = {gl_mem, res.size()};
+    tk_mem.atlas_id = id;
+    tk_mem.glyphs = gl_mem;
 
-    return *tk_mem;
+    return tk_mem;
   }
 
   return inv;

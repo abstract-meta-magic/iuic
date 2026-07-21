@@ -73,7 +73,7 @@ public:
                                 std::is_trivially_destructible_v<T>,
                                 sizeof(T),
                                 alignof(T),
-                                0,
+                                5, // base lifetime is 5 tick
                                 get_dtor_for<T>(),
                                 get_deleter_for<T>(),
                                 get_copy_ctor_for<T>(),

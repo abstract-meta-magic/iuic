@@ -14,6 +14,13 @@ import iuic.state; // tmp
 
 namespace iuic::scheme {
 
+export struct base {
+
+protected:
+  environment::tmp *tenv;
+  environment::persist *penv;
+};
+
 struct sk_element {
   std::variant<const layout::frame *, const layout::text *> layout;
   units::uid uid;

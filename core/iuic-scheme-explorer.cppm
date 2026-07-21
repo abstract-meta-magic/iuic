@@ -10,123 +10,14 @@ import iuic.event;
 import :policy;
 // import :proto.base;
 import :scheme.base;
+import :scheme.query;
 
 namespace iuic::scheme {
-
-namespace query {
-namespace tag {
-
-export struct element : iuic::query::tag {};
-
-export template <const iuic::event::channel &channel__>
-struct event : iuic::query::tag {
-  static constexpr auto &channel = channel__;
-};
-} // namespace tag
-
-export template <const iuic::event::channel &channel__>
-constexpr iuic::query::expr<tag::event<channel__>> event{};
-
-export constexpr iuic::query::expr<tag::element> element;
-
-export struct hit {
-  using type_tag = iuic::query::type;
-  units::ui::position point;
-};
-export struct has_state {
-  using type_tag = iuic::query::type;
-  iuic::state::value state;
-};
-
-export struct valid_t {
-  using type_tag = iuic::query::type;
-} valid;
-
-export template <erasure::is_pure_type T> struct type {
-  using type_tag = iuic::query::type;
-};
-
-export struct state {
-  using type_tag = iuic::query::type;
-  iuic::state::value value;
-};
-
-export template <typename EXPR> struct qnot {
-  using type_tag = iuic::query::type;
-  EXPR expr;
-};
-}; // namespace query
-
-export struct base {
-
-protected:
-  environment::tmp *tenv;
-  environment::persist *penv;
-};
 
 struct explorer_assign {
   blueprint::base_iterator it;
   environment::tmp *tenv;
   environment::persist *penv;
-};
-
-export struct partition : base {
-  // API
-  partition(base &b, units::uid owner_) : base{b}, owner{owner_} {}
-
-  struct : utils::member_for<partition> {
-    bool has(state::value v) {
-      return self().penv->state.has(self().owner, v);
-    };
-    void attach(state::value v) { self().penv->state.attach(self().owner, v); };
-    void detach(state::value v) { self().penv->state.detach(self().owner, v); };
-  } state{*this};
-
-private:
-  units::uid owner;
-};
-
-export struct capture : base {
-  // API
-  capture(base &b, units::uid owner__, units::uid obj__)
-      : base{b}, owner_{owner__}, obj_{obj__} {}
-
-  struct : utils::member_for<capture> {
-    struct : utils::member_for<capture> {
-      bool has(state::value v) {
-        return self().penv->state.has(self().owner_, v);
-      };
-      void attach(state::value v) {
-        self().penv->state.attach(self().owner_, v);
-      };
-      void detach(state::value v) {
-        self().penv->state.detach(self().owner_, v);
-      };
-    } state{self()};
-
-    struct : utils::member_for<capture> {
-
-    } memory{self()};
-
-    struct : utils::member_for<capture> {
-      // emit ??
-      // only archive(passive) ???
-    } event{self()};
-  } owner{*this};
-
-  struct : utils::member_for<capture> {
-    struct : utils::member_for<capture> {
-      void try_visit(auto &&call) {
-        self()
-            .penv->object.get(self().obj_)
-            .try_visit(std::forward<decltype(call)>(call));
-      };
-    } memory{self()};
-  } obj{*this};
-
-private:
-  units::uid owner_;
-  units::uid obj_;
 };
 
 export struct explorer : base {
@@ -140,17 +31,17 @@ export struct explorer : base {
     };
 
     const units::ui::area &area(iterators::base it) {
-      return tree::const_access_iterator{tree::shift(self().begin_, it)}->area;
+      return self().get_element(it).area;
     };
 
     bool is_virtualized(iterators::base it) {
-      auto &el = *tree::const_access_iterator{tree::shift(self().begin_, it)};
+      auto &el = self().get_element(it);
 
       return el.meta.has(el.meta.virtualized);
     };
 
     bool is_discarded(iterators::base it) {
-      auto &el = *tree::const_access_iterator{tree::shift(self().begin_, it)};
+      auto &el = self().get_element(it);
 
       return el.meta.has(el.meta.discarded);
     }
@@ -163,6 +54,8 @@ export struct explorer : base {
       return not self().get_element(it).text.empty();
     };
 
+    units::uid uid(iterators::base it) { return self().get_element(it).uid; };
+
     std::span<const text::present::token> text(iterators::base it) {
       return self().get_element(it).text;
     };
@@ -170,20 +63,16 @@ export struct explorer : base {
   } props{*this};
 
   struct : utils::member_for<explorer> {
-    // TODO :
-  } event{*this};
-
-  struct : utils::member_for<explorer> {
     bool has(iterators::base it, state::value state) {
-      return self().penv->state.has(self().get_uid(it), state);
+      return self().penv->state.access(self().get_uid(it)).has(state);
     };
 
     void attach(iterators::base it, state::value state) {
-      self().penv->state.attach(self().get_uid(it), state);
+      self().penv->state.access(self().get_uid(it)).attach(state);
     }
 
     void detach(iterators::base it, state::value state) {
-      self().penv->state.detach(self().get_uid(it), state);
+      self().penv->state.access(self().get_uid(it)).detach(state);
     }
   } state{*this};
 
@@ -205,39 +94,18 @@ export struct explorer : base {
       return ranges::postorder{
           tree::hierarchy::bfs::base_iterator{self().begin_}};
     };
-
-    auto preorder() {};
-
-    // only available elements
-    // no virtualized,discarted
-    auto viwe_ordered() {};
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
-    // TODO : REIMPL
-
-    template <const iuic::event::channel &ch> void event(auto &&...args) {
-      if constexpr (requires() {
-                      self().tenv->event.query<ch>(
-                          static_cast<base &>(self()),
-                          std::forward<decltype(args)>(args)...);
-                    }) {
-        self().tenv->event.query<ch>(static_cast<base &>(self()),
-                                     std::forward<decltype(args)>(args)...);
-      } else {
-        self().tenv->event.query<ch>(std::forward<decltype(args)>(args)...);
-      }
-    };
-
-    void element(auto &&...args) {
-      // do search element
-
-    };
-
+  private:
     bool eval(scheme::iterators::base it, query::valid_t t) {
       auto &el = self().get_element(it);
       return not(el.meta.has(el.meta.discarded) ||
                  el.meta.has(el.meta.virtualized));
+    };
+
+    bool eval(scheme::iterators::base it, query::state t) {
+      return self().state.has(it, t.value);
     };
 
     bool eval(scheme::iterators::base it, query::hit t) {
@@ -249,12 +117,6 @@ export struct explorer : base {
         return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
       };
 
-      /*
-      bool pointInRect(float px, float py, float rx, float ry, float w, float h)
-    { return px >= rx && px <= rx + w && py >= ry && py <= ry + h;
-    }
-      */
-
       return in__(t.point, el.area.bordered);
     };
 
@@ -263,6 +125,7 @@ export struct explorer : base {
       return not eval(it, expr.expr);
     };
 
+  public:
     template <const iuic::event::channel &ch, typename... EXPR>
     decltype(auto)
     operator()(const iuic::query::expr<query::tag::event<ch>, EXPR...> &expr) {
@@ -291,12 +154,6 @@ export struct explorer : base {
       return res;
     }
   } query{*this};
-
-  struct : utils::member_for<explorer> {
-    void set_key_code(units::keycode code) {
-      self().penv->external.key_code = code;
-    };
-  } global{*this};
 
 public: // assign
   explorer &operator=(explorer_assign assing) {
