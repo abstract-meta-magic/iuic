@@ -1,3 +1,4 @@
 [submodule "extern-docs/iuic-obsidian-ru"]
 	path = extern-docs/iuic-obsidian-ru
 	url = git@github.com:abstract-meta-magic/iuic-obsidian-ru.git
+	branch = main
