@@ -202,23 +202,6 @@ struct builder_state_interface : protected virtual builder_base {
   void detach(units::uid uid, state::value s);
 
   void persist(units::uid uid);
-
-  struct : utils::member_for<builder_state_interface> {
-    void use(const auto &proto);
-
-    void use(units::uid uid, const auto &proto);
-
-    void transition(state::value state);
-
-    void transition(units::uid uid, state::value state);
-    // TOTO : error handling
-    // void transition(units::uid, iuic::state, auto err);
-    // void transition(iuic::state, auto err);
-
-    void try_visit_shared(
-        erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&call);
-
-  } machine{*this};
 };
 
 struct builder final : public virtual builder_base,
@@ -453,6 +436,7 @@ units::uid builder_uid_interface::self() const noexcept {
 void builder_state_interface::attach(units::uid uid, state::value v) {
   penv.state.access(uid).attach(v);
 };
+
 void builder_state_interface::detach(units::uid uid, state::value v) {
   penv.state.access(uid).detach(v);
 };
@@ -462,30 +446,6 @@ bool builder_state_interface::has(units::uid uid, state::value v) {
 
 void builder_state_interface::persist(units::uid uid) {
   penv.state.access(uid).update_lifetime();
-};
-
-void utils::type_of<&builder_state_interface::machine>::use(const auto &proto) {
-  // TODO : Impl unknown
-}
-
-void utils::type_of<&builder_state_interface::machine>::try_visit_shared(
-    erasure::func_as_decoy<erasure::decoy(erasure::decoy &)> auto &&visitor) {
-  auto *machine =
-      self().penv.machine.get(tree::access_iterator{self().it}->uid);
-  if (machine) {
-    machine->get_controller().try_visit_shared(
-        std::forward<decltype(visitor)>(visitor));
-  }
-};
-
-void utils::type_of<&builder_state_interface::machine>::transition(
-    state::value v) {
-  auto *machine =
-      self().penv.machine.get(tree::access_iterator{self().it}->uid);
-  if (machine) {
-    // Mb no move ??
-    machine->get_controller().try_move(v);
-  }
 };
 
 // ---- IMPL [event] ----

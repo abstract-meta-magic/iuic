@@ -165,7 +165,6 @@ struct tmp : iuic::advance::interface {
     T get(units::uid uid)
       requires(sizeof(T) < sizeof(std::uint64_t) && std::is_enum_v<T>)
     {
-
       auto *type = erasure::type::from<T>();
       if (auto it = std::find_if(
               data.begin(), data.end(),

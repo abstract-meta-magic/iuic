@@ -154,7 +154,7 @@ public: // BIG-V
   void fill_chunks_info(sized_chunk_pool &pool) {
     for (auto &chunk : pool.chunks) {
       chunk.slot_size = pool.slot_size;
-      chunk.capacity = chunk.native_size / chunk.slot_size;
+      chunk.capacity = chunk::native_size / chunk.slot_size;
       chunk.free_count = chunk.capacity;
       chunk.free_list_head = 0;
       chunk.state = chunk::free;
@@ -451,7 +451,7 @@ private:
       }
 
       if (!is_slot_alive(slot)) {
-        if (slot.type && slot.type != erasure::type::none()) {
+        if (slot.type != erasure::type::none()) {
           void *ptr = arena.get(slot.id);
           if (ptr) {
             slot.type->dtor(ptr);
