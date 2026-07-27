@@ -10,19 +10,12 @@ struct decl final {
   decl &operator=(const decl &) = delete;
   decl(decl &&) = delete;
   decl &operator=(decl &&) = delete;
+  decl(const decl &) = delete;
+
+  consteval decl() noexcept {};
 
   // force static\global
   const decl *self{this};
-
-private:
-  consteval decl() noexcept {};
-  decl(const decl &) = default;
-
-public:
-  template <const decl &of> static consteval decl instance_of() {
-    static constexpr decl _{};
-    return _;
-  };
 };
 
 } // namespace iuic::state

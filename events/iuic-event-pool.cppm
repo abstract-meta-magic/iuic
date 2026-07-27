@@ -21,4 +21,21 @@ private:
   std::vector<package> pkgs;
 };
 
+template <const channel &ch>
+  requires(ch.type == channel::type_e::passive)
+struct pool<ch> : advance::interface {
+  pool(advance::pool &p) { rebind(p); };
+  // default
+  pool();
+
+  void push(archive p) { pkgs.push_back(p); };
+
+  std::span<archive> list() { return pkgs; };
+
+  void advance() override { pkgs.clear(); };
+
+private:
+  std::vector<archive> pkgs;
+};
+
 }; // namespace iuic::event

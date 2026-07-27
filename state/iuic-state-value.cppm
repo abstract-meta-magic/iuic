@@ -27,7 +27,7 @@ struct value final {
     decl = other.decl;
     return *this;
   };
-
+  // private ??
   const decl *decl{nullptr};
 };
 

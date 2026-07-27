@@ -12,10 +12,10 @@ template <const channel &ch> struct dispatcher {
     pkg.call(erasure::visited::as_mutable{arg});
   };
 
-  static void read(archive a, auto &&arg)
+  static void read(archive a, auto &&call)
     requires(ch.type == channel::type_e::passive)
   {
-    // DO JOB later
+    a.data.try_visit(call);
   };
 };
 
@@ -38,8 +38,8 @@ struct trigger<ch> {
 template <const channel &ch> struct reader {
   reader(archive a_) : a{a_} {}
 
-  void operator()(auto &&...args) {
-    dispatcher<ch>::read(a, std::forward<decltype(args)>(args)...);
+  void operator()(auto &&call) {
+    dispatcher<ch>::read(a, std::forward<decltype(call)>(call));
   };
 
 private:

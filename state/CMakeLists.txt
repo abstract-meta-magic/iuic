@@ -7,14 +7,7 @@ target_sources(${PROJECT_NAME}_state PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"iuic-state-decl.cppm"
-	"iuic-state-base.cppm"
 	"iuic-state-value.cppm"
-	"iuic-state-machine-exception.cppm"
-	"iuic-state-machine-graph.cppm"
-	"iuic-state-machine-execute.cppm"
-	"iuic-state-machine-controller.cppm"
-	"iuic-state-machine-instance.cppm"
-	"iuic-state-machine-spec.cppm"
 	"iuic-state.cppm"
 )
 

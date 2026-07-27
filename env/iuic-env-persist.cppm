@@ -12,7 +12,6 @@ export import :persist.state;
 
 export namespace iuic::environment {
 
-// TODO : MEMORY LEAK HERE
 struct persist {
 
   persist_object_storage object;

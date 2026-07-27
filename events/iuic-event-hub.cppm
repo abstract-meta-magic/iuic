@@ -10,24 +10,44 @@ import :packager;
 import :query;
 import :factory;
 
-export namespace iuic::event {
+namespace iuic::event {
 
-struct hub : protected advance::interface {
-  struct proxy {
-    proxy(hub &hub_) : hub__{std::addressof(hub_)} {}
-    proxy(hub *hub_) : hub__{hub_} {}
+struct store__ {
+  template <const channel &CH> allocator<CH> &get_allocator__() {
+    auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
 
-    template <const channel &CH, typename EVENT_TYPE, typename... PKGR_ARGS>
-    void emit(EVENT_TYPE &&event, PKGR_ARGS &&...pkg_args) {
-      if (hub__) {
-        hub__->emit<CH>(std::forward<EVENT_TYPE>(event),
-                        std::forward<PKGR_ARGS>(pkg_args)...);
-      };
+    if (auto find = allocs__.find(index); find != allocs__.end()) {
+      return erasure::visited::as_mutable{find->second}.unsafe_visit(
+          [](event::allocator<CH> &p) -> event::allocator<CH> & { return p; });
+    } else {
+      auto ins = allocs__.insert(
+          {index, erasure::visited{new event::allocator<CH>{allocs_adv__}}});
+      return erasure::visited::as_mutable{ins.first->second}.unsafe_visit(
+          [](event::allocator<CH> &p) -> event::allocator<CH> & { return p; });
     };
-
-  private:
-    hub *hub__;
   };
+
+  template <const channel &CH> event::pool<CH> &get_pool__() {
+    auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
+
+    if (auto find = pools__.find(index); find != pools__.end()) {
+      return erasure::visited::as_mutable{find->second}.unsafe_visit(
+          [](event::pool<CH> &p) -> event::pool<CH> & { return p; });
+    } else {
+      auto ins = pools__.insert(
+          {index, erasure::visited{new event::pool<CH>{pool_adv__}}});
+      return erasure::visited::as_mutable{ins.first->second}.unsafe_visit(
+          [](event::pool<CH> &p) -> event::pool<CH> & { return p; });
+    };
+  };
+
+  std::unordered_map<std::size_t, erasure::visited> allocs__;
+  std::unordered_map<std::size_t, erasure::visited> pools__;
+  advance::pool allocs_adv__;
+  advance::pool pool_adv__;
+};
+
+export struct emitter : virtual protected store__ {
 
   template <const channel &CH, typename EVENT_TYPE, typename... PKGR_ARGS>
   void emit(EVENT_TYPE &&event, PKGR_ARGS &&...pkg_args) {
@@ -35,39 +55,51 @@ struct hub : protected advance::interface {
     allocator<CH> &alloc = get_allocator__<CH>();
 
     packager<CH> pkgr = [&]() constexpr {
-      if constexpr (CH.hub_provide.packanger ==
-                    policy::hub_provide::status::front) {
+      if constexpr (CH.emmiter_provide.packanger ==
+                    policy::emmiter_provide::status::front) {
 
-        return packager<CH>{*this, std::forward<PKGR_ARGS>(pkg_args)...};
-      } else if constexpr (CH.hub_provide.packanger ==
-                           policy::hub_provide::status::back) {
-        return packager<CH>{std::forward<PKGR_ARGS>(pkg_args)..., *this};
+        return packager<CH>{static_cast<emitter &>(*this),
+                            std::forward<PKGR_ARGS>(pkg_args)...};
+      } else if constexpr (CH.emmiter_provide.packanger ==
+                           policy::emmiter_provide::status::back) {
+        return packager<CH>{std::forward<PKGR_ARGS>(pkg_args)...,
+                            static_cast<emitter &>(*this)};
       } else {
         return packager<CH>{std::forward<PKGR_ARGS>(pkg_args)...};
       }
     }();
 
-    if constexpr (CH.hub_provide.factory ==
-                  policy::hub_provide::status::front) {
-      factory<EVENT_TYPE, CH>::process(*this, std::forward<EVENT_TYPE>(event),
-                                       pool, pkgr, alloc);
-    } else if constexpr (CH.hub_provide.factory ==
-                         policy::hub_provide::status::back) {
+    if constexpr (CH.emmiter_provide.factory ==
+                  policy::emmiter_provide::status::front) {
+      factory<EVENT_TYPE, CH>::process(static_cast<emitter &>(*this),
+                                       std::forward<EVENT_TYPE>(event), pool,
+                                       pkgr, alloc);
+    } else if constexpr (CH.emmiter_provide.factory ==
+                         policy::emmiter_provide::status::back) {
       factory<EVENT_TYPE, CH>::process(std::forward<EVENT_TYPE>(event), pool,
-                                       pkgr, alloc, *this);
+                                       pkgr, alloc,
+                                       static_cast<emitter &>(*this));
     } else {
       factory<EVENT_TYPE, CH>::process(std::forward<EVENT_TYPE>(event), pool,
                                        pkgr, alloc);
     }
   };
+};
+
+export struct accesser : virtual protected store__ {
 
   template <const channel &CH>
   decltype(auto) query(std::invocable<query<CH> &> auto &&call) {
+    // use channel info
     // find,create,validate,lock,call ?
     event::query<CH> q{get_pool__<CH>()};
     return call(q);
   }; // mb return proxy
+};
 
+export struct hub : public emitter,
+                    public accesser,
+                    protected advance::interface {
   void reset() {
     pool_adv__.advance();
     allocs_adv__.advance();
@@ -92,38 +124,5 @@ struct hub : protected advance::interface {
 
 private:
   void advance() override { reset(); };
-
-  template <const channel &CH> event::pool<CH> &get_pool__() {
-    auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
-
-    if (auto find = pools__.find(index); find != pools__.end()) {
-      return erasure::visited::as_mutable{find->second}.unsafe_visit(
-          [](event::pool<CH> &p) -> event::pool<CH> & { return p; });
-    } else {
-      auto ins = pools__.insert(
-          {index, erasure::visited{new event::pool<CH>{pool_adv__}}});
-      return erasure::visited::as_mutable{ins.first->second}.unsafe_visit(
-          [](event::pool<CH> &p) -> event::pool<CH> & { return p; });
-    };
-  };
-
-  template <const channel &CH> allocator<CH> &get_allocator__() {
-    auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
-
-    if (auto find = allocs__.find(index); find != allocs__.end()) {
-      return erasure::visited::as_mutable{find->second}.unsafe_visit(
-          [](event::allocator<CH> &p) -> event::allocator<CH> & { return p; });
-    } else {
-      auto ins = allocs__.insert(
-          {index, erasure::visited{new event::allocator<CH>{allocs_adv__}}});
-      return erasure::visited::as_mutable{ins.first->second}.unsafe_visit(
-          [](event::allocator<CH> &p) -> event::allocator<CH> & { return p; });
-    };
-  };
-
-  std::unordered_map<std::size_t, erasure::visited> allocs__;
-  std::unordered_map<std::size_t, erasure::visited> pools__;
-  advance::pool allocs_adv__;
-  advance::pool pool_adv__;
 };
 }; // namespace iuic::event
