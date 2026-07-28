@@ -41,4 +41,13 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 ## Main alias
 add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
 
+## IF TEST
+if(IUIC_BUILD_TESTS)
+  if(TARGET Catch2::Catch2)
+    add_subdirectory(test)
+  else()
+    message(FATAL_ERROR "IUIC use BUILD_TESTS, but Catch2 not found")
+  endif()
+endif()
+
 # target_compile_options(${PROJECT_NAME}_core PRIVATE -O2)

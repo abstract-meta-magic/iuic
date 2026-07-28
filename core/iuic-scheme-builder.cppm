@@ -11,15 +11,14 @@ import :policy;
 import :scheme.base;
 // import :proto.base;
 
-export namespace iuic::scheme {
+namespace iuic::scheme {
 
-struct builder;
+export struct builder;
 
 template <typename T>
 concept builder_block_cpt = std::invocable<T, builder &>;
 
 struct builder_base {
-protected:
   using insert_iterator =
       tree::insert_iterator<tree::flat_unordered_type<sketch::value_t>>;
 
@@ -29,16 +28,15 @@ public:
     std::size_t index{0};
   };
 
-  builder_base(environment::tmp &tenv_, environment::persist &penv_,
+  builder_base(environment::persist &penv_, environment::tmp &tenv_,
                insert_iterator it_, builder &builder_)
-      : tenv{tenv_}, penv{penv_}, it{it_}, builder{builder_} {
+      : penv{penv_}, tenv{tenv_}, it{it_}, builder{builder_} {
 
     unique_uid.reserve(400);
   };
 
-protected: // builder unit stack
-  environment::tmp &tenv;
   environment::persist &penv;
+  environment::tmp &tenv;
   insert_iterator it;
   builder &builder;
   std::vector<std::size_t> unique_uid;
@@ -53,7 +51,7 @@ struct builder_element_interface : protected virtual builder_base {
   builder_element_interface(environment::tmp &tenv_,
                             environment::persist &penv_, insert_iterator it_,
                             struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   /*
     Базовая форма для всего.Стелизуемый рамка.
@@ -88,7 +86,7 @@ struct builder_element_interface : protected virtual builder_base {
 struct builder_order_interface : protected virtual builder_base {
   builder_order_interface(environment::tmp &tenv_, environment::persist &penv_,
                           insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   void group(std::uint16_t value);
 
@@ -100,7 +98,7 @@ struct builder_order_interface : protected virtual builder_base {
 struct builder_policy_interface : protected virtual builder_base {
   builder_policy_interface(environment::tmp &tenv_, environment::persist &penv_,
                            insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   void set(auto p);
 };
@@ -110,19 +108,14 @@ struct builder_uid_interface : protected virtual builder_base {
 
   builder_uid_interface(environment::tmp &tenv_, environment::persist &penv_,
                         insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
-  units::uid make(const std::string &str,
-                  const utils::anchor &anchor = default_anchor) const noexcept;
+  units::uid
+  make_static(const std::string &str,
+              const utils::anchor &anchor = default_anchor) const noexcept;
 
-  units::uid make(policy::shared sh, const std::string &str,
-                  const utils::anchor &anchor = default_anchor);
-
-  units::uid make(policy::unique, const std::string &str,
-                  const utils::anchor &anchor = default_anchor);
-
-  units::uid make(policy::indexed, const std::string &str,
-                  const utils::anchor &anchor = default_anchor);
+  units::uid make_unique(const std::string &str,
+                         const utils::anchor &anchor = default_anchor);
 
   units::uid self() const noexcept;
 };
@@ -130,7 +123,7 @@ struct builder_uid_interface : protected virtual builder_base {
 struct builder_memory_interface : protected virtual builder_base {
   builder_memory_interface(environment::tmp &tenv_, environment::persist &penv_,
                            insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   // TODO : MB replace to decoy
   template <typename T>
@@ -147,7 +140,7 @@ struct builder_memory_interface : protected virtual builder_base {
 struct builder_event_interface : protected virtual builder_base {
   builder_event_interface(environment::tmp &tenv_, environment::persist &penv_,
                           insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   template <const iuic::event::channel &ch> void emit(auto &&data) {
     tenv.event.emit<ch>(data);
@@ -159,7 +152,7 @@ struct builder_event_interface : protected virtual builder_base {
 struct builder_text_interface : protected virtual builder_base {
   builder_text_interface(environment::tmp &tenv_, environment::persist &penv_,
                          insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   // UTF-8
   const text::raw::token &static_token(text::atlas::id, std::string_view);
@@ -171,7 +164,7 @@ struct builder_text_interface : protected virtual builder_base {
 struct builder_style_interface : protected virtual builder_base {
   builder_style_interface(environment::tmp &tenv_, environment::persist &penv_,
                           insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   style::sid self();
 
@@ -193,7 +186,7 @@ struct builder_style_interface : protected virtual builder_base {
 struct builder_state_interface : protected virtual builder_base {
   builder_state_interface(environment::tmp &tenv_, environment::persist &penv_,
                           insert_iterator it_, struct builder &builder_)
-      : builder_base{tenv_, penv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, it_, builder_} {}
 
   bool has(units::uid uid, state::value s);
 
@@ -204,20 +197,20 @@ struct builder_state_interface : protected virtual builder_base {
   void persist(units::uid uid);
 };
 
-struct builder final : public virtual builder_base,
-                       private builder_element_interface,
-                       private builder_state_interface,
-                       private builder_uid_interface,
-                       private builder_policy_interface,
-                       private builder_memory_interface,
-                       private builder_text_interface,
-                       private builder_event_interface,
-                       private builder_style_interface {
+export struct builder final : protected virtual builder_base,
+                              private builder_element_interface,
+                              private builder_state_interface,
+                              private builder_uid_interface,
+                              private builder_policy_interface,
+                              private builder_memory_interface,
+                              private builder_text_interface,
+                              private builder_event_interface,
+                              private builder_style_interface {
   // TOTO пересмотреть концепцию конструктора
   // перестроить его через kernel(module private)
-  builder(environment::tmp &tenv, environment::persist &penv,
+  builder(environment::persist &penv, environment::tmp &tenv,
           insert_iterator it) noexcept
-      : builder_base{tenv, penv, it, *this},
+      : builder_base{penv, tenv, it, *this},
         builder_element_interface{tenv, penv, it, *this},
         builder_state_interface{tenv, penv, it, *this},
         builder_uid_interface{tenv, penv, it, *this},
@@ -257,7 +250,7 @@ struct director {
     tenv.meta.viewport_size = viewport;
     tree::flat_unordered_type<sketch::value_t> tree;
 
-    builder b{tenv, penv, {tree.root()}};
+    builder b{penv, tenv, {tree.root()}};
 
     call(b);
 
@@ -344,6 +337,7 @@ void builder_element_interface::text(const iuic::text::raw::token &token,
                                      const layout::text &layout_) {
   auto ait = tree::access_iterator{it};
 
+  // if not insert ?
   auto nit = it.at(sketch::value_t{
       .layout = &layout_,
       .uid = uid_,
@@ -372,8 +366,8 @@ void builder_element_interface::text(
 // ---- IMPL [uid] ----
 
 units::uid
-builder_uid_interface::make(const std::string &str,
-                            const utils::anchor &anchor) const noexcept {
+builder_uid_interface::make_static(const std::string &str,
+                                   const utils::anchor &anchor) const noexcept {
 
   std::stringstream ss;
   ss << anchor.value;
@@ -382,47 +376,24 @@ builder_uid_interface::make(const std::string &str,
       static_cast<std::uint64_t>(std::hash<std::string>{}(ss.str()))};
 };
 
-units::uid builder_uid_interface::make(policy::shared sh,
-                                       const std::string &str,
-                                       const utils::anchor &anchor) {
-  std::stringstream ss;
-  ss << anchor.value;
-  ss << "shared--";
-  ss << str;
-  tree::root_iterator rit{it};
+units::uid builder_uid_interface::make_unique(const std::string &str,
+                                              const utils::anchor &anchor) {
+  static thread_local char buff[512]{"--unique--"};
 
-  if (++rit) {
-    ss << std::to_underlying(tree::access_iterator{++rit}->uid);
-  } else {
-    ss << "--root-of";
-  }
-
-  return units::uid{
-      static_cast<std::uint64_t>(std::hash<std::string>{}(ss.str()))};
-};
-
-units::uid builder_uid_interface::make(policy::unique, const std::string &str,
-                                       const utils::anchor &anchor) {
-  static thread_local char buff[512]{"--unique"};
-
-  std::size_t size{8};
+  std::size_t size{10};
 
   if (unique_uid.empty()) {
-    static char first[]{"--first"};
-    std::memcpy(&buff[9], first, 8);
-    size += 8;
+    static std::size_t zero{0};
+    std::memcpy(&buff[size + 1], &zero, sizeof(std::size_t));
+    size += sizeof(std::size_t);
   } else {
-    static char last[]{"--last--unique"};
-    std::memcpy(&buff[9], last, 15);
-    std::memcpy(&buff[24], &unique_uid.back(), sizeof(std::size_t));
-    size += 8 + 15 + sizeof(std::size_t);
+    std::memcpy(&buff[size + 1], &unique_uid.back(), sizeof(std::size_t));
+    size += sizeof(std::size_t);
   }
 
   std::size_t hash = std::hash<std::string_view>{}({buff, size});
 
   unique_uid.push_back(hash);
-
-  // std::println("hash : {}", hash);
 
   return units::uid{static_cast<std::uint64_t>(hash)};
 };

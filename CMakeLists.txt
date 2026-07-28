@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.31)
 
 project(iuic LANGUAGES CXX)
 
+option(IUIC_BUILD_TESTS "Build unit tests" ON)
 ## project ENV ?
-
 
 ## lvl - 0
 add_subdirectory(underlying)
