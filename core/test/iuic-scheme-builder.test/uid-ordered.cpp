@@ -19,10 +19,10 @@ extern "C++" int main() {
 
   scheme::builder builder{penv, tenv, {tree.root()}};
 
-  auto uid_1 = builder.uid.make_unique("unique");
-  auto uid_2 = builder.uid.make_unique("unique");
+  auto uid_1 = builder.uid.make_ordered("unique");
+  auto uid_2 = builder.uid.make_ordered("unique");
 
-  if (uid_1 == uid_2) {
+  if (uid_1 != uid_2) {
     return 1;
   }
 
@@ -30,8 +30,8 @@ extern "C++" int main() {
 
   style::sid sid{0};
   bool res{false};
-  builder.element.frame(uid_1, sid, layout, [&](auto &b) {
-    auto uid_3 = b.uid.make_unique("unique");
+  builder.element.frame(uid_1, sid, layout, [&](auto &b) { // <-- root ch
+    auto uid_3 = b.uid.make_ordered("unique");
     res = uid_1 == uid_3;
   });
 

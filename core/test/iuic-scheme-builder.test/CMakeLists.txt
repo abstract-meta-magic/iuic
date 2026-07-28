@@ -1,23 +1,37 @@
-add_executable(uid_str)
+add_executable(uid_static)
 
-target_link_libraries(uid_str PRIVATE iuic_core)
+target_link_libraries(uid_static PRIVATE iuic_core)
 
-target_sources(uid_str
+target_sources(uid_static
 	PUBLIC
-	"uid-str.cpp"
+	"uid-static.cpp"
 )
 
-add_test(NAME "iuic-scheme-builder[uid::static]" COMMAND uid_str LABELS "unit;core")
+add_test(NAME "iuic-scheme-builder[uid::static]" COMMAND uid_static LABELS "unit;core")
 
 
 
-add_executable(uid_unique)
+add_executable(uid_ordered)
 
-target_link_libraries(uid_unique PRIVATE iuic_core)
+target_link_libraries(uid_ordered PRIVATE iuic_core)
 
-target_sources(uid_unique
+target_sources(uid_ordered
 	PUBLIC
-	"uid-unique.cpp"
+	"uid-ordered.cpp"
 )
 
-add_test(NAME "iuic-scheme-builder[uid::unique]" COMMAND uid_unique LABELS "unit;core")
+add_test(NAME "iuic-scheme-builder[uid::ordered]" COMMAND uid_ordered LABELS "unit;core")
+
+
+
+add_executable(uid_stable)
+
+target_link_libraries(uid_stable PRIVATE iuic_core)
+
+target_sources(uid_stable
+	PUBLIC
+	"uid-stable.cpp"
+)
+
+add_test(NAME "iuic-scheme-builder[uid::stabel]" COMMAND uid_stable LABELS "unit;core")
+

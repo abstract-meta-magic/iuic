@@ -31,16 +31,23 @@ public:
   builder_base(environment::persist &penv_, environment::tmp &tenv_,
                insert_iterator it_, builder &builder_)
       : penv{penv_}, tenv{tenv_}, it{it_}, builder{builder_} {
-
-    unique_uid.reserve(400);
-  };
+    deep_index.reserve(200);
+    deep_index.push_back({});
+  }
 
   environment::persist &penv;
   environment::tmp &tenv;
   insert_iterator it;
   builder &builder;
-  std::vector<std::size_t> unique_uid;
-  std::uint32_t index{0};
+
+  struct index {
+    std::size_t position{0};
+    std::size_t branch{0};
+  };
+
+  std::vector<index> deep_index{};
+  std::size_t current_deep{0};
+  std::uint32_t global_index{0};
 };
 
 struct builder_element_interface : protected virtual builder_base {
@@ -114,8 +121,10 @@ struct builder_uid_interface : protected virtual builder_base {
   make_static(const std::string &str,
               const utils::anchor &anchor = default_anchor) const noexcept;
 
-  units::uid make_unique(const std::string &str,
-                         const utils::anchor &anchor = default_anchor);
+  units::uid make_ordered(const std::string &str,
+                          const utils::anchor &anchor = default_anchor);
+
+  units::uid make_stable(const std::string &str, const utils::anchor &anchor);
 
   units::uid self() const noexcept;
 };
@@ -270,15 +279,24 @@ void builder_element_interface::frame(style::sid sid_,
                                       builder_block_cpt auto &&call) noexcept {
   auto ait = tree::access_iterator{it};
 
-  auto nit = it.at(
-      sketch::value_t{.layout = &layout,
-                      .uid = ait ? ait->uid : units::uid{0},
-                      .sid = sid_,
-                      .order = ait ? units::ui::order{index++, ait->order.layer}
-                                   : units::ui::order{index++, 0}});
+  ++deep_index.at(current_deep).position;
+  auto nit = it.at(sketch::value_t{
+      .layout = &layout,
+      .uid = ait ? ait->uid : units::uid{0},
+      .sid = sid_,
+      .order = ait ? units::ui::order{global_index++, ait->order.layer}
+                   : units::ui::order{global_index++, 0}});
 
   std::swap(nit, it);
+
+  ++current_deep;
+  if (deep_index.size() == current_deep) {
+    deep_index.push_back({});
+  }
   call(builder);
+  ++deep_index.at(current_deep).branch;
+  deep_index.at(current_deep).position = 0;
+  --current_deep;
   std::swap(nit, it);
 };
 
@@ -287,27 +305,38 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       builder_block_cpt auto &&call) noexcept {
   auto ait = tree::access_iterator{it};
 
-  auto nit = it.at(
-      sketch::value_t{.layout = &layout_,
-                      .uid = uid_,
-                      .sid = sid_,
-                      .order = ait ? units::ui::order{index++, ait->order.layer}
-                                   : units::ui::order{index++, 0}});
+  std::println("max deap : {}", deep_index.size());
+  ++deep_index.at(current_deep).position;
+  auto nit = it.at(sketch::value_t{
+      .layout = &layout_,
+      .uid = uid_,
+      .sid = sid_,
+      .order = ait ? units::ui::order{global_index++, ait->order.layer}
+                   : units::ui::order{global_index++, 0}});
 
   std::swap(nit, it);
+  ++current_deep;
+  if (deep_index.size() == current_deep) {
+    deep_index.push_back({});
+  }
   call(builder);
+  ++deep_index.at(current_deep).branch;
+  deep_index.at(current_deep).position = 0;
+  --current_deep;
   std::swap(nit, it);
 };
+
 void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       const layout::frame &layout_) noexcept {
   auto ait = tree::access_iterator{it};
 
-  auto nit = it.at(
-      sketch::value_t{.layout = &layout_,
-                      .uid = uid_,
-                      .sid = sid_,
-                      .order = ait ? units::ui::order{index++, ait->order.layer}
-                                   : units::ui::order{index++, 0}});
+  ++deep_index.at(current_deep).position;
+  auto nit = it.at(sketch::value_t{
+      .layout = &layout_,
+      .uid = uid_,
+      .sid = sid_,
+      .order = ait ? units::ui::order{global_index++, ait->order.layer}
+                   : units::ui::order{global_index++, 0}});
 };
 
 void builder_element_interface::frame(style::sid sid_,
@@ -315,12 +344,13 @@ void builder_element_interface::frame(style::sid sid_,
 
   auto ait = tree::access_iterator{it};
 
-  auto nit = it.at(
-      sketch::value_t{.layout = &layout_,
-                      .uid = ait ? ait->uid : units::uid{0},
-                      .sid = sid_,
-                      .order = ait ? units::ui::order{index++, ait->order.layer}
-                                   : units::ui::order{index++, 0}});
+  ++deep_index.at(current_deep).position;
+  auto nit = it.at(sketch::value_t{
+      .layout = &layout_,
+      .uid = ait ? ait->uid : units::uid{0},
+      .sid = sid_,
+      .order = ait ? units::ui::order{global_index++, ait->order.layer}
+                   : units::ui::order{global_index++, 0}});
 };
 
 void builder_element_interface::text(const iuic::text::raw::token &token,
@@ -338,12 +368,13 @@ void builder_element_interface::text(const iuic::text::raw::token &token,
   auto ait = tree::access_iterator{it};
 
   // if not insert ?
+  ++deep_index.at(current_deep).position;
   auto nit = it.at(sketch::value_t{
       .layout = &layout_,
       .uid = uid_,
       .sid = sid_,
-      .order = ait ? units::ui::order{index++, ait->order.layer}
-                   : units::ui::order{index++, 0},
+      .order = ait ? units::ui::order{global_index++, ait->order.layer}
+                   : units::ui::order{global_index++, 0},
       .text = {&token, 1} // SINGLE TOKEN SPAN
   });
 };
@@ -353,15 +384,16 @@ void builder_element_interface::text(
     const layout::text &layout_) {
   auto ait = tree::access_iterator{it};
 
-  auto nit = it.at(
-      sketch::value_t{.layout = &layout_,
-                      .uid = ait ? ait->uid : units::uid{0},
-                      .sid = iuic::style::sid{0},
-                      .order = ait ? units::ui::order{index++, ait->order.layer}
-                                   : units::ui::order{index++, 0},
-                      .text = tokens
+  ++deep_index.at(current_deep).position;
+  auto nit = it.at(sketch::value_t{
+      .layout = &layout_,
+      .uid = ait ? ait->uid : units::uid{0},
+      .sid = iuic::style::sid{0},
+      .order = ait ? units::ui::order{global_index++, ait->order.layer}
+                   : units::ui::order{global_index++, 0},
+      .text = tokens
 
-      });
+  });
 };
 // ---- IMPL [uid] ----
 
@@ -376,24 +408,52 @@ builder_uid_interface::make_static(const std::string &str,
       static_cast<std::uint64_t>(std::hash<std::string>{}(ss.str()))};
 };
 
-units::uid builder_uid_interface::make_unique(const std::string &str,
-                                              const utils::anchor &anchor) {
-  static thread_local char buff[512]{"--unique--"};
+units::uid builder_uid_interface::make_ordered(const std::string &str,
+                                               const utils::anchor &anchor) {
+  static thread_local char buff[512]{"--unique--"}; // type prefix
 
   std::size_t size{10};
 
-  if (unique_uid.empty()) {
-    static std::size_t zero{0};
-    std::memcpy(&buff[size + 1], &zero, sizeof(std::size_t));
-    size += sizeof(std::size_t);
-  } else {
-    std::memcpy(&buff[size + 1], &unique_uid.back(), sizeof(std::size_t));
-    size += sizeof(std::size_t);
-  }
+  std::size_t order[3]{0, 0, 0};
+
+  order[0] = current_deep;
+  order[1] = deep_index.at(current_deep).position;
+  order[2] = deep_index.at(current_deep).branch;
+
+  std::memcpy(&buff[size], &order, sizeof(order));
+  size += sizeof(order);
+  std::memcpy(&buff[size], &anchor.value, sizeof(order));
+  size += sizeof(anchor.value);
+  std::memcpy(&buff[size], str.data(), str.size());
+  size += str.size();
+  // make_ordered();
+  // make_stable();
 
   std::size_t hash = std::hash<std::string_view>{}({buff, size});
 
-  unique_uid.push_back(hash);
+  return units::uid{static_cast<std::uint64_t>(hash)};
+};
+
+units::uid builder_uid_interface::make_stable(const std::string &str,
+                                              const utils::anchor &anchor) {
+  static thread_local char buff[512]{"--stable--"}; // type prefix
+  std::size_t size{10};
+
+  if (auto ait = tree::access_iterator{it}) {
+    std::memcpy(&buff[size], &ait->uid, sizeof(units::uid));
+    size += sizeof(units::uid);
+  } else {
+    std::memcpy(&buff[size], &size, sizeof(size));
+    size += sizeof(size);
+  }
+
+  std::memcpy(&buff[size], str.data(), str.size());
+  size += str.size();
+
+  std::memcpy(&buff[size], &anchor.value, sizeof(anchor.value));
+  size += sizeof(anchor.value);
+
+  std::size_t hash = std::hash<std::string_view>{}({buff, size});
 
   return units::uid{static_cast<std::uint64_t>(hash)};
 };
