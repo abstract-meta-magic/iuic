@@ -9,6 +9,9 @@ import iuic.style;
 import iuic.event;
 
 export namespace iuic::exception {
+struct try_override_freeze : std::logic_error {
+  try_override_freeze() : std::logic_error{"Try override freeze object"} {};
+};
 
 struct tmp_buffer_overflow : std::overflow_error {
   tmp_buffer_overflow() : std::overflow_error{"TMP BUFFER OVERFLOW"} {};
@@ -46,10 +49,10 @@ struct tmp : iuic::advance::interface {
   private:
     struct meta {
       style::index index;
-      bool fork{false};
-      // override info
-      // fork of
-      // decl info
+      bool is_shape_overrided{false};
+      bool is_decoration_overrided{false};
+      bool is_transform_overrided{false};
+      bool is_freeze{false};
     };
 
   public:
@@ -83,7 +86,7 @@ struct tmp : iuic::advance::interface {
         nindex.transform = sheet.transform.size() - 1;
         nindex.advance = sheet.advence.size() - 1;
         // stage 2
-        index.insert({++free_index, {nindex}});
+        index.insert({++free_index, {.index = nindex, .is_freeze = true}});
 
         indexed_decl.insert({decl, free_index});
       }
@@ -94,64 +97,89 @@ struct tmp : iuic::advance::interface {
       return make(std::addressof(decl));
     };
 
-    style::sid override(style::sid sid, style::shape &&shape) {
+    bool override(style::sid sid, std::invocable<style::shape &> auto &&call) {
+      if (auto it = index.find(sid); it != index.end()) {
+        auto &meta = it->second;
 
-      if (index.contains(sid)) {
-        if (not index.at(sid).fork) {
-          index.insert({++free_index, {index.at(sid).index, true}});
-          sid = free_index;
+        if (meta.is_freeze) {
+          return false;
         }
 
-        auto &meta = index.at(sid);
-        sheet.shape.push_back(std::move(shape));
-        meta.index.shape = sheet.shape.size() - 1;
+        if (not meta.is_shape_overrided) {
+          sheet.shape.push_back(sheet.shape.at(meta.index.shape)); // COW
+          meta.index.shape = sheet.shape.size() - 1;
+        }
+        call(sheet.shape.at(meta.index.shape));
+        return true;
       }
+      return false;
+    };
 
+    bool override(style::sid sid,
+                  std::invocable<style::decoration &> auto &&call) {
+      if (auto it = index.find(sid); it != index.end()) {
+        auto &meta = it->second;
+
+        if (meta.is_freeze) {
+          return false;
+        }
+
+        if (not meta.is_decoration_overrided) {
+          sheet.decoration.push_back(
+              sheet.decoration.at(meta.index.decoration)); // COW
+          meta.index.decoration = sheet.decoration.size() - 1;
+        }
+
+        call(sheet.decoration.at(meta.index.decoration));
+        return true;
+      }
+      return false;
+    };
+
+    bool override(style::sid sid,
+                  std::invocable<style::transform &> auto &&call) {
+      if (auto it = index.find(sid); it != index.end()) {
+        auto &meta = it->second;
+
+        if (meta.is_freeze) {
+          return false;
+        }
+
+        if (not meta.is_transform_overrided) {
+          sheet.transform.push_back(
+              sheet.transform.at(meta.index.transform)); // COW
+          meta.index.transform = sheet.transform.size() - 1;
+        }
+
+        call(sheet.transform.at(meta.index.transform));
+
+        return true;
+      }
+      return false;
+    };
+
+    style::sid fork(style::sid sid) {
+      if (auto it = index.find(sid); it != index.end()) {
+        auto &meta = it->second;
+
+        auto insert = index.insert(
+            {++free_index, {meta.index}}); // all flags set to false
+
+        if (insert.second) {
+          return insert.first->first;
+        }
+      }
+      // exception ???
       return sid;
     };
 
-    style::sid override(style::sid sid, style::decoration &&decoracion) {
-      if (index.contains(sid)) {
-        if (not index.at(sid).fork) {
-          index.insert({++free_index, {index.at(sid).index, true}});
-          sid = free_index;
-        }
+    style::sid freeze(style::sid sid) {
+      if (auto it = index.find(sid); it != index.end()) {
+        auto &meta = it->second;
 
-        auto &meta = index.at(sid);
-        sheet.decoration.push_back(std::move(decoracion));
-        meta.index.decoration = sheet.decoration.size() - 1;
+        meta.is_freeze = true;
+        // restruct ???
       }
-
-      return sid;
-    };
-
-    style::sid override(style::sid sid, style::transform &&transform) {
-      if (index.contains(sid)) {
-        if (not index.at(sid).fork) {
-          index.insert({++free_index, {index.at(sid).index, true}});
-          sid = free_index;
-        }
-
-        auto &meta = index.at(sid);
-        sheet.transform.push_back(std::move(transform));
-        meta.index.transform = sheet.transform.size() - 1;
-      }
-
-      return sid;
-    };
-
-    style::sid override(style::sid sid, style::advanced &&advance) {
-      if (index.contains(sid)) {
-        if (not index.at(sid).fork) {
-          index.insert({++free_index, {index.at(sid).index, true}});
-          sid = free_index;
-        }
-
-        auto &meta = index.at(sid);
-        sheet.advence.push_back(std::move(advance));
-        meta.index.advance = sheet.advence.size() - 1;
-      }
-
       return sid;
     };
 

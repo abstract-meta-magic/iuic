@@ -177,19 +177,35 @@ struct builder_style_interface : protected virtual builder_base {
 
   style::sid self();
 
-  style::sid override(style::sid sid);
-
-  style::sid make(style::sid sid);
-
   style::sid make(const style::decl *s);
 
   style::sid make(const style::decl &s);
 
-  style::sid make(style::sid sid, style::shape &&);
+  // throw exception
+  void override(style::sid sid, std::invocable<style::shape &> auto &&call);
 
-  style::sid make(style::sid sid, style::transform &&);
+  // throw exception
+  void override(style::sid sid,
+                std::invocable<style::decoration &> auto &&call);
 
-  style::sid make(style::sid sid, style::decoration &&);
+  // throw exception
+  void override(style::sid sid, std::invocable<style::transform &> auto &&call);
+
+  bool try_override(style::sid sid, std::invocable<style::shape &> auto &&call);
+
+  bool try_override(style::sid sid,
+                    std::invocable<style::decoration &> auto &&call);
+
+  bool try_override(style::sid sid,
+                    std::invocable<style::transform &> auto &&call);
+
+  style::sid fork(style::sid sid);
+
+  style::sid freeze(style::sid sid);
+
+  void replace_self_style(style::sid sid);
+
+  style::value get(style::sid sid);
 };
 
 struct builder_state_interface : protected virtual builder_base {
@@ -487,12 +503,8 @@ style::sid builder_style_interface::self() {
   return tree::access_iterator{it}->sid;
 };
 
-style::sid builder_style_interface::override(style::sid sid) {
-  return tree::access_iterator{it}->sid = sid;
-};
-
-style::sid builder_style_interface::make(style::sid sid) {
-  return tenv.style.make(sid);
+void builder_style_interface::replace_self_style(style::sid sid) {
+  tree::access_iterator{it}->sid = sid;
 };
 
 style::sid builder_style_interface::make(const style::decl *s) {
@@ -503,18 +515,55 @@ style::sid builder_style_interface::make(const style::decl &s) {
   return tenv.style.make(s);
 };
 
-style::sid builder_style_interface::make(style::sid sid, style::shape &&shape) {
-  return tenv.style.override(sid, std::move(shape));
+// throw exception
+void builder_style_interface::override(
+    style::sid sid, std::invocable<style::shape &> auto &&call) {
+  if (not tenv.style.override(sid, std::forward<decltype(call)>(call))) {
+    throw iuic::exception::try_override_freeze{};
+  }
 };
 
-style::sid builder_style_interface::make(style::sid sid,
-                                         style::transform &&transform) {
-  return tenv.style.override(sid, std::move(transform));
+// throw exception
+void builder_style_interface::override(
+    style::sid sid, std::invocable<style::decoration &> auto &&call) {
+  if (not tenv.style.override(sid, std::forward<decltype(call)>(call))) {
+    throw iuic::exception::try_override_freeze{};
+  }
 };
 
-style::sid builder_style_interface::make(style::sid sid,
-                                         style::decoration &&decoration) {
-  return tenv.style.override(sid, std::move(decoration));
+// throw exception
+void builder_style_interface::override(
+    style::sid sid, std::invocable<style::transform &> auto &&call) {
+  if (not tenv.style.override(sid, std::forward<decltype(call)>(call))) {
+    throw iuic::exception::try_override_freeze{};
+  }
+};
+
+bool builder_style_interface::try_override(
+    style::sid sid, std::invocable<style::shape &> auto &&call) {
+  return tenv.style.override(sid, std::forward<decltype(call)>(call));
+};
+
+bool builder_style_interface::try_override(
+    style::sid sid, std::invocable<style::decoration &> auto &&call) {
+  return tenv.style.override(sid, std::forward<decltype(call)>(call));
+};
+
+bool builder_style_interface::try_override(
+    style::sid sid, std::invocable<style::transform &> auto &&call) {
+  return tenv.style.override(sid, std::forward<decltype(call)>(call));
+};
+
+style::sid builder_style_interface::fork(style::sid sid) {
+  return tenv.style.fork(sid);
+};
+
+style::sid builder_style_interface::freeze(style::sid sid) {
+  return tenv.style.freeze(sid);
+};
+
+style::value builder_style_interface::get(style::sid sid) {
+  return tenv.style.get(sid);
 };
 
 // ---- IMPL [memory] ----
