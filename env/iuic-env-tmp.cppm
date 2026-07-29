@@ -8,6 +8,36 @@ import iuic.state;
 import iuic.style;
 import iuic.event;
 
+export namespace iuic::exception {
+
+struct tmp_buffer_overflow : std::overflow_error {
+  tmp_buffer_overflow() : std::overflow_error{"TMP BUFFER OVERFLOW"} {};
+};
+
+}; // namespace iuic::exception
+
+namespace iuic::environment {
+
+std::pmr::memory_resource *buffer_overflow_ex_resource() {
+  struct : public std::pmr::memory_resource {
+  protected:
+    void *do_allocate(std::size_t, std::size_t) override {
+      throw iuic::exception::tmp_buffer_overflow{};
+    };
+
+    void do_deallocate(void *, std::size_t, std::size_t) override {};
+
+    bool do_is_equal(
+        const std::pmr::memory_resource &other) const noexcept override {
+      return false;
+    };
+  } static _;
+
+  return &_;
+};
+
+}; // namespace iuic::environment
+
 export namespace iuic::environment {
 struct tmp : iuic::advance::interface {
   struct : private advance::interface {
@@ -195,15 +225,18 @@ struct tmp : iuic::advance::interface {
 
   private:
     void *allocate(std::size_t size, std::size_t align, std::size_t count = 1) {
+      // throw
       return allocator.allocate(size * count, align);
     };
+
     void advance() override { allocator.release(); };
 
   private:
     std::array<std::byte, iuic::cenv::num("iuic::sizeof::buff::tmp")
                               .value_or(1024 * 1024 * 4)>
         tmp_buff;
-    std::pmr::monotonic_buffer_resource allocator{&tmp_buff, tmp_buff.size()};
+    std::pmr::monotonic_buffer_resource allocator{
+        &tmp_buff, tmp_buff.size(), buffer_overflow_ex_resource()};
 
   } memory;
 

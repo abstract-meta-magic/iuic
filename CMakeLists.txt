@@ -6,6 +6,7 @@ option(IUIC_BUILD_TESTS "Build unit tests" ON)
 ## project ENV ?
 
 ## lvl - 0
+add_subdirectory(test)
 add_subdirectory(underlying)
 ## lvl - 1
 add_subdirectory(text)

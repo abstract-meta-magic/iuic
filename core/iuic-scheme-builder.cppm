@@ -533,6 +533,8 @@ void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
   if (auto state = access.state();
       state == environment::object_state::non_exist) {
     access.reserve();
+  } else if (state == environment::object_state::alive_this_type) {
+    access.update_lifetime();
   }
 };
 
@@ -556,8 +558,6 @@ void builder_memory_interface::init_if_not(units::uid uid,
       state == environment::object_state::reserve_this_type) {
     access.allocate();
     access.construct([&](void *mem) { new (mem) type{call()}; });
-  } else if (state == environment::object_state::alive_this_type) {
-    access.update_lifetime();
   }
 };
 

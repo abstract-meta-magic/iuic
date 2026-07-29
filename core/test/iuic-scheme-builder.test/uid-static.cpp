@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module iuic.core;
+import iuic.test;
 import iuic.underlying;
 import iuic.env;
 import :scheme.builder;
@@ -10,37 +11,38 @@ using namespace iuic;
 
 #include "dummy-layout.inc"
 
-extern "C++" int main() {
-  advance::pool p;
-  environment::persist penv{p};
-  environment::tmp tenv{p};
+namespace {
+struct test : iuic::test::unit<test> {
+  static constexpr std::string_view name{"uid::static"};
 
-  tree::flat_unordered_type<scheme::sketch::value_t> tree;
+  void body(iuic::test::utils utils) {
+    advance::pool p;
+    environment::persist penv{p};
+    environment::tmp tenv{p};
 
-  scheme::builder builder{penv, tenv, {tree.root()}};
+    tree::flat_unordered_type<scheme::sketch::value_t> tree;
 
-  auto uid_1 = builder.uid.make_static("STR");
+    scheme::builder builder{penv, tenv, {tree.root()}};
 
-  auto uid_2 = builder.uid.make_static("STR");
-  if (uid_1 != uid_2) {
-    return 1;
+    auto uid_1 = builder.uid.make_static("STR");
+
+    auto uid_2 = builder.uid.make_static("STR");
+
+    utils.eq(uid_1, uid_2, "static uid [STR]:[STR]");
+
+    auto uid_3 = builder.uid.make_static("STR-");
+
+    utils.neq(uid_1, uid_3, "static uid [STR]:[STR-]");
+
+    static dummy_layout layout;
+
+    style::sid sid{0};
+    builder.element.frame(sid, layout, [&](auto &b) {
+      auto uid_4 = b.uid.make_static("STR");
+      utils.eq(uid_1, uid_4, "inner static uid [STR]:[STR]");
+    });
   }
+} _{};
+}; // namespace
 
-  auto uid_3 = builder.uid.make_static("STR-");
-
-  if (uid_1 == uid_3) {
-    return 1;
-  }
-
-  static dummy_layout layout;
-
-  style::sid sid{0};
-  bool res{false};
-  builder.element.frame(sid, layout, [&](auto &b) {
-    auto uid_4 = b.uid.make_static("STR");
-    res = uid_1 == uid_4;
-  });
-  if (not res) {
-    return 1;
-  }
-};
+extern "C++" int main() { return iuic::test::registry::instance().run(); };
