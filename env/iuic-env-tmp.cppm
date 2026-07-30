@@ -7,6 +7,7 @@ import iuic.underlying;
 import iuic.state;
 import iuic.style;
 import iuic.event;
+import :tmp.policy;
 
 export namespace iuic::exception {
 struct try_override_freeze : std::logic_error {
@@ -192,55 +193,7 @@ struct tmp : iuic::advance::interface {
 
   event::hub event;
 
-  struct : private advance::interface {
-    friend tmp;
-
-    struct policy {
-      const erasure::type *type;
-      std::uint64_t value;
-      units::uid uid;
-    };
-
-    void set(units::uid uid, auto p)
-      requires(sizeof(p) < sizeof(std::uint64_t) && std::is_enum_v<decltype(p)>)
-    {
-      policy el;
-      el.value = std::to_underlying(p);
-      el.uid = uid;
-      el.type = erasure::type::from<decltype(p)>();
-
-      if (auto it = std::find_if(
-              data.begin(), data.end(),
-              [&](policy &p) { return el.uid == p.uid && el.type == p.type; });
-          it != data.end()) {
-        (*it).value = std::to_underlying(p);
-      } else {
-        data.push_back(el);
-      }
-    };
-
-    template <typename T>
-    T get(units::uid uid)
-      requires(sizeof(T) < sizeof(std::uint64_t) && std::is_enum_v<T>)
-    {
-      auto *type = erasure::type::from<T>();
-      if (auto it = std::find_if(
-              data.begin(), data.end(),
-              [&](policy &p) { return uid == p.uid && type == p.type; });
-          it != data.end()) {
-
-        return static_cast<T>(
-            static_cast<std::underlying_type_t<T>>(it->value));
-      } else {
-        return {};
-      };
-    };
-
-    void advance() override { data.clear(); };
-
-  private:
-    std::vector<policy> data;
-  } policy;
+  policy_storage policy;
 
   static constexpr std::size_t tmp_buff_size = 1024 * 1024 * 4;
 

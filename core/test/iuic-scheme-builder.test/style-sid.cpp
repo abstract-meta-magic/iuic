@@ -45,34 +45,84 @@ struct test_persist : iuic::test::unit<test_persist> {
     utils.neq(sid_1, sid_2, "[style-1]:[style-2]");
     utils.eq(sid_1, sid_3, "[style-1]:[style-1]");
 
-    // нужен ли явный фокр
-    // что на самом деле делает make
-    // как понять что, ты перезаписал стиль
-    /*
-      builder.style.make(decl);
-      builder.style.fork(sid)
-      builder.style.override(sid,part);
-      builder.style.try_override(sid,part); // noexcept
-      builder.style.freeze(sid); // lock override -> need explict fork
-     */
+    auto value_invalid = builder.style.get(style::sid{0}); // invalid sid
+    utils.rq_false(value_invalid.valid(), "invalid");
+
+    auto value_1 = builder.style.get(sid_1);
+    utils.rq_true(value_1, "validate style");
+    auto &shape_1 = value_1.get_shape();
+
+    utils.rq_true(std::visit(
+                      [&]<typename type>(const type &obj) {
+                        if constexpr (std::same_as<type, units::upixel>) {
+                          utils.eq(obj, 20_upx, "wrong value");
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      },
+                      shape_1.size.width),
+                  "wrong visit type");
+
+    utils.rq_true(std::visit(
+                      [&]<typename type>(const type &obj) {
+                        if constexpr (std::same_as<type, units::upixel>) {
+                          utils.eq(obj, 20_upx, "wrong value");
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      },
+                      shape_1.size.height),
+                  "wrong visit type");
+
     utils.ex_catch<iuic::exception::try_override_freeze>(
         [&]() { builder.style.override(sid_1, [](style::shape &shape) {}); },
         "by default decl is freeze");
 
     auto sid_4 = builder.style.fork(sid_1);
     utils.ex_nothrow(
-        [&]() { builder.style.override(sid_4, [](style::shape &shape) {}); },
+        [&]() {
+          builder.style.override(sid_4, [](style::shape &shape) {
+            shape.size.width = 80_upx;
+            shape.size.height = 80_upx;
+          });
+        },
         "invalid freeze");
+
     builder.style.freeze(sid_4);
     utils.ex_catch<iuic::exception::try_override_freeze>(
         [&]() { builder.style.override(sid_4, [](style::shape &shape) {}); },
         "invalid freeze");
 
-    // ex_catch -> try_override_freeze{};
+    auto value_2 = builder.style.get(sid_4);
 
-    // etc...
+    utils.rq_true(value_2.valid(), "invalid style");
+    auto &shape_2 = value_2.get_shape();
 
-    auto style = builder.style.get(sid_4);
+    utils.rq_true(std::visit(
+                      [&]<typename type>(const type &obj) {
+                        if constexpr (std::same_as<type, units::upixel>) {
+                          utils.eq(obj, 80_upx, "wrong value");
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      },
+                      shape_2.size.width),
+                  "wrong visit type");
+
+    utils.rq_true(std::visit(
+                      [&]<typename type>(const type &obj) {
+                        if constexpr (std::same_as<type, units::upixel>) {
+                          utils.eq(obj, 80_upx, "wrong value");
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      },
+                      shape_2.size.height),
+                  "wrong visit type");
   };
 } _{};
 } // namespace

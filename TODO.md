@@ -1,3 +1,3 @@
-- tests                -> v0.3.* 
+- tests + examples     -> v0.3.* 
 - iuic::log            -> v0.4.*
 - iuic::state::machine -> v0.5.*

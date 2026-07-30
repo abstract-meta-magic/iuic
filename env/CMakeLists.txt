@@ -4,6 +4,7 @@ target_sources(${PROJECT_NAME}_env PUBLIC
 	FILE_SET iuic_env_modules
 	TYPE CXX_MODULES
 	FILES
+	"iuic-env-tmp-policy.cppm"
 	"iuic-env-tmp.cppm"
 	"iuic-env-persist-decl.cppm"
 	"iuic-env-persist-object.cppm"

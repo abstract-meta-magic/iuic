@@ -108,6 +108,12 @@ struct builder_policy_interface : protected virtual builder_base {
       : builder_base{penv_, tenv_, it_, builder_} {}
 
   void set(auto p);
+
+  void set(units::uid uid, auto p);
+
+  template <typename T> T get();
+
+  template <typename T> T get(units::uid uid);
 };
 
 struct builder_uid_interface : protected virtual builder_base {
@@ -321,7 +327,6 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       builder_block_cpt auto &&call) noexcept {
   auto ait = tree::access_iterator{it};
 
-  std::println("max deap : {}", deep_index.size());
   ++deep_index.at(current_deep).position;
   auto nit = it.at(sketch::value_t{
       .layout = &layout_,
@@ -693,7 +698,19 @@ builder_text_interface::dynamic_token(text::atlas::id id,
 };
 // ---- IMPL [policy] ----
 
+void builder_policy_interface::set(units::uid uid, auto p) {
+  tenv.policy.set(uid, p);
+};
+
 void builder_policy_interface::set(auto p) {
-  tenv.policy.set(tree::access_iterator{it}->uid, p);
+  set(tree::access_iterator{it}->uid, p);
+};
+
+template <typename T> T builder_policy_interface::get(units::uid uid) {
+  return tenv.policy.get<T>(uid);
+};
+
+template <typename T> T builder_policy_interface::get() {
+  return get<T>(tree::access_iterator{it}->uid);
 };
 }; // namespace iuic::scheme

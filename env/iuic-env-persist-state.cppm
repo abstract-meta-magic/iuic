@@ -13,7 +13,7 @@ struct persist_state_storage : iuic::advance::interface {
   using index_t = std::size_t;
   struct slot {
     units::uid uid{0};
-    std::uint32_t geniration{0};
+    std::int32_t generation{0};
     std::array<state::value, 3> static_data{nullptr, nullptr, nullptr};
     std::vector<state::value> dynamic_data; // pre alloc 6
   };
@@ -52,6 +52,7 @@ struct persist_state_storage : iuic::advance::interface {
       for (auto &state : slot.static_data) {
         if (state == nullptr) {
           state = value;
+          slot.generation = storage.generation;
           return;
         }
       }
@@ -62,6 +63,7 @@ struct persist_state_storage : iuic::advance::interface {
         }
       }
       slot.dynamic_data.push_back(value);
+      slot.generation = storage.generation;
     };
 
     void detach(state::value value) {
@@ -83,7 +85,7 @@ struct persist_state_storage : iuic::advance::interface {
 
     void update_lifetime() {
       auto &slot = storage.pool.at(access_index);
-      slot.geniration = storage.geniration;
+      slot.generation = storage.generation;
     };
 
   private:
@@ -96,10 +98,26 @@ struct persist_state_storage : iuic::advance::interface {
 
 private:
   void sync_GC() {
-    // do job
+    // TODO : rework
     for (auto &slot : pool) {
-      if (slot.geniration != 0 && (geniration - slot.geniration) > 3) {
-        std::exchange(slot, {.uid = slot.uid});
+      if (slot.generation != 0) {
+
+        std::int64_t diff = static_cast<std::int64_t>(generation) -
+                            static_cast<std::int64_t>(slot.generation);
+
+        const std::int64_t HALF_RANGE =
+            static_cast<std::int64_t>(
+                std::numeric_limits<std::int32_t>::max()) +
+            1;
+
+        if (diff > HALF_RANGE)
+          diff -= 2 * HALF_RANGE;
+        if (diff < -HALF_RANGE)
+          diff += 2 * HALF_RANGE;
+
+        if (std::abs(diff) > 6) {
+          std::exchange(slot, {.uid = slot.uid});
+        }
       }
     }
   };
@@ -126,12 +144,12 @@ private:
   };
 
   void advance() override {
-    ++geniration;
+    generation += 2;
     sync_GC();
   };
 
 private:
   std::array<slot, persist_max * 2> pool;
-  std::uint32_t geniration{1};
+  std::int32_t generation{1};
 };
 }; // namespace iuic::environment

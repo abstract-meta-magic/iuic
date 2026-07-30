@@ -8,6 +8,13 @@ set(TEST_NAMES
     memory_tmp
     # style
     style_sid
+    # state
+    state
+    # policy
+    policy
+    # text
+
+    # event ???
 )
 
 foreach(TEST_NAME ${TEST_NAMES})
