@@ -1,6 +1,7 @@
 add_library(${PROJECT_NAME}_underlying STATIC)
 
 
+add_subdirectory(cenv)
 add_subdirectory(utils)
 add_subdirectory(tree)
 add_subdirectory(units)
@@ -20,6 +21,7 @@ endif()
 
 ## UNDERLYING LIBS
 target_link_libraries(${PROJECT_NAME}_underlying
+	PUBLIC ${PROJECT_NAME}_underlying__cenv
 	PUBLIC ${PROJECT_NAME}_underlying__utils
 	PUBLIC ${PROJECT_NAME}_underlying__tree
 	PUBLIC ${PROJECT_NAME}_underlying__units
@@ -28,6 +30,7 @@ target_link_libraries(${PROJECT_NAME}_underlying
 
 target_compile_features(${PROJECT_NAME}_underlying
 	PRIVATE cxx_std_20
-	PRIVATE cxx_std_23)
+	PRIVATE cxx_std_23
+)
 
 add_library(${PROJECT_NAME}::underlying ALIAS ${PROJECT_NAME}_underlying)

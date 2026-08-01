@@ -170,10 +170,10 @@ struct builder_text_interface : protected virtual builder_base {
       : builder_base{penv_, tenv_, it_, builder_} {}
 
   // UTF-8
-  const text::raw::token &static_token(text::atlas::id, std::string_view);
+  const text::raw::token &static_token(std::string_view, std::string_view);
 
   // UTF-8
-  const text::raw::token &dynamic_token(text::atlas::id, std::string_view);
+  const text::raw::token &dynamic_token(std::string_view, std::string_view);
 };
 
 struct builder_style_interface : protected virtual builder_base {
@@ -617,8 +617,8 @@ void builder_memory_interface::init_if_not(units::uid uid,
 
 // ---- IMPL [text] ----
 const text::raw::token &
-builder_text_interface::static_token(text::atlas::id id,
-                                     std::string_view text) {
+builder_text_interface::static_token(std::string_view text,
+                                     std::string_view font) {
   struct data {
     text::raw::token token;
     std::vector<iuic::text::glyph::id_t> memory;
@@ -628,7 +628,8 @@ builder_text_interface::static_token(text::atlas::id id,
   static std::unordered_map<text::atlas::id,
                             std::unordered_map<std::string, data>>
       cache;
-  auto &atlas = text::atlas::by_id(id);
+  auto &atlas = text::atlas::by_name(font);
+  auto id = atlas.get_id();
 
   if (atlas.get_id() == text::atlas::invalid_id || text.size() > 50) {
     return inv;
@@ -663,11 +664,11 @@ builder_text_interface::static_token(text::atlas::id id,
 
 // UTF-8
 const text::raw::token &
-builder_text_interface::dynamic_token(text::atlas::id id,
-                                      std::string_view text) {
+builder_text_interface::dynamic_token(std::string_view text,
+                                      std::string_view font) {
   static text::raw::token inv{.atlas_id = text::atlas::invalid_id};
 
-  auto &atlas = text::atlas::by_id(id);
+  auto &atlas = text::atlas::by_name(font);
 
   if (atlas.get_id() == text::atlas::invalid_id || text.size() > 50) {
     return inv;
@@ -676,7 +677,7 @@ builder_text_interface::dynamic_token(text::atlas::id id,
   if (atlas.decoder->capabilities().is_std_char_support()) {
     auto res = atlas.decoder->decode(text); // exceptions
 
-    text::raw::token tk{.atlas_id = id, .glyphs = res};
+    text::raw::token tk{.atlas_id = atlas.get_id(), .glyphs = res};
 
     text::raw::token &tk_mem = tenv.memory.allocate<text::raw::token>()[0];
 
@@ -688,7 +689,7 @@ builder_text_interface::dynamic_token(text::atlas::id id,
       }
     }
 
-    tk_mem.atlas_id = id;
+    tk_mem.atlas_id = atlas.get_id();
     tk_mem.glyphs = gl_mem;
 
     return tk_mem;

@@ -13,7 +13,7 @@ set(TEST_NAMES
     # policy
     policy
     # text
-
+    text
     # event ???
 )
 
