@@ -15,6 +15,8 @@
 ---
 ## How to :
 ### Component
+- [box](./how-to/box.md)
+- [text-box](./how-to/text-box.md)
 ### Layout
 - frame 
 - text

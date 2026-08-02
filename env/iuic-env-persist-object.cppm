@@ -3,7 +3,6 @@
 export module iuic.env:persist.object;
 import std;
 import iuic.underlying;
-import :persist.decl;
 
 namespace iuic::environment {
 
@@ -422,8 +421,11 @@ struct persist_object_storage : iuic::advance::interface {
   };
 
 private:
+  static constexpr std::size_t pool_size =
+      iuic::cenv::num("iuic::env.persist_max").value_or(8192) * 2;
+
   index_t get_index(units::uid uid) {
-    auto point = std::to_underlying(uid) & (persist_max * 2 - 1);
+    auto point = std::to_underlying(uid) & (pool_size - 1);
     auto backup = point;
     auto end = point + 10;
 
@@ -483,7 +485,7 @@ private: // ADVANCE
   };
 
 private:
-  std::array<slot, persist_max * 2> pool; // x 2 for <40%
+  std::array<slot, pool_size> pool; // x 2 for <40%
   persist_object_storage_arena arena;
   std::uint32_t generation; // on advance ++
   // кол-во разбиений для вызова маркера.

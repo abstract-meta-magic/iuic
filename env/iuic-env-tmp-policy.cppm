@@ -1,24 +1,5 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
-module;
-
-namespace iuic::environment {
-
-#ifdef IUIC_TMP_STATIC_POILCY_STORAGE
-
-constexpr bool policy_tmp_storage_use_static{true};
-
-#ifndef IUIC_TMP_STATIC_POILCY_STORAGE_MAX
-constexpr std::size_t policy_tmp_storage_max{4048};
-#else
-constexpr std::size_t policy_tmp_storage_max{
-    IUIC_TMP_STATIC_POILCY_STORAGE_MAX};
-#endif
-
-#else
-constexpr bool policy_tmp_storage_use_static{false};
-#endif
-}; // namespace iuic::environment
 
 export module iuic.env:tmp.policy;
 import std;
@@ -157,11 +138,11 @@ private:
   std::vector<slot> slots;
 };
 
-template <bool = policy_tmp_storage_use_static>
-struct policy_storage_base_resolution;
+template <bool> struct policy_storage_base_resolution;
 
 template <> struct policy_storage_base_resolution<true> {
   // TODO : impl static std::array pool
+  // iuic::cenv::logic("iuic::env.tmp_static_policy_storage_size")
   using type = policy_storage_dynamic__;
 };
 
@@ -169,5 +150,8 @@ template <> struct policy_storage_base_resolution<false> {
   using type = policy_storage_dynamic__;
 };
 
-struct policy_storage : public policy_storage_base_resolution<>::type {};
+struct policy_storage
+    : public policy_storage_base_resolution<
+          iuic::cenv::logic("iuic::env.tmp_static_policy_storage")
+              .value_or(false)>::type {};
 }; // namespace iuic::environment

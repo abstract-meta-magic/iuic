@@ -50,13 +50,15 @@ struct test_ex : iuic::test::unit<test_ex> {
     scheme::builder builder{penv, tenv, {tree.root()}};
 
     struct large_type {
-      std::byte data[1024 * 1024 * 1]; // 1MB
+      std::byte data[iuic::cenv::num("iuic::env.tmp_buffer_size")
+                         .value_or(1024 * 1024 * 4) /
+                     4];
     };
 
     utils.ex_catch<iuic::exception::tmp_buffer_overflow>(
         [&]() {
           for (; true;) {
-            builder.memory.tmp(large_type{}); // 1MB
+            builder.memory.tmp(large_type{});
           }
         },
         "No exception throw");

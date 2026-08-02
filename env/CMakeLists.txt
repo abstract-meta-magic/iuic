@@ -6,7 +6,6 @@ target_sources(${PROJECT_NAME}_env PUBLIC
 	FILES
 	"iuic-env-tmp-policy.cppm"
 	"iuic-env-tmp.cppm"
-	"iuic-env-persist-decl.cppm"
 	"iuic-env-persist-object.cppm"
 	"iuic-env-persist-state.cppm"
 	"iuic-env-persist.cppm"
@@ -29,5 +28,10 @@ target_compile_features(${PROJECT_NAME}_env
 	PRIVATE cxx_std_23)
 
 add_library(${PROJECT_NAME}::env ALIAS ${PROJECT_NAME}_env)
+
+
+if(${IUIC_BUILD_TESTS})
+  add_subdirectory(test)
+endif()
 
 # target_compile_options(${PROJECT_NAME}_env PRIVATE -O2 -g)

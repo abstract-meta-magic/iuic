@@ -195,8 +195,6 @@ struct tmp : iuic::advance::interface {
 
   policy_storage policy;
 
-  static constexpr std::size_t tmp_buff_size = 1024 * 1024 * 4;
-
   struct : private advance::interface {
     friend tmp;
 
@@ -213,7 +211,7 @@ struct tmp : iuic::advance::interface {
     void advance() override { allocator.release(); };
 
   private:
-    std::array<std::byte, iuic::cenv::num("iuic::sizeof::buff::tmp")
+    std::array<std::byte, iuic::cenv::num("iuic::env.tmp_buffer_size")
                               .value_or(1024 * 1024 * 4)>
         tmp_buff;
     std::pmr::monotonic_buffer_resource allocator{

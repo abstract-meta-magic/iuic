@@ -1,13 +1,15 @@
 // Copyright (c) 2026 abstract-meta-magic and contributors
 // SPDX-License-Identifier: Apache-2.0
 export module iuic.underlying.erasure:visited.base;
+import iuic.underlying.cenv;
 import :decl;
 import :type;
 
 export namespace iuic::erasure {
 struct visited {
   // TODO : replace to env or cenv or macros
-  static constexpr bool unsafe_check{true};
+  static constexpr bool unsafe_check{
+      not iuic::cenv::logic("iuic::runtime.unsafe").value_or(false)};
   struct as_const;
   struct as_const_sync;
   struct as_mutable;

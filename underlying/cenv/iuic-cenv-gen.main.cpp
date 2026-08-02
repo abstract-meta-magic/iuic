@@ -109,6 +109,7 @@ void write_logic_value(std::ofstream &os, std::string_view value) {
 
 int main(const int argc, const char **argv) {
   // parce args
+  // TODO : rework this garbage
 
   if (argc != 3) {
     // error

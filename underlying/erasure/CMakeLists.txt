@@ -19,6 +19,8 @@ target_sources(${PROJECT_NAME}_underlying__erasure PUBLIC
 	"iuic-erasure.cppm"
 )
 
+target_link_libraries(${PROJECT_NAME}_underlying__erasure PUBLIC ${PROJECT_NAME}_underlying__cenv)
+
 if(TARGET iuic_std_module)
 		target_link_libraries(${PROJECT_NAME}_underlying__erasure PUBLIC iuic_std_module)
 endif()

@@ -6,7 +6,6 @@ import std;
 import iuic.underlying;
 import iuic.state;
 import iuic.style;
-export import :persist.decl;
 export import :persist.object;
 export import :persist.state;
 

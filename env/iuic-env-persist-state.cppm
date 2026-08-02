@@ -4,7 +4,6 @@
 export module iuic.env:persist.state;
 import std;
 import iuic.underlying;
-import :persist.decl;
 import iuic.state;
 
 namespace iuic::environment {
@@ -97,6 +96,9 @@ struct persist_state_storage : iuic::advance::interface {
   proxy access(units::uid uid) { return {*this, uid, get_index(uid)}; };
 
 private:
+  static constexpr std::size_t pool_max =
+      iuic::cenv::num("iuic::env.persist_max").value_or(8192);
+
   void sync_GC() {
     // TODO : rework
     for (auto &slot : pool) {
@@ -123,7 +125,7 @@ private:
   };
 
   index_t get_index(units::uid uid) {
-    auto point = std::to_underlying(uid) & (persist_max * 2 - 1);
+    auto point = std::to_underlying(uid) & (pool_max - 1);
     auto backup = point;
     auto end = point + 10;
 
@@ -149,7 +151,7 @@ private:
   };
 
 private:
-  std::array<slot, persist_max * 2> pool;
+  std::array<slot, pool_max> pool;
   std::int32_t generation{1};
 };
 }; // namespace iuic::environment
