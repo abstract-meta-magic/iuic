@@ -1,4 +1,4 @@
-'''c++
+```c++
 
 using builder = iuic::scheme::builder;
 
@@ -23,4 +23,4 @@ void text_box(builder &b) {
 }
 
 
-'''
+```

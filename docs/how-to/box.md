@@ -1,4 +1,4 @@
-'''c++
+```c++
 
 using builder = iuic::scheme::builder;
 
@@ -10,4 +10,4 @@ void box(builder &b) {
   b.element.frame(b.style.make(style),layout);
 }
 
-'''
+```
