@@ -18,8 +18,8 @@
 - [box](./how-to/box.md)
 - [text-box](./how-to/text-box.md)
 ### Layout
-- frame 
-- text
+- [frame](./how-to/frame-layout.md) 
+- [text](./how-to/text-layout.md)
 ### Text
 - decoder
 - atlas

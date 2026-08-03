@@ -1,4 +1,12 @@
+Requires:
+- [text-layout]()
+- [style]()
+- [text]()
+- [memory]()
+
+
 ```c++
+import iuic.core;
 
 using builder = iuic::scheme::builder;
 

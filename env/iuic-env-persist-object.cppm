@@ -4,6 +4,7 @@ export module iuic.env:persist.object;
 import std;
 import iuic.underlying;
 
+// TODO : separate arena.cppm | storage.cppm
 namespace iuic::environment {
 
 export enum object_state {
@@ -59,8 +60,16 @@ struct arena_id {
 };
 
 // lifetime size_t::max == immortal
-
 struct persist_object_storage_arena {
+
+  enum pool_index : std::size_t {
+    for_16_byte = 0,
+    for_32_byte = 1,
+    for_64_byte = 2,
+    for_128_byte = 3,
+    for_256_byte = 3,
+  };
+
   // sized 16 32 64 128 256
   struct alignas(64) chunk {
     static constexpr std::size_t native_size = 64 * 1024;
@@ -104,19 +113,19 @@ struct persist_object_storage_arena {
 
     if (size < 17) {
       result.location.pool = 0;
-      allocate__(sized_pool[0], result);
+      allocate__(sized_pool[pool_index::for_16_byte], result);
     } else if (size < 33) {
       result.location.pool = 1;
-      allocate__(sized_pool[1], result);
+      allocate__(sized_pool[pool_index::for_32_byte], result);
     } else if (size < 65) {
       result.location.pool = 2;
-      allocate__(sized_pool[2], result);
+      allocate__(sized_pool[pool_index::for_64_byte], result);
     } else if (size < 129) {
       result.location.pool = 3;
-      allocate__(sized_pool[3], result);
+      allocate__(sized_pool[pool_index::for_128_byte], result);
     } else if (size < 257) {
       result.location.pool = 4;
-      allocate__(sized_pool[4], result);
+      allocate__(sized_pool[pool_index::for_256_byte], result);
     } else {
       // large object
     }
@@ -137,6 +146,15 @@ struct persist_object_storage_arena {
     std::size_t slot_size{0};
   };
 
+public: // Debug API
+  template <
+      iuic::utils::is_deduction_context T = iuic::utils::deduction_context>
+  auto &data([[maybe_unused]] T ctx = {})
+    requires(iuic::cenv::logic("iuic::debug.api").value_or(false))
+  {
+    return sized_pool;
+  };
+
 public: // BIG-V
   persist_object_storage_arena() {
     std::uint32_t slot_size = 16;
@@ -150,6 +168,24 @@ public: // BIG-V
     }
   };
 
+  persist_object_storage_arena(const persist_object_storage_arena &) = delete;
+  persist_object_storage_arena(persist_object_storage_arena &&) = delete;
+  persist_object_storage_arena &
+  operator=(const persist_object_storage_arena &) = delete;
+  persist_object_storage_arena &
+  operator=(persist_object_storage_arena &&) = delete;
+
+  ~persist_object_storage_arena() {
+    for (auto &pool : sized_pool) {
+      for (auto &chunk : pool.chunks) {
+        if (chunk.state == chunk::active || chunk.state == chunk::freeze) {
+          delete[] chunk.memory;
+        }
+      }
+    }
+  };
+
+private:
   void fill_chunks_info(sized_chunk_pool &pool) {
     for (auto &chunk : pool.chunks) {
       chunk.slot_size = pool.slot_size;
@@ -160,16 +196,6 @@ public: // BIG-V
     }
   };
 
-  persist_object_storage_arena(const persist_object_storage_arena &) = delete;
-  persist_object_storage_arena(persist_object_storage_arena &&) = delete;
-  persist_object_storage_arena &
-  operator=(const persist_object_storage_arena &) = delete;
-  persist_object_storage_arena &
-  operator=(persist_object_storage_arena &&) = delete;
-
-  ~persist_object_storage_arena() {};
-
-private:
   void deallocate__(sized_chunk_pool &pool, arena_id &id) {
     deallocate_slot(pool.chunks[id.location.chunk], id);
     // check for memory free
@@ -240,11 +266,11 @@ private:
   void allocate_slot(chunk &chunk, arena_id &id) {
     std::uint32_t slot = chunk.free_list_head;
 
-    /* Later in #DEBUG MODE
-    if (chunk.free_list_head == std::numeric_limits<std::uint32_t>::max()) {
-      return;
+    if constexpr (iuic::cenv::logic("iuic::debug.mode").value_or(false)) {
+      if (chunk.free_list_head == std::numeric_limits<std::uint32_t>::max()) {
+        return;
+      }
     }
-    */
 
     chunk.free_list_head = *reinterpret_cast<std::uint32_t *>(
         chunk.memory + (slot * chunk.slot_size));
@@ -420,6 +446,16 @@ struct persist_object_storage : iuic::advance::interface {
     }
   };
 
+public: // BIG-V
+  persist_object_storage() noexcept = default;
+  ~persist_object_storage() {
+    for (auto &slot : pool) {
+      if (slot.type != nullptr && slot.id.is_allocated()) {
+        slot.type->dtor(arena.get(slot.id));
+      }
+    }
+  };
+
 private:
   static constexpr std::size_t pool_size =
       iuic::cenv::num("iuic::env.persist_max").value_or(8192) * 2;
@@ -487,7 +523,7 @@ private: // ADVANCE
 private:
   std::array<slot, pool_size> pool; // x 2 for <40%
   persist_object_storage_arena arena;
-  std::uint32_t generation; // on advance ++
+  std::uint32_t generation{1}; // on advance ++
   // кол-во разбиений для вызова маркера.
   // [Later] thread for dead_marker and GC ???
 };

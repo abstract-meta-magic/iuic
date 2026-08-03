@@ -6,6 +6,12 @@ import iuic.underlying.erasure;
 
 export namespace iuic::utils {
 
+struct deduction_context final {};
+
+template <typename T>
+concept is_deduction_context =
+    std::same_as<std::remove_cvref_t<T>, deduction_context>;
+
 struct unimplemented : std::runtime_error {
   unimplemented()
       : std::runtime_error{"This part/function doesn't have implementation."} {
