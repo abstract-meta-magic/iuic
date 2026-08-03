@@ -21,6 +21,12 @@ endif()
 target_link_libraries(${PROJECT_NAME}_text iuic::underlying)
 
 target_compile_features(${PROJECT_NAME}_text
-	PRIVATE cxx_std_23)
+	PRIVATE
+	cxx_std_23
+)
+
+target_compile_options(${PROJECT_NAME}_text PRIVATE
+	${IUIC_DEFAULT_COMPILE_OPTIONS}
+)
 
 add_library(${PROJECT_NAME}::text ALIAS ${PROJECT_NAME}_text)

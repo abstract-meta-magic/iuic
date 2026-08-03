@@ -34,3 +34,9 @@ target_compile_features(${PROJECT_NAME}_underlying
 )
 
 add_library(${PROJECT_NAME}::underlying ALIAS ${PROJECT_NAME}_underlying)
+
+
+target_compile_options(${PROJECT_NAME}_underlying
+	PRIVATE
+	${IUIC_DEFAULT_COMPILE_OPTIONS}
+)

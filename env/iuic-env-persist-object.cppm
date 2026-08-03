@@ -312,7 +312,7 @@ struct persist_object_storage : iuic::advance::interface {
         }
 
         if (slot.type == required_type) {
-          if (not is_alive()) {
+          if (not storage.is_slot_alive(slot)) {
             return object_state::outdated_this_type;
           } else if (slot.id.is_allocated()) {
             return object_state::alive_this_type;
@@ -320,7 +320,7 @@ struct persist_object_storage : iuic::advance::interface {
             return object_state::reserve_this_type;
           }
         } else {
-          if (not is_alive()) {
+          if (not storage.is_slot_alive(slot)) {
             return object_state::outdated_other_type;
           } else if (slot.id.is_allocated()) {
             return object_state::alive_other_type;
@@ -341,9 +341,10 @@ struct persist_object_storage : iuic::advance::interface {
         slot.lifetime = required_type->livetime;
         slot.generation = storage.generation;
         slot.uid = uid;
-      } else if (not is_alive()) {
+      } else if (not storage.is_slot_alive(slot)) {
         slot.type = required_type;
-        slot.lifetime = required_type->livetime;
+        // x2 because generation step is += 2
+        slot.lifetime = required_type->livetime * 2;
         slot.generation = storage.generation;
         destruct();
         deallocate();
@@ -396,7 +397,7 @@ struct persist_object_storage : iuic::advance::interface {
     erasure::visited get() {
       auto &slot = storage.pool[access_index];
       if (slot.id.is_allocated() && slot.type != erasure::type::none() &&
-          is_alive()) {
+          storage.is_slot_alive(slot)) {
         return erasure::visited{storage.arena.get(slot.id), slot.type};
       } else {
         return nullptr;
@@ -409,20 +410,9 @@ struct persist_object_storage : iuic::advance::interface {
       if (slot.lifetime == 0)
         return;
 
-      if (is_alive() && required_type == slot.type) {
+      if (storage.is_slot_alive(slot) && required_type == slot.type) {
         slot.generation = storage.generation;
       }
-    };
-
-  private:
-    bool is_alive() {
-      auto &slot = storage.pool[access_index];
-      if (slot.lifetime == 0)
-        return true;
-
-      auto dif = storage.generation - slot.generation;
-
-      return dif < slot.lifetime;
     };
 
   private:
@@ -504,11 +494,13 @@ private:
   }
 
   // Вспомогательный метод для проверки (можно сделать private методом класса)
-  bool is_slot_alive(const slot &s) const {
-    if (s.lifetime == 0)
+  bool is_slot_alive(const slot &slot) const {
+    if (slot.lifetime == 0)
       return true; // Immortal
 
-    return (generation - s.generation) < s.lifetime;
+    auto diff = static_cast<std::int32_t>(generation - slot.generation);
+
+    return diff < slot.lifetime || diff > -slot.lifetime;
   }
 
   // later for async GC
@@ -516,7 +508,9 @@ private:
   // void touch_GC();
 private: // ADVANCE
   void advance() override {
-    ++generation;
+    generation += 2;
+    generation |= 1;
+
     sync_clean();
   };
 

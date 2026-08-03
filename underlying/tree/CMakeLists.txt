@@ -37,3 +37,8 @@ target_compile_features(${PROJECT_NAME}_underlying__tree
 	PRIVATE cxx_std_20
 	PRIVATE cxx_std_23
 )
+
+target_compile_options(${PROJECT_NAME}_underlying__tree
+	PRIVATE
+	${IUIC_DEFAULT_COMPILE_OPTIONS}
+)

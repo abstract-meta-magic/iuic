@@ -21,4 +21,10 @@ target_compile_features(${PROJECT_NAME}_state
 
 target_link_libraries(${PROJECT_NAME}_state PRIVATE iuic::underlying)
 
+target_compile_options(${PROJECT_NAME}_state
+	PRIVATE
+	${IUIC_DEFAULT_COMPILE_OPTIONS}
+)
+
+
 add_library(${PROJECT_NAME}::state ALIAS ${PROJECT_NAME}_state)

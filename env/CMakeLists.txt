@@ -34,4 +34,6 @@ if(${IUIC_BUILD_TESTS})
   add_subdirectory(test)
 endif()
 
-# target_compile_options(${PROJECT_NAME}_env PRIVATE -O2 -g)
+target_compile_options(${PROJECT_NAME}_env PRIVATE
+	${IUIC_DEFAULT_COMPILE_OPTIONS}
+)

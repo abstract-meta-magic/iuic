@@ -12,7 +12,7 @@ struct persist_state_storage : iuic::advance::interface {
   using index_t = std::size_t;
   struct slot {
     units::uid uid{0};
-    std::int32_t generation{0};
+    std::uint32_t generation{0};
     std::array<state::value, 3> static_data{nullptr, nullptr, nullptr};
     std::vector<state::value> dynamic_data; // pre alloc 6
   };
@@ -95,6 +95,28 @@ struct persist_state_storage : iuic::advance::interface {
 
   proxy access(units::uid uid) { return {*this, uid, get_index(uid)}; };
 
+public: // DEBUG API
+  template <iuic::utils::is_deduction_context = iuic::utils::deduction_context>
+  auto &get_pool()
+    requires(iuic::cenv::logic("iuic::debug.api").value_or(false))
+  {
+    return pool;
+  };
+
+  template <iuic::utils::is_deduction_context = iuic::utils::deduction_context>
+  auto &get_generation()
+    requires(iuic::cenv::logic("iuic::debug.api").value_or(false))
+  {
+    return generation;
+  };
+
+  template <iuic::utils::is_deduction_context = iuic::utils::deduction_context>
+  auto get_index_debug(units::uid uid)
+    requires(iuic::cenv::logic("iuic::debug.api").value_or(false))
+  {
+    return get_index(uid);
+  };
+
 private:
   static constexpr std::size_t pool_max =
       iuic::cenv::num("iuic::env.persist_max").value_or(8192);
@@ -104,20 +126,9 @@ private:
     for (auto &slot : pool) {
       if (slot.generation != 0) {
 
-        std::int64_t diff = static_cast<std::int64_t>(generation) -
-                            static_cast<std::int64_t>(slot.generation);
+        auto diff = static_cast<std::int32_t>(generation - slot.generation);
 
-        const std::int64_t HALF_RANGE =
-            static_cast<std::int64_t>(
-                std::numeric_limits<std::int32_t>::max()) +
-            1;
-
-        if (diff > HALF_RANGE)
-          diff -= 2 * HALF_RANGE;
-        if (diff < -HALF_RANGE)
-          diff += 2 * HALF_RANGE;
-
-        if (std::abs(diff) > 6) {
+        if (diff > 6 || diff < -6) {
           std::exchange(slot, {.uid = slot.uid});
         }
       }
@@ -147,11 +158,13 @@ private:
 
   void advance() override {
     generation += 2;
+    generation |= 1;
+
     sync_GC();
   };
 
 private:
   std::array<slot, pool_max> pool;
-  std::int32_t generation{1};
+  std::uint32_t generation{1};
 };
 }; // namespace iuic::environment

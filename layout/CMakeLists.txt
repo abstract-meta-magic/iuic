@@ -28,6 +28,13 @@ target_link_libraries(${PROJECT_NAME}_layout
 )
 
 target_compile_features(${PROJECT_NAME}_layout
-	PRIVATE cxx_std_23)
+	PRIVATE
+	cxx_std_23
+)
+
+target_compile_options(${PROJECT_NAME}_layout
+	PRIVATE
+	${IUIC_DEFAULT_COMPILE_OPTIONS}
+)
 
 add_library(${PROJECT_NAME}::layout ALIAS ${PROJECT_NAME}_layout)

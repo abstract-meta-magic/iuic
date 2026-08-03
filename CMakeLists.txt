@@ -1,8 +1,23 @@
 cmake_minimum_required(VERSION 3.31)
 
-project(iuic LANGUAGES CXX)
+project(iuic
+	VERSION 0.3.0
+	LANGUAGES CXX
+)
 
 option(IUIC_BUILD_TESTS "Build unit tests" ON)
+option(IUIC_EXTRA "Add extra flags" OFF)
+
+set(IUIC_DEFAULT_TARGET_COMPILE_OPTIONS
+	# DEBUG
+	$<$<CONFIG:Debug>:-g>
+	$<$<CONFIG:Debug>:-O0>
+	# RELEASE
+	$<$<CONFIG:Release>:$<IF:$<BOOL:${IUIC_EXTRA}>,-O3,-O2>>
+)
+
+
+
 ## project ENV ?
 
 ## lvl - 0

@@ -50,4 +50,9 @@ if(IUIC_BUILD_TESTS)
   endif()
 endif()
 
-# target_compile_options(${PROJECT_NAME}_core PRIVATE -O2)
+target_compile_options(${PROJECT_NAME}_core
+	PRIVATE
+	${IUIC_DEFAULT_TARGET_COMPILE_OPTIONS}
+)
+
+## Set tests default options 

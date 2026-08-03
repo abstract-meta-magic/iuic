@@ -50,3 +50,7 @@ target_compile_features(${PROJECT_NAME}_underlying__cenv
 	PRIVATE cxx_std_23
 )
 
+target_compile_options(${PROJECT_NAME}_underlying__cenv
+	PRIVATE
+	${IUIC_DEFAULT_COMPILE_OPTIONS}
+)
