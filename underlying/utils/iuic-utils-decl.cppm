@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 export module iuic.underlying.utils:decl;
 import std;
+import iuic.underlying.cenv;
 import iuic.underlying.erasure;
 
 export namespace iuic::utils {
@@ -11,6 +12,12 @@ struct deduction_context final {};
 template <typename T>
 concept is_deduction_context =
     std::same_as<std::remove_cvref_t<T>, deduction_context>;
+
+template <typename T,
+          bool = iuic::cenv::logic("iuic::debug.api").value_or(false)>
+struct debug_api;
+
+template <typename T> struct debug_api<T, false> {};
 
 struct unimplemented : std::runtime_error {
   unimplemented()

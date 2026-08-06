@@ -4,7 +4,10 @@ target_sources(${PROJECT_NAME}_env PUBLIC
 	FILE_SET iuic_env_modules
 	TYPE CXX_MODULES
 	FILES
+	"iuic-env-tmp-exception.cppm"
 	"iuic-env-tmp-policy.cppm"
+	"iuic-env-tmp-style.cppm"
+	"iuic-env-tmp-memory.cppm"
 	"iuic-env-tmp.cppm"
 	"iuic-env-persist-object.cppm"
 	"iuic-env-persist-state.cppm"

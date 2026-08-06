@@ -19,6 +19,7 @@ target_sources(${PROJECT_NAME}_underlying__cenv PUBLIC
 	"iuic-cenv.cppm"
 )
 
+if(DEFINED IUIC_CENV_FILE AND EXISTS ${IUIC_CENV_FILE})
 set(IUIC_CENV_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/gen/iuic/")
 set(IUIC_CENV_INC_FILE "${IUIC_CENV_GEN_DIR}/__iuic_cenv_define.inc")
 file(MAKE_DIRECTORY ${IUIC_CENV_GEN_DIR})
@@ -35,9 +36,8 @@ add_custom_command(
 
 add_custom_target(${PROJECT_NAME}_underlying__cenv_gen_dep DEPENDS ${IUIC_CENV_INC_FILE})
 
-if(EXISTS ${IUIC_CENV_FILE})
-	add_dependencies(${PROJECT_NAME}_underlying__cenv ${PROJECT_NAME}_underlying__cenv_gen_dep)
-	target_include_directories(${PROJECT_NAME}_underlying__cenv PRIVATE ${IUIC_CENV_GEN_DIR})
+add_dependencies(${PROJECT_NAME}_underlying__cenv ${PROJECT_NAME}_underlying__cenv_gen_dep)
+target_include_directories(${PROJECT_NAME}_underlying__cenv PRIVATE ${IUIC_CENV_GEN_DIR})
 endif()
 
 

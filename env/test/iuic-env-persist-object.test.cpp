@@ -15,76 +15,79 @@ struct test : iuic::test::unit<test> {
     // invalide arena.get(id)
     // double free
     // large alloc > 256 bytes
-    if (iuic::cenv::logic("iuic::debug.api").value_or(false)) {
 
-      iuic::environment::persist_object_storage_arena arena;
-      auto &data = arena.data();
-      using enum iuic::environment::persist_object_storage_arena::pool_index;
+    [&]<typename T = iuic::environment::persist_object_storage_arena>() {
+      if constexpr (iuic::cenv::logic("iuic::debug.api").value_or(false)) {
+        T arena;
+        auto &data = arena.data();
+        using enum iuic::environment::persist_object_storage_arena::pool_index;
 
-      // 16[0],32[1],64[2],...
-      utils.eq(data[for_64_byte].chunks[0].memory, nullptr,
-               "validate chunk memory");
+        // 16[0],32[1],64[2],...
+        utils.eq(data[for_64_byte].chunks[0].memory, nullptr,
+                 "validate chunk memory");
 
-      auto id = arena.allocate(48);
+        auto id = arena.allocate(48);
 
-      // 16[0],32[1],64[2],...
-      utils.neq(data[for_64_byte].chunks[0].memory, nullptr,
-                "validate chunk memory");
-      utils.eq(data[for_32_byte].chunks[0].memory, nullptr,
-               "validate chunk memory");
-      utils.eq(data[for_16_byte].chunks[0].memory, nullptr,
-               "validate chunk memory");
+        // 16[0],32[1],64[2],...
+        utils.neq(data[for_64_byte].chunks[0].memory, nullptr,
+                  "validate chunk memory");
+        utils.eq(data[for_32_byte].chunks[0].memory, nullptr,
+                 "validate chunk memory");
+        utils.eq(data[for_16_byte].chunks[0].memory, nullptr,
+                 "validate chunk memory");
 
-      // 16[0],32[1],64[2],...
-      utils.eq(data[for_64_byte].chunks[0].free_count,
-               data[for_64_byte].chunks[0].capacity - 1, "validate chunk size");
+        // 16[0],32[1],64[2],...
+        utils.eq(data[for_64_byte].chunks[0].free_count,
+                 data[for_64_byte].chunks[0].capacity - 1,
+                 "validate chunk size");
 
-      auto *ptr = arena.get(id);
+        auto *ptr = arena.get(id);
 
-      utils.neq(ptr, nullptr, "validate ptr");
+        utils.neq(ptr, nullptr, "validate ptr");
 
-      arena.deallocate(id);
+        arena.deallocate(id);
 
-      // 16[0],32[1],64[2],...
-      utils.eq(data[for_64_byte].chunks[0].free_count,
-               data[for_64_byte].chunks[0].capacity, "validate chunk size");
+        // 16[0],32[1],64[2],...
+        utils.eq(data[for_64_byte].chunks[0].free_count,
+                 data[for_64_byte].chunks[0].capacity, "validate chunk size");
 
-      std::vector<iuic::environment::arena_id> alloc_ids;
-      for (; data[for_64_byte].chunks[0].free_count != 0;) {
-        alloc_ids.push_back(arena.allocate(64));
+        std::vector<iuic::environment::arena_id> alloc_ids;
+        for (; data[for_64_byte].chunks[0].free_count != 0;) {
+          alloc_ids.push_back(arena.allocate(64));
+        }
+
+        utils.eq(data[for_64_byte].chunks[0].free_count, 0, "check full");
+
+        arena.allocate(64);
+
+        utils.eq(data[for_64_byte].chunks[1].free_count,
+                 data[for_64_byte].chunks[1].capacity - 1, "new chunk usage");
+
+        std::size_t deallocate_count = data[for_64_byte].chunks[0].capacity / 2;
+        for (int i{0}; i < deallocate_count; ++i) {
+          arena.deallocate(alloc_ids.at(i));
+        }
+
+        utils.eq(data[for_64_byte].chunks[0].free_count, deallocate_count,
+                 "old chunk usage");
+        auto id_1 = arena.allocate(64);
+        utils.neq(arena.get(id_1), nullptr, "validate ptr");
+
+        utils.eq(data[for_64_byte].chunks[0].free_count, deallocate_count - 1,
+                 "old chunk usage");
+        utils.eq(data[for_64_byte].chunks[1].free_count,
+                 data[for_64_byte].chunks[1].capacity - 1, "new chunk usage");
+
+        for (std::size_t i{deallocate_count}; i < alloc_ids.size(); ++i) {
+          utils.neq(arena.get(alloc_ids[i]), nullptr, "validate ptr");
+        }
+      } else {
+        // warn
+        utils.rq_true(false, "test required debug api");
       }
-
-      utils.eq(data[for_64_byte].chunks[0].free_count, 0, "check full");
-
-      arena.allocate(64);
-
-      utils.eq(data[for_64_byte].chunks[1].free_count,
-               data[for_64_byte].chunks[1].capacity - 1, "new chunk usage");
-
-      std::size_t deallocate_count = data[for_64_byte].chunks[0].capacity / 2;
-      for (int i{0}; i < deallocate_count; ++i) {
-        arena.deallocate(alloc_ids.at(i));
-      }
-
-      utils.eq(data[for_64_byte].chunks[0].free_count, deallocate_count,
-               "old chunk usage");
-      auto id_1 = arena.allocate(64);
-      utils.neq(arena.get(id_1), nullptr, "validate ptr");
-
-      utils.eq(data[for_64_byte].chunks[0].free_count, deallocate_count - 1,
-               "old chunk usage");
-      utils.eq(data[for_64_byte].chunks[1].free_count,
-               data[for_64_byte].chunks[1].capacity - 1, "new chunk usage");
-
-      for (std::size_t i{deallocate_count}; i < alloc_ids.size(); ++i) {
-        utils.neq(arena.get(alloc_ids[i]), nullptr, "validate ptr");
-      }
-
-    } else {
-      std::println("[Warning] : test [{}] => Need iuic::debug.api == true",
-                   name);
-    }
+    }();
   };
+
 } base{};
 
 struct test_2 : iuic::test::unit<test_2> {

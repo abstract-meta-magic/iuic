@@ -7,8 +7,27 @@ import iuic.underlying;
 import iuic.state;
 
 namespace iuic::environment {
+struct persist_state_storage;
+}
 
-struct persist_state_storage : iuic::advance::interface {
+namespace iuic::utils {
+template <> struct debug_api<iuic::environment::persist_state_storage, true> {
+  auto &get_pool(this auto &&self) { return self.pool; };
+
+  auto &get_generation(this auto &&self) { return self.generation; };
+
+  auto get_index_debug(this auto &&self, units::uid uid) {
+    return self.get_index(uid);
+  };
+};
+} // namespace iuic::utils
+
+namespace iuic::environment {
+
+struct persist_state_storage
+    : iuic::advance::interface,
+      public iuic::utils::debug_api<persist_state_storage> {
+  friend iuic::utils::debug_api<persist_state_storage, true>;
   using index_t = std::size_t;
   struct slot {
     units::uid uid{0};
@@ -94,28 +113,6 @@ struct persist_state_storage : iuic::advance::interface {
   };
 
   proxy access(units::uid uid) { return {*this, uid, get_index(uid)}; };
-
-public: // DEBUG API
-  template <iuic::utils::is_deduction_context = iuic::utils::deduction_context>
-  auto &get_pool()
-    requires(iuic::cenv::logic("iuic::debug.api").value_or(false))
-  {
-    return pool;
-  };
-
-  template <iuic::utils::is_deduction_context = iuic::utils::deduction_context>
-  auto &get_generation()
-    requires(iuic::cenv::logic("iuic::debug.api").value_or(false))
-  {
-    return generation;
-  };
-
-  template <iuic::utils::is_deduction_context = iuic::utils::deduction_context>
-  auto get_index_debug(units::uid uid)
-    requires(iuic::cenv::logic("iuic::debug.api").value_or(false))
-  {
-    return get_index(uid);
-  };
 
 private:
   static constexpr std::size_t pool_max =

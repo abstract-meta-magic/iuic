@@ -17,10 +17,18 @@ struct persist {
 
   persist_state_storage state;
 
+  // and more
   persist(advance::pool &pool) {
     object.rebind(pool);
     state.rebind(pool);
   };
+
+public: // BIG-V
+  persist(const persist &) = delete;
+  persist(persist &&) = delete;
+  persist &operator=(const persist &) = delete;
+  persist &operator=(persist &&) = delete;
+  ~persist() {};
 };
 
 }; // namespace iuic::environment

@@ -67,6 +67,9 @@ protected:
     }
   };
 
+protected:
+  void protected_rebind(auto &obj, pool &npool) { obj.rebind(npool); };
+
 private:
   pool *pool;
   friend void pool::remove(interface *);

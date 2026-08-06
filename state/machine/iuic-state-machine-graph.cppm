@@ -6,6 +6,7 @@ import iuic.underlying;
 import :decl;
 import :value;
 
+// Try use static constexpr operator[]
 namespace iuic::state::machine {
 
 export struct transition {

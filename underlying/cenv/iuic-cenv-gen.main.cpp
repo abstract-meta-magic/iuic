@@ -113,6 +113,8 @@ int main(const int argc, const char **argv) {
 
   if (argc != 3) {
     // error
+    std::println("invalide args");
+    return 1;
   }
 
   std::filesystem::path in{argv[1]};

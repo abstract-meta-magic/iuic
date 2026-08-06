@@ -43,3 +43,49 @@ target_link_libraries(iuic_env_persist_state_test
 
 add_valgrind_test("iuic::env::persist[state]" iuic_env_persist_state_test)
 
+add_executable(iuic_env_tmp_style_test
+	"iuic-env-tmp-style.test.cpp"
+)
+
+target_link_libraries(iuic_env_tmp_style_test
+	PRIVATE
+	iuic_test
+	iuic_env
+)
+
+add_test(NAME "iuic::env::tmp[style]"
+	COMMAND iuic_env_tmp_style_test
+	LABELS "unit;env"
+)
+
+
+add_executable(iuic_env_tmp_policy_test
+	"iuic-env-tmp-policy.test.cpp"
+)
+
+target_link_libraries(iuic_env_tmp_policy_test
+	PRIVATE
+	iuic_test
+	iuic_env
+)
+
+add_test(NAME "iuic::env::tmp[policy]"
+	COMMAND iuic_env_tmp_policy_test
+	LABELS "unit;env"
+)
+
+
+add_executable(iuic_env_tmp_memory_test
+	"iuic-env-tmp-memory.test.cpp"
+)
+
+target_link_libraries(iuic_env_tmp_memory_test
+	PRIVATE
+	iuic_test
+	iuic_env
+)
+
+add_test(NAME "iuic::env::tmp[memory]"
+	COMMAND iuic_env_tmp_memory_test
+	LABELS "unit;env"
+)

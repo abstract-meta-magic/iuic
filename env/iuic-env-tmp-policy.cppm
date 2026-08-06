@@ -9,6 +9,24 @@ import iuic.style;
 import iuic.event;
 
 namespace iuic::environment {
+struct policy_storage_dynamic__;
+}
+
+namespace iuic::utils {
+template <>
+struct debug_api<iuic::environment::policy_storage_dynamic__, true> {
+public: // DEBUG API
+  auto &get_load_debug(this auto &&self) { return self.load; };
+
+  auto &get_mask_debug(this auto &&self) { return self.mask; };
+
+  auto &get_size_debug(this auto &&self) { return self.size; };
+
+  auto &get_slots_debug(this auto &&self) { return self.slots; };
+};
+} // namespace iuic::utils
+
+namespace iuic::environment {
 
 template <typename T>
 concept is_policy = std::is_enum_v<T> && sizeof(T) <= sizeof(std::uint64_t) &&
@@ -43,9 +61,13 @@ inline std::size_t hash(units::uid uid, const erasure::type *type) {
     throw std::logic_error{"unsupported system"};
   }
 };
-
 // tmp
-struct policy_storage_dynamic__ : iuic::advance::interface {
+struct policy_storage_dynamic__
+    : private iuic::advance::interface,
+      public iuic::utils::debug_api<policy_storage_dynamic__> {
+  friend iuic::advance::interface;
+  friend iuic::utils::debug_api<policy_storage_dynamic__, true>;
+
   static constexpr std::size_t init_size{1024};
   struct slot {
     units::uid uid{0};
@@ -56,7 +78,8 @@ struct policy_storage_dynamic__ : iuic::advance::interface {
   template <is_policy T> void set(units::uid uid, T value) {
     if (auto slot_index = find_slot(uid, erasure::type::from<T>());
         slot_index != invalid_index) {
-      slots[slot_index].value = static_cast<std::uint64_t>(value);
+      slots[slot_index].value =
+          static_cast<std::uint64_t>(std::to_underlying(value));
     }
   };
 
@@ -70,11 +93,21 @@ struct policy_storage_dynamic__ : iuic::advance::interface {
   };
 
 public: // ctor
-  policy_storage_dynamic__() {
+  policy_storage_dynamic__(iuic::advance::pool &adp) {
     slots = std::vector<slot>(init_size); // 1024
     size = init_size;
     mask = init_size - 1;
+    load = 0;
+    rebind(adp);
   };
+
+public: // BIG-V
+  policy_storage_dynamic__(const policy_storage_dynamic__ &) = delete;
+  policy_storage_dynamic__(policy_storage_dynamic__ &&) = delete;
+  policy_storage_dynamic__ &
+  operator=(const policy_storage_dynamic__ &) = delete;
+  policy_storage_dynamic__ &operator=(policy_storage_dynamic__ &&) = delete;
+  ~policy_storage_dynamic__() {};
 
 private: // advance
   void advance() override {
@@ -88,14 +121,14 @@ private:
 
   template <bool check = true>
   std::size_t find_slot(units::uid uid, const erasure::type *type) {
-    std::size_t h = hash(uid, type);
-    std::size_t slot_index = h & mask;
-
     if constexpr (check) {
       check_fill();
     }
 
-    for (;;) {
+    std::size_t h = hash(uid, type);
+    std::size_t slot_index = h & mask;
+
+    for (int i{0}; i < 10; ++i) {
       if (auto &slot = slots[slot_index];
           slot.type == type && slot.uid == uid) {
         return slot_index;
@@ -107,6 +140,8 @@ private:
       }
       slot_index = (slot_index + 1) & mask;
     }
+
+    return invalid_index;
   };
 
   void rehash() {
@@ -120,7 +155,12 @@ private:
     for (auto &slot : old_slots) {
       if (slot.type != nullptr) {
         std::size_t insert_index = find_slot<false>(slot.uid, slot.type);
+        std::println("insert point : {}", insert_index);
+        std::println("rehash before set {} : {}", slots[insert_index].value,
+                     slot.value);
         slots[insert_index].value = slot.value;
+        std::println("rehash after set {} : {}", slots[insert_index].value,
+                     slot.value);
       }
     }
   };
@@ -150,8 +190,13 @@ template <> struct policy_storage_base_resolution<false> {
   using type = policy_storage_dynamic__;
 };
 
-struct policy_storage
+struct policy_tmp_registry
     : public policy_storage_base_resolution<
           iuic::cenv::logic("iuic::env.tmp_static_policy_storage")
-              .value_or(false)>::type {};
+              .value_or(false)>::type {
+  policy_tmp_registry(iuic::advance::pool &adp)
+      : policy_storage_base_resolution<
+            iuic::cenv::logic("iuic::env.tmp_static_policy_storage")
+                .value_or(false)>::type{adp} {}
+};
 }; // namespace iuic::environment

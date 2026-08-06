@@ -500,7 +500,8 @@ private:
 
     auto diff = static_cast<std::int32_t>(generation - slot.generation);
 
-    return diff < slot.lifetime || diff > -slot.lifetime;
+    return diff <= static_cast<std::int32_t>(slot.lifetime) &&
+           diff >= -static_cast<std::int32_t>(slot.lifetime);
   }
 
   // later for async GC
