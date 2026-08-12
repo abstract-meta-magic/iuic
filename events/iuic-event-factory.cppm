@@ -10,10 +10,10 @@ import :packager;
 
 export namespace iuic::event {
 
-template <typename EVENT_TYPE, const channel &ch> struct factory {
-  static void process(EVENT_TYPE &&event, pool<ch> &pool, packager<ch> &pkgr,
-                      allocator<ch> &alloc) {
-    pool.push(pkgr.make(std::forward<EVENT_TYPE>(event), alloc));
+template <const channel &ch> struct factory {
+  static void process(auto &&event, auto &&...args, pool<ch> &pool,
+                      packager<ch> &pkgr, allocator<ch> &alloc) {
+    pool.push(pkgr.make(std::forward<decltype(event)>(event), alloc));
   };
 };
 }; // namespace iuic::event

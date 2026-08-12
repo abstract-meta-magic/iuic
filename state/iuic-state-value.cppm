@@ -17,7 +17,9 @@ struct value final {
     return other.decl == decl;
   };
 
-  operator std::size_t() const noexcept { return (std::size_t)decl; };
+  operator std::size_t() const noexcept {
+    return reinterpret_cast<std::size_t>(decl);
+  };
 
   constexpr bool operator!=(const value &other) const noexcept {
     return not(other.decl == decl);
@@ -27,7 +29,8 @@ struct value final {
     decl = other.decl;
     return *this;
   };
-  // private ??
+
+private:
   const decl *decl{nullptr};
 };
 

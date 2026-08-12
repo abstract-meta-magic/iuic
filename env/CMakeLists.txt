@@ -15,12 +15,13 @@ target_sources(${PROJECT_NAME}_env PUBLIC
 	"iuic-env.cppm"
 )
 
-
-if(TARGET iuic_std_module)
-		target_link_libraries(${PROJECT_NAME}_env iuic_std_module)
+if(${IUIC_USER_STD})
+target_link_libraries(${PROJECT_NAME}_env PRIVATE iuic::user_std)
 endif()
 
+
 target_link_libraries(${PROJECT_NAME}_env
+	PUBLIC
 	iuic::underlying
 	iuic::state
 	iuic::style

@@ -14,11 +14,12 @@ target_sources(${PROJECT_NAME}_text PUBLIC
 	"iuic-atlas.cpp"
 )
 
-if(TARGET iuic_std_module)
-	target_link_libraries(${PROJECT_NAME}_text iuic_std_module)
+if(${IUIC_USER_STD})
+	target_link_libraries(${PROJECT_NAME}_text PRIVATE iuic::user_std)
 endif()
 
-target_link_libraries(${PROJECT_NAME}_text iuic::underlying)
+
+target_link_libraries(${PROJECT_NAME}_text PUBLIC iuic::underlying)
 
 target_compile_features(${PROJECT_NAME}_text
 	PRIVATE

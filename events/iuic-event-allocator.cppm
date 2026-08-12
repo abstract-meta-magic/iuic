@@ -22,8 +22,9 @@ private:
   void advance() override { alloc__.release(); };
 
 private:
-  std::array<std::byte, ch.memory.max_size> raw;
-  std::pmr::monotonic_buffer_resource alloc__{raw.data(), raw.size()};
+  std::array<std::byte, ch.memory.size> raw;
+  std::pmr::monotonic_buffer_resource alloc__{raw.data(), raw.size(),
+                                              std::pmr::null_memory_resource()};
 };
 
 }; // namespace iuic::event

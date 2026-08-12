@@ -21,7 +21,9 @@ struct visited {
     return type::from<T>() == type;
   };
 
-  bool as(const type *t) const noexcept { return t == type; };
+  constexpr bool as(const type *t) const noexcept { return t == type; };
+
+  constexpr const type *get_type() const noexcept { return type; };
 
   template <is_pure_type T>
   constexpr visited(const T &data_)

@@ -6,6 +6,11 @@ import iuic.underlying;
 
 export namespace iuic::event {
 
+template <typename... ARGS> struct meta_call {
+  erasure::visited::as_mutable call;
+  std::tuple<ARGS...> args;
+};
+
 template <typename T>
 concept is_valide_allocator =
     std::is_base_of_v<T, iuic::advance::interface> &&
@@ -47,8 +52,7 @@ struct thread {
 };
 
 struct memory {
-  std::size_t min_size{512};
-  std::size_t max_size{2048};
+  std::size_t size{1024 * 8};
   bool only_trivially_destructible{true};
   // alloc exception policy
   // etc

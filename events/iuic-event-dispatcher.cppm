@@ -5,23 +5,22 @@ import iuic.underlying;
 import :decl;
 
 export namespace iuic::event {
-template <const channel &ch> struct dispatcher {
-  static void trigger(package pkg, auto &&arg)
-    requires(ch.type == channel::type_e::active)
-  {
-    pkg.call(erasure::visited::as_mutable{arg});
-  };
 
-  static void read(archive a, auto &&call)
-    requires(ch.type == channel::type_e::passive)
-  {
-    a.data.try_visit(call);
-  };
+template <typename T>
+concept is_dispatcher = true;
+
+template <const channel &ch> struct dispatcher {
+  static_assert(false,
+                "For this channel dispatcher is not defined. Pleas watch "
+                "docs [iuic.event.dispatcher]");
 };
 
 template <const channel &ch> struct trigger {
   trigger(package pkg_) : pkgs{pkg_} {};
   void operator()(auto &&...args) {
+    static_assert(is_dispatcher<dispatcher<ch>>,
+                  "Invalid dispatcher implimentation. Please watch docs "
+                  "[iuic.event.dispatcher]");
     dispatcher<ch>::trigger(pkgs, std::forward<decltype(args)>(args)...);
   };
 
@@ -39,6 +38,9 @@ template <const channel &ch> struct reader {
   reader(archive a_) : a{a_} {}
 
   void operator()(auto &&call) {
+    static_assert(is_dispatcher<dispatcher<ch>>,
+                  "Invalid dispatcher implimentation. Please watch docs "
+                  "[iuic.event.dispatcher]");
     dispatcher<ch>::read(a, std::forward<decltype(call)>(call));
   };
 

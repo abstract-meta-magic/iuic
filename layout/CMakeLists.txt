@@ -17,11 +17,13 @@ target_sources(${PROJECT_NAME}_layout PUBLIC
 	"iuic-layout.cppm"
 )
 
-if(TARGET iuic_std_module)
-		target_link_libraries(${PROJECT_NAME}_layout iuic_std_module)
+if(${IUIC_USER_STD})
+target_link_libraries(${PROJECT_NAME}_layout PRIVATE iuic::user_std)
 endif()
 
+
 target_link_libraries(${PROJECT_NAME}_layout
+	PUBLIC
 	iuic::underlying
 	iuic::text
 	iuic::env
@@ -38,3 +40,8 @@ target_compile_options(${PROJECT_NAME}_layout
 )
 
 add_library(${PROJECT_NAME}::layout ALIAS ${PROJECT_NAME}_layout)
+
+
+if(${IUIC_BUILD_TESTS})
+	add_subdirectory(test)
+endif()

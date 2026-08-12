@@ -28,6 +28,11 @@ target_sources(${PROJECT_NAME}_underlying__tree PUBLIC
 	"ranges/iuic-ranges-type-unordered.cppm"
 )
 
+if(${IUIC_USER_STD})
+target_link_libraries(${PROJECT_NAME}_underlying__tree PRIVATE iuic::user_std)
+endif()
+
+
 target_link_libraries(${PROJECT_NAME}_underlying__tree
 	PUBLIC ${PROJECT_NAME}_underlying__utils
 	PUBLIC ${PROJECT_NAME}_underlying__erasure

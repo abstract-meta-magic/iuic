@@ -14,12 +14,12 @@ target_sources(${PROJECT_NAME}_events PUBLIC
 	"iuic-event-hub.cppm"
 	"iuic-event.cppm"
 )
-
-if(TARGET iuic_std_module)
-		target_link_libraries(${PROJECT_NAME}_events iuic_std_module)
+if(${IUIC_USER_STD})
+target_link_libraries(${PROJECT_NAME}_events PRIVATE iuic::user_std)
 endif()
 
 target_link_libraries(${PROJECT_NAME}_events
+	PUBLIC
 	iuic::underlying
 )
 
@@ -32,3 +32,8 @@ target_compile_options(${PROJECT_NAME}_events
 )
 
 add_library(${PROJECT_NAME}::events ALIAS ${PROJECT_NAME}_events)
+
+
+if(${IUIC_BUILD_TESTS})
+add_subdirectory(test)
+endif()

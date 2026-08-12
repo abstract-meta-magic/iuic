@@ -145,6 +145,8 @@ struct iterator_range_for<iterator_range_trait<root_iterator<T>>, Iterator> {
   iterator_range_for(root_iterator<T> it, iterator_type<Iterator> = {})
       : begin_{it} {};
 
+  iterator_range_for(root_iterator<T> it) : begin_{it} {};
+
   iterator begin() { return begin_; };
 
   sentinel<iterator> end() { return {}; };
@@ -156,6 +158,11 @@ private:
 template <typename T, template <typename> typename Iterator>
 iterator_range_for(sibling_iterator<T>, iterator_type<Iterator>)
     -> iterator_range_for<iterator_range_trait<sibling_iterator<T>>, Iterator>;
+
+template <typename T>
+iterator_range_for(sibling_iterator<T>)
+    -> iterator_range_for<iterator_range_trait<sibling_iterator<T>>,
+                          base_iterator>;
 
 template <typename T, template <typename> typename Iterator>
 iterator_range_for(root_iterator<T>, iterator_type<Iterator>)

@@ -22,12 +22,11 @@ struct frame_utils : public utils_base {
     }
   };
 
-  // this is joke...BUT
-  struct : utils::adv_member_for<frame_utils> {
+  struct : utils::member_for<frame_utils> {
     const units::ui::adaptive::size &operator[](base_iterator el) {
       return tree::access_iterator{tree::shift(self().it, el)}->measure;
     };
-  } measure [[no_unique_address]];
+  } measure{*this};
 
   const units::ui::area &self_area() const {
     return (tree::access_iterator{it})->arrange;

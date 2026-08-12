@@ -26,14 +26,13 @@ struct utils_base {
     return {iuic::tree::childs_of(base_iterator{it})};
   };
 
-  // this is joke...BUT
-  struct : utils::adv_member_for<utils_base> {
+  struct : utils::member_for<utils_base> {
     style::value operator[](base_iterator el) {
       return element_access_iterator{tree::shift(self().it, el)}->style;
     };
-  } style [[no_unique_address]];
+  } style{*this};
 
-  struct : utils::adv_member_for<utils_base> {
+  struct : utils::member_for<utils_base> {
     template <typename... FMT_ARG>
     void error(std::format_string<FMT_ARG...> fs, FMT_ARG &&...args) {
       // TODO : afther iuic.logger
@@ -57,7 +56,7 @@ struct utils_base {
       std::println(std::move(fs), std::forward<FMT_ARG>(args)...);
       std::println("\033[0m\n");
     };
-  } log [[no_unique_address]];
+  } log{*this};
 
   units::ui::size root_size() { return tenv.meta.viewport_size; };
 

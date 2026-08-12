@@ -207,4 +207,8 @@ private:
   };
 };
 
+export int run(bool only_failure = false) {
+  return registry::instance().run(only_failure);
+};
+
 }; // namespace iuic::test

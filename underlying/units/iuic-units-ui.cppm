@@ -57,7 +57,20 @@ struct rect {
     };
   };
 
-  constexpr auto operator<=>(const rect &) const = default;
+  constexpr auto operator<=>(const rect &other) const {
+    if (auto cmp = position <=> other.position; cmp != 0) {
+      return cmp;
+    }
+    return size <=> other.size;
+  };
+
+  constexpr auto operator==(const rect &other) const {
+    return (other <=> other) == 0;
+  };
+
+  constexpr auto operator!=(const rect &other) const {
+    return (*this == other) != 0;
+  };
 };
 
 struct area {

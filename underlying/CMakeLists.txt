@@ -15,8 +15,8 @@ target_sources(${PROJECT_NAME}_underlying PUBLIC
 	"iuic-underlying.cppm"
 )
 
-if(TARGET iuic_std_module)
-		target_link_libraries(${PROJECT_NAME}_underlying PUBLIC iuic_std_module)
+if(${IUIC_USER_STD})
+	target_link_libraries(${PROJECT_NAME}_underlying PRIVATE iuic::user_std)
 endif()
 
 ## UNDERLYING LIBS

@@ -5,7 +5,6 @@ export module iuic.core;
 // exter-export
 export import iuic.underlying;
 export import iuic.text;
-export import iuic.symbol;
 export import iuic.state;
 export import iuic.style;
 export import iuic.event;

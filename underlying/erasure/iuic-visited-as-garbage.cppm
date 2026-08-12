@@ -5,15 +5,15 @@ import :visited.base;
 
 export namespace iuic::erasure {
 struct visited::as_garbage : private visited {
-  as_garbage(visited v) : visited{v} {};
+  constexpr as_garbage(visited v) : visited{v} {};
   template <typename T>
-  as_garbage(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
+  constexpr as_garbage(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
 
-  as_garbage(std::nullptr_t) : visited{nullptr, type::none()} {};
+  constexpr as_garbage(std::nullptr_t) : visited{nullptr, type::none()} {};
 
-  void free() { type->deleter(data); };
+  constexpr void free() const { type->deleter(data); };
 
-  void destruct() { type->dtor(data); };
+  constexpr void destruct() const { type->dtor(data); };
 };
 
 }; // namespace iuic::erasure

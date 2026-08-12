@@ -157,8 +157,12 @@ struct builder_event_interface : protected virtual builder_base {
                           insert_iterator it_, struct builder &builder_)
       : builder_base{penv_, tenv_, it_, builder_} {}
 
-  template <const iuic::event::channel &ch> void emit(auto &&data) {
-    tenv.event.emit<ch>(data);
+  template <const iuic::event::channel &ch> void emit(auto &&...args) {
+    if constexpr (requires { tenv.event.emit<ch>(builder, args...); }) {
+      tenv.event.emit<ch>(builder, args...);
+    } else {
+      tenv.event.emit<ch>(args...);
+    }
   };
 
   // custom

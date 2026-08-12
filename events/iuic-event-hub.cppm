@@ -28,6 +28,7 @@ struct store__ {
   };
 
   template <const channel &CH> event::pool<CH> &get_pool__() {
+
     auto index = reinterpret_cast<std::size_t>(std::addressof(CH));
 
     if (auto find = pools__.find(index); find != pools__.end()) {
@@ -49,49 +50,33 @@ struct store__ {
 
 export struct emitter : virtual protected store__ {
 
-  template <const channel &CH, typename EVENT_TYPE, typename... PKGR_ARGS>
-  void emit(EVENT_TYPE &&event, PKGR_ARGS &&...pkg_args) {
-    event::pool<CH> &pool = get_pool__<CH>();
-    allocator<CH> &alloc = get_allocator__<CH>();
+  template <const channel &ch> void emit(auto &&...args) {
+    static_assert(is_packager<packager<ch>>,
+                  "Invalid packager implimentation. Please watch docs "
+                  "[iuic.event.packager]");
 
-    packager<CH> pkgr = [&]() constexpr {
-      if constexpr (CH.emmiter_provide.packanger ==
-                    policy::emmiter_provide::status::front) {
+    event::pool<ch> &pool = get_pool__<ch>();
+    allocator<ch> &alloc = get_allocator__<ch>();
 
-        return packager<CH>{static_cast<emitter &>(*this),
-                            std::forward<PKGR_ARGS>(pkg_args)...};
-      } else if constexpr (CH.emmiter_provide.packanger ==
-                           policy::emmiter_provide::status::back) {
-        return packager<CH>{std::forward<PKGR_ARGS>(pkg_args)...,
-                            static_cast<emitter &>(*this)};
-      } else {
-        return packager<CH>{std::forward<PKGR_ARGS>(pkg_args)...};
-      }
-    }();
-
-    if constexpr (CH.emmiter_provide.factory ==
-                  policy::emmiter_provide::status::front) {
-      factory<EVENT_TYPE, CH>::process(static_cast<emitter &>(*this),
-                                       std::forward<EVENT_TYPE>(event), pool,
-                                       pkgr, alloc);
-    } else if constexpr (CH.emmiter_provide.factory ==
-                         policy::emmiter_provide::status::back) {
-      factory<EVENT_TYPE, CH>::process(std::forward<EVENT_TYPE>(event), pool,
-                                       pkgr, alloc,
-                                       static_cast<emitter &>(*this));
+    if constexpr (requires() {
+                    packager<ch>::make(alloc, static_cast<emitter &>(*this),
+                                       std::forward<decltype(args)>(args)...);
+                  }) {
+      pool.push(packager<ch>::make(alloc, static_cast<emitter &>(*this),
+                                   std::forward<decltype(args)>(args)...));
     } else {
-      factory<EVENT_TYPE, CH>::process(std::forward<EVENT_TYPE>(event), pool,
-                                       pkgr, alloc);
+      pool.push(
+          packager<ch>::make(alloc, std::forward<decltype(args)>(args)...));
     }
-  };
+  }
 };
 
 export struct accesser : virtual protected store__ {
-
   template <const channel &CH>
   decltype(auto) query(std::invocable<query<CH> &> auto &&call) {
-    // use channel info
-    // find,create,validate,lock,call ?
+    static_assert(is_packager<event::query<CH>>,
+                  "Invalid query implimentation. Please watch docs "
+                  "[iuic.event.query]");
     event::query<CH> q{get_pool__<CH>()};
     return call(q);
   }; // mb return proxy

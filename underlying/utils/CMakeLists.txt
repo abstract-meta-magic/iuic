@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}_underlying__utils PUBLIC
 	"iuic-external.cppm"
 	"iuic-utils.cppm"
 	"iuic-advance.cppm"
+	"iuic-func.cppm"
 )
 
 target_sources(${PROJECT_NAME}_underlying__utils
@@ -15,9 +16,8 @@ target_sources(${PROJECT_NAME}_underlying__utils
 	"iuic-advance.cpp"
 )
 
-
-if(TARGET iuic_std_module)
-		target_link_libraries(${PROJECT_NAME}_underlying__utils PUBLIC iuic_std_module)
+if(${IUIC_USER_STD})
+target_link_libraries(${PROJECT_NAME}_underlying__utils PRIVATE iuic::user_std)
 endif()
 
 target_link_libraries(${PROJECT_NAME}_underlying__utils PUBLIC

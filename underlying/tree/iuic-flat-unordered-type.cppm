@@ -198,7 +198,15 @@ struct insert_iterator<flat_unordered_type<T>>
     return {};
   };
 
-  void to(T &&) {};
+  insert_iterator to(T &&value) {
+    if (this->self != base::container_t::hierarchy::node_t::root) {
+      // mb iuic::unsafe use ?
+      if (this->valid()) {
+        return to_(std::move(value));
+      }
+    }
+    return {};
+  };
 
 private:
   insert_iterator at_root(T &&value) {
@@ -210,12 +218,13 @@ private:
     if (index == 0) {
       hierarchy.push_back({});
     } else {
-      hierarchy.push_back({.left = this->owner->root_end});
       auto &root_end = this->owner->root_end;
+      hierarchy.push_back({.left = root_end});
 
       hierarchy[root_end].right = index;
       root_end = index;
     };
+
     return base{index, this->owner};
   }
 
@@ -240,6 +249,30 @@ private:
     }
     return base{index, this->owner};
   };
+
+  insert_iterator to_(T &&value) {
+    auto &hierarchy = this->owner->hierarchy__;
+    auto &data = this->owner->data__;
+    auto index = hierarchy.size();
+
+    auto &self_node = hierarchy[this->self];
+    data.push_back(std::move(value));
+    if (self_node.parent != base::container_t::hierarchy::node_t::root) {
+      auto &parent_node = hierarchy[self_node.parent];
+      hierarchy.push_back(
+          {.parent = self_node.parent, .left = parent_node.ch_last});
+
+      hierarchy[parent_node.ch_last].right = index;
+      parent_node.ch_last = index;
+    } else {
+      auto &root_end = this->owner->root_end;
+      hierarchy.push_back({.parent = self_node.parent, .left = root_end});
+      hierarchy[root_end].right = index;
+      root_end = index;
+    }
+
+    return base{index, this->owner};
+  }
 };
 
 template <typename T>
@@ -265,6 +298,10 @@ copy_iterator(base_iterator<flat_unordered_type<T>>)
 template <typename T>
 move_iterator(base_iterator<flat_unordered_type<T>>)
     -> move_iterator<flat_unordered_type<T>>;
+
+template <typename T>
+insert_iterator(base_iterator<flat_unordered_type<T>>)
+    -> insert_iterator<flat_unordered_type<T>>;
 
 template <typename T> auto childs_of(base_iterator<flat_unordered_type<T>> it) {
   struct : decltype(it) {
