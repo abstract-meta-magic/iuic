@@ -17,6 +17,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME}_underlying__units
 	PUBLIC ${PROJECT_NAME}_underlying__utils
+	PUBLIC ${PROJECT_NAME}_underlying__external
 )
 
 target_compile_features(${PROJECT_NAME}_underlying__units

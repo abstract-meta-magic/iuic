@@ -3,7 +3,7 @@
 
 export module iuic.underlying.units:ui;
 import std;
-import iuic.underlying.utils;
+import iuic.underlying.external;
 import iuic.underlying.erasure;
 import :decl;
 import :op;
@@ -86,7 +86,7 @@ struct inherit {};
 
 struct adapt {};
 
-using fill = std::variant<none, color, iuic::erasure::visited>;
+using fill = std::variant<none, color, iuic::external::instance>;
 
 struct border_radius {
   // TODO : body

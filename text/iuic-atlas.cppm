@@ -133,7 +133,7 @@ public:
   bool is_kerning_supported() const { return meta__.kerning_support; };
 
   std::string name;
-  std::unique_ptr<external::binding> binding;
+  external::instance binding;
   std::unique_ptr<decoder> decoder;
 
   // directional
@@ -157,7 +157,7 @@ public:
 
   // invalide atlas ctor
   atlas()
-      : binding{nullptr}, decoder{nullptr}, name{"Invalid"},
+      : binding{}, decoder{nullptr}, name{"Invalid"},
         handler__{nullptr, registry_detach} {};
 
   // TODO : BIG-V
@@ -243,11 +243,8 @@ struct atlas::builder {
     return *this;
   };
 
-  template <typename T>
-  builder &set_binding(T &&binding)
-    requires std::is_base_of_v<iuic::external::binding, T>
-  {
-    binding__.reset(new T{std::forward<T>(binding)});
+  template <typename T> builder &set_binding(T &&binding) {
+    binding__ = std::forward<T>(binding);
     return *this;
   };
 
@@ -271,16 +268,10 @@ struct atlas::builder {
   atlas finalize() {
     atlas res{std::move(name), std::move(glyph__), std::move(meta__)};
 
-    if (iuic::text::atlas::by_name("Fira Code - 16").get_id() !=
-        iuic::text::atlas::invalid_id) {
-      std::println("HAVE - FIN");
-    }
-
     res.baseline_offset = baseline_offset__;
     res.text_height = text_height__;
     res.decoder.swap(decoder__);
-    res.binding.swap(binding__);
-    std::println("FINI bind : {}", (bool)res.binding);
+    std::swap(res.binding, binding__);
 
     return res;
   };
@@ -289,7 +280,7 @@ struct atlas::builder {
 
 private:
   std::unique_ptr<iuic::text::decoder> decoder__;
-  std::unique_ptr<iuic::external::binding> binding__;
+  iuic::external::instance binding__;
   std::string name;
   iuic::units::upixel text_height__{8};
   iuic::units::upixel baseline_offset__{8};

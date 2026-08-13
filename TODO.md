@@ -11,3 +11,5 @@
 - rework iuic::event   -> v?.++.0
 - rework iuic::text    -> v?.++.0
 - tests revision       -> v?.?.++
+- rethinking underlying
+  conmonent            -> v?.++.0

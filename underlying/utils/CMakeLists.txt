@@ -5,7 +5,6 @@ target_sources(${PROJECT_NAME}_underlying__utils PUBLIC
 	TYPE CXX_MODULES
 	FILES
 	"iuic-utils-decl.cppm"
-	"iuic-external.cppm"
 	"iuic-utils.cppm"
 	"iuic-advance.cppm"
 	"iuic-func.cppm"

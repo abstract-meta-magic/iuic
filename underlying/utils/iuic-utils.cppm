@@ -4,7 +4,6 @@
 export module iuic.underlying.utils;
 
 export import :decl;
-export import :external;
 export import :advance;
 // TODO : Rework
 export import iuic.underlying.func;

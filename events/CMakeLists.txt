@@ -14,6 +14,7 @@ target_sources(${PROJECT_NAME}_events PUBLIC
 	"iuic-event-hub.cppm"
 	"iuic-event.cppm"
 )
+
 if(${IUIC_USER_STD})
 target_link_libraries(${PROJECT_NAME}_events PRIVATE iuic::user_std)
 endif()
