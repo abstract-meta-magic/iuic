@@ -45,7 +45,7 @@ export struct binding {
 public: // BIG-V + RAII
   binding(const binding &) = delete;
   binding(binding &&) = delete;
-  // can
+  // TODO : move
   binding &operator=(const binding &) = delete;
   binding &operator=(binding &&) = delete;
   constexpr ~binding() {
@@ -59,6 +59,8 @@ public: // BIG-V + RAII
 private:
   type::value type;
   uri path;
+  // TODO : std::visit | union
+  // отказ от virtual
   block *block_ptr{nullptr};
 };
 }; // namespace iuic::external

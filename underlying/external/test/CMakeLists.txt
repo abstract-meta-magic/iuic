@@ -9,6 +9,10 @@ target_link_libraries(binding_test
 	iuic_underlying__external
 )
 
+find_program(VALGRIND valgrind)
+
+## TODO : ERROR MSG
+
 add_test(NAME "iuic::external[binding]"
-	COMMAND binding_test
+	COMMAND ${VALGRIND} --error-exitcode=1 --track-origins=yes --leak-check=full ./binding_test
 )

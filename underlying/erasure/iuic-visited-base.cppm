@@ -25,6 +25,10 @@ struct visited {
 
   constexpr const type *get_type() const noexcept { return type; };
 
+  constexpr const void *raw() const noexcept { return data; };
+
+  constexpr void *raw() noexcept { return data; };
+
   template <is_pure_type T>
   constexpr visited(const T &data_)
       : data{static_cast<void *>(const_cast<T *>(std::addressof(data_)))},

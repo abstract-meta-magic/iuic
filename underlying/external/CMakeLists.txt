@@ -20,6 +20,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME}_underlying__external PUBLIC
 	${PROJECT_NAME}_underlying__erasure
+	${PROJECT_NAME}_underlying__utils
 )
 
 

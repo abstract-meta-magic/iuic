@@ -22,6 +22,10 @@ struct test : iuic::test::unit<test> {
       int x, y;
     };
 
+    struct image_shared_data {
+      int x, y;
+    };
+
     constexpr auto test_inst_ct =
         test_bind.make_declaration<image_data{4, 4}>();
 
@@ -38,6 +42,7 @@ struct test : iuic::test::unit<test> {
     static_assert(test_inst_ct.get_uri().get_path() == "my/path",
                   "invalid uri path");
 
+    // RUNTIME
     utils.rq_true(
         test_inst_ct.try_visit_declaration([&](const image_data &data) {
           utils.eq(data.x, 4, "check value");
@@ -45,20 +50,53 @@ struct test : iuic::test::unit<test> {
         }),
         "check data ct-inst in rt");
 
-    utils.rq_false(test_inst_ct.is_resolved(), "check resolve");
+    // mb add async_resolve ???
+    test_inst_ct.resolve([](iuic::external::resolution_context ctx) {
+      auto shared = ctx.get_shared_object<image_shared_data>();
 
-    // async ???
-    test_inst_ct.resolve([](auto ctx) {
-      // resolve
+      if (not shared) {
+        shared.try_emplace(12, 12);
+        // or
+        shared.try_set(image_shared_data{12, 12});
+        shared.get().try_visit([](image_shared_data &) {});
+        shared.reset();
+      }
+
+      auto res = ctx.get_resolution();
+      if (not res) {
+        res.try_emplace<image_data_2>(4, 4);
+        // or
+        res.try_set(image_data{4, 4});
+        res.get().try_visit([](image_data_2 &) {});
+        res.reset();
+      }
+
+      return true;
     });
 
-    // check
+    utils.eq(test_inst_ct.get_resolution_type(),
+             iuic::erasure::type::from<image_data_2>(), "check type");
 
-    test_inst_ct.try_visit_resolution([](image_data_2 &data) {
-      // do job
-    });
+    utils.rq_true(test_inst_ct.try_visit_resolution([&](image_data_2 &data) {
+      utils.eq(data.x, 4, "check value");
+      utils.eq(data.y, 4, "check value");
+    }),
+                  "visit resolution");
 
-    // check
+    utils.rq_true(
+        test_inst_ct.try_visit_shared_object([&](image_shared_data &data) {
+          utils.eq(data.x, 12, "check value");
+          utils.eq(data.y, 12, "check value");
+        }),
+        "visit shared");
+
+    auto inst_2 = test_bind.make_declaration();
+
+    utils.rq_true(inst_2.try_visit_shared_object([&](image_shared_data &data) {
+      utils.eq(data.x, 12, "check value");
+      utils.eq(data.y, 12, "check value");
+    }),
+                  "visit shared");
   };
 } _{};
 }; // namespace

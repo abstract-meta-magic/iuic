@@ -13,6 +13,8 @@ set(IUIC_DEFAULT_TARGET_COMPILE_OPTIONS
 	# DEBUG
 	$<$<CONFIG:Debug>:-g>
 	$<$<CONFIG:Debug>:-O0>
+	$<$<CONFIG:Debug>:-Wall>
+	$<$<CONFIG:Debug>:-Wextra>
 	# RELEASE
 	$<$<CONFIG:Release>:$<IF:$<BOOL:${IUIC_EXTRA}>,-O3,-O2>>
 )
