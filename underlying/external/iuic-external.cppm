@@ -4,5 +4,6 @@
 export module iuic.underlying.external;
 export import :type;
 export import :uri;
+export import :resolution_context;
 export import :instance;
 export import :binding;

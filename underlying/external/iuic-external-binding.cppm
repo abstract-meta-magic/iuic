@@ -11,6 +11,7 @@ import :block.dynamic__;
 import :instance;
 
 namespace iuic::external {
+
 template <typename T> struct hidden_identity__ {
   using type = T;
 };

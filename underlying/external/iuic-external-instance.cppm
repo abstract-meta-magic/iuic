@@ -6,6 +6,7 @@ import std;
 import :type;
 import :uri;
 import :block.base;
+import :resolution_context;
 
 namespace iuic::external {
 

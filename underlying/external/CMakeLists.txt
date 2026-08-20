@@ -9,6 +9,7 @@ target_sources(${PROJECT_NAME}_underlying__external PUBLIC
 	"iuic-external-block-base.cppm" 
 	"iuic-external-block-static.cppm" 
 	"iuic-external-block-dynamic.cppm" 
+	"iuic-external-resolution-context.cppm" 
 	"iuic-external-instance.cppm" 
 	"iuic-external-binding.cppm" 
 	"iuic-external.cppm" 
