@@ -59,12 +59,12 @@ struct shape {
 
 // запрес на динамическое изменение
 
-// limit 64
 struct decoration {
   units::ui::rounding rounding;
   units::ui::fill background{units::ui::none{}};
   units::ui::fill foreground{units::ui::none{}};
   units::ui::fill border{units::ui::none{}};
+  iuic::external::instance extended{};
 };
 
 enum class position { STATIC, RELATIVE, FIXED, ABSOLUTE, STICKY };

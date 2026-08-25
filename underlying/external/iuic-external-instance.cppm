@@ -12,6 +12,8 @@ namespace iuic::external {
 
 static constexpr type::decl null_extern_type__;
 
+// TODO : нужно уменьшить вес
+// т.к. 64 byte довольно много
 export struct instance : private declaration_segment {
   decltype(auto) resolve(std::invocable<resolution_context> auto &&call) const {
     return call(resolution_context{this,
@@ -89,11 +91,25 @@ public: // BIG-V + RAII
   constexpr instance(const instance &other)
       : declaration_segment{other}, block_ptr{other.block_ptr} {}
 
-  instance &operator=(instance &&other) {
+  constexpr instance &operator=(instance &&other) {
     std::swap(type, other.type);
     std::swap(object, other.object);
     std::swap(path, other.path);
     std::swap(block_ptr, other.block_ptr);
+
+    return *this;
+  }
+
+  constexpr instance &operator=(const instance &other) {
+    // TODO : нужно уметь различать CT и RT
+    if consteval {
+      type = other.type;
+      object = other.object;
+      path = other.path;
+      block_ptr = other.block_ptr;
+    } else {
+      // TODO : DO RT COPY
+    }
 
     return *this;
   }

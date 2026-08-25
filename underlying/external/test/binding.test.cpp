@@ -11,8 +11,10 @@ struct test : iuic::test::unit<test> {
 
   void body(iuic::test::utils utils) {
     static constexpr iuic::external::type::decl test_type;
-    static constexpr iuic::external::binding test_bind{test_type,
-                                                       {"res://my/path"}};
+    static constexpr iuic::external::binding test_bind{
+        test_type,
+        {"res://my/path"},
+        iuic::external::self_identity<test_bind>{}};
 
     struct image_data {
       int x, y;

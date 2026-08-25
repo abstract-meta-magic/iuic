@@ -12,20 +12,27 @@ import :instance;
 
 namespace iuic::external {
 
-template <typename T> struct hidden_identity__ {
-  using type = T;
-};
+export struct binding;
+
+export template <const binding &> struct self_identity {};
 
 export struct binding {
 
-  template <typename T = decltype([]() {})>
-  constexpr binding(type::value type_, uri path_, hidden_identity__<T> = {})
+  // CT\RT - Safe Binding
+  template <const binding &self>
+  constexpr binding(type::value type_, uri path_, self_identity<self> = {})
       : type{type_}, path{path_}, block_ptr{nullptr} {
     if consteval {
-      block_ptr = &static_block<T>;
+      block_ptr = &static_block<decltype(self_identity<self>{})>;
     } else {
       block_ptr = new dynamic_block__{};
     }
+  };
+
+  // RT - Binding
+  binding(type::value type_, uri path_)
+      : type{type_}, path{path_}, block_ptr{nullptr} {
+    block_ptr = new dynamic_block__{};
   };
 
   // make conceptr is_data_type

@@ -29,14 +29,16 @@ public:
   };
 
   builder_base(environment::persist &penv_, environment::tmp &tenv_,
-               insert_iterator it_, builder &builder_)
-      : penv{penv_}, tenv{tenv_}, it{it_}, builder{builder_} {
+               environment::domain &denv_, insert_iterator it_,
+               builder &builder_)
+      : penv{penv_}, tenv{tenv_}, denv{denv_}, it{it_}, builder{builder_} {
     deep_index.reserve(200);
     deep_index.push_back({});
   }
 
   environment::persist &penv;
   environment::tmp &tenv;
+  environment::domain &denv;
   insert_iterator it;
   builder &builder;
 
@@ -56,9 +58,10 @@ struct builder_element_interface : protected virtual builder_base {
   // Разделить 64 hash на 32(группа)|32(елемент)
 
   builder_element_interface(environment::tmp &tenv_,
-                            environment::persist &penv_, insert_iterator it_,
+                            environment::persist &penv_,
+                            environment::domain &denv_, insert_iterator it_,
                             struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   /*
     Базовая форма для всего.Стелизуемый рамка.
@@ -92,8 +95,9 @@ struct builder_element_interface : protected virtual builder_base {
 
 struct builder_order_interface : protected virtual builder_base {
   builder_order_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                          environment::domain &denv_, insert_iterator it_,
+                          struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   void group(std::uint16_t value);
 
@@ -104,8 +108,9 @@ struct builder_order_interface : protected virtual builder_base {
 
 struct builder_policy_interface : protected virtual builder_base {
   builder_policy_interface(environment::tmp &tenv_, environment::persist &penv_,
-                           insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                           environment::domain &denv_, insert_iterator it_,
+                           struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   void set(auto p);
 
@@ -120,8 +125,9 @@ struct builder_uid_interface : protected virtual builder_base {
   static inline utils::anchor default_anchor{};
 
   builder_uid_interface(environment::tmp &tenv_, environment::persist &penv_,
-                        insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                        environment::domain &denv_, insert_iterator it_,
+                        struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   units::uid
   make_static(const std::string &str,
@@ -137,8 +143,9 @@ struct builder_uid_interface : protected virtual builder_base {
 
 struct builder_memory_interface : protected virtual builder_base {
   builder_memory_interface(environment::tmp &tenv_, environment::persist &penv_,
-                           insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                           environment::domain &denv_, insert_iterator it_,
+                           struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   // TODO : MB replace to decoy
   template <typename T>
@@ -146,16 +153,20 @@ struct builder_memory_interface : protected virtual builder_base {
 
   void init_if_not(units::uid uid, std::invocable<> auto &&call);
 
+  // TODO : replace to proxy interface
   template <typename T>
   void persist(units::uid uid, std::type_identity<T> = {});
 
   template <typename T> T &tmp(T &&);
+
+  template <typename T> auto domain();
 };
 
 struct builder_event_interface : protected virtual builder_base {
   builder_event_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                          environment::domain &denv_, insert_iterator it_,
+                          struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   template <const iuic::event::channel &ch> void emit(auto &&...args) {
     if constexpr (requires { tenv.event.emit<ch>(builder, args...); }) {
@@ -170,8 +181,9 @@ struct builder_event_interface : protected virtual builder_base {
 
 struct builder_text_interface : protected virtual builder_base {
   builder_text_interface(environment::tmp &tenv_, environment::persist &penv_,
-                         insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                         environment::domain &denv_, insert_iterator it_,
+                         struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   // UTF-8
   const text::raw::token &static_token(std::string_view, std::string_view);
@@ -182,8 +194,9 @@ struct builder_text_interface : protected virtual builder_base {
 
 struct builder_style_interface : protected virtual builder_base {
   builder_style_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                          environment::domain &denv_, insert_iterator it_,
+                          struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   style::sid self();
 
@@ -220,8 +233,9 @@ struct builder_style_interface : protected virtual builder_base {
 
 struct builder_state_interface : protected virtual builder_base {
   builder_state_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, it_, builder_} {}
+                          environment::domain &denv_, insert_iterator it_,
+                          struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
   bool has(units::uid uid, state::value s);
 
@@ -244,16 +258,16 @@ export struct builder final : protected virtual builder_base,
   // TOTO пересмотреть концепцию конструктора
   // перестроить его через kernel(module private)
   builder(environment::persist &penv, environment::tmp &tenv,
-          insert_iterator it) noexcept
-      : builder_base{penv, tenv, it, *this},
-        builder_element_interface{tenv, penv, it, *this},
-        builder_state_interface{tenv, penv, it, *this},
-        builder_uid_interface{tenv, penv, it, *this},
-        builder_policy_interface{tenv, penv, it, *this},
-        builder_memory_interface{tenv, penv, it, *this},
-        builder_text_interface{tenv, penv, it, *this},
-        builder_event_interface{tenv, penv, it, *this},
-        builder_style_interface{tenv, penv, it, *this} {};
+          environment::domain &denv, insert_iterator it) noexcept
+      : builder_base{penv, tenv, denv, it, *this},
+        builder_element_interface{tenv, penv, denv, it, *this},
+        builder_state_interface{tenv, penv, denv, it, *this},
+        builder_uid_interface{tenv, penv, denv, it, *this},
+        builder_policy_interface{tenv, penv, denv, it, *this},
+        builder_memory_interface{tenv, penv, denv, it, *this},
+        builder_text_interface{tenv, penv, denv, it, *this},
+        builder_event_interface{tenv, penv, denv, it, *this},
+        builder_style_interface{tenv, penv, denv, it, *this} {};
 
   builder_element_interface &element{*this};
   builder_state_interface &state{*this};
@@ -278,14 +292,15 @@ public: // public forward decl
 namespace iuic::scheme {
 
 struct director {
-  director(environment::tmp &tenv_, environment::persist &penv_)
-      : tenv{tenv_}, penv{penv_} {};
+  director(environment::tmp &tenv_, environment::persist &penv_,
+           environment::domain &denv_)
+      : tenv{tenv_}, penv{penv_}, denv{denv_} {};
 
   sketch make(units::ui::size viewport, std::invocable<builder &> auto &&call) {
     tenv.meta.viewport_size = viewport;
     tree::flat_unordered_type<sketch::value_t> tree;
 
-    builder b{penv, tenv, {tree.root()}};
+    builder b{penv, tenv, denv, {tree.root()}};
 
     call(b);
 
@@ -295,6 +310,7 @@ struct director {
 private:
   environment::tmp &tenv;
   environment::persist &penv;
+  environment::domain &denv;
 };
 
 // ---- IMPL ----
@@ -580,6 +596,10 @@ template <typename T> T &builder_memory_interface::tmp(T &&value) {
   T &ptr = tenv.memory.allocate<T>()[0];
   new (&ptr) T{std::move(value)};
   return ptr;
+};
+
+template <typename T> auto builder_memory_interface::domain() {
+  return denv.get<T>();
 };
 
 template <typename T>

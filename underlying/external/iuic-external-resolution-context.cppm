@@ -6,6 +6,18 @@ import std;
 import :block.base;
 
 namespace iuic::external {
+
+template <typename T> struct reset_token {};
+
+struct resetor {
+  void reset();
+
+  template <typename T> reset_token<T> make_token(T);
+};
+
+}; // namespace iuic::external
+
+namespace iuic::external {
 export struct resolution_context {
 
   resolution_segment_proxy get_resolution() { return {resolution, general}; };
@@ -26,6 +38,9 @@ export struct resolution_context {
     return erasure::visited::as_const{declaration->object}.try_visit(
         std::forward<decltype(call)>(call));
   };
+
+  // TODO : add reset mechanism for backend
+  // void add_reset_token(reset_token<resolution_context>);
 
   resolution_context(const declaration_segment *declaration_,
                      resolution_segment *resolution_, general_context *general_)

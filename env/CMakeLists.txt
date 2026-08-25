@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME}_env PUBLIC
 	"iuic-env-persist-object.cppm"
 	"iuic-env-persist-state.cppm"
 	"iuic-env-persist.cppm"
+	"iuic-env-domain.cppm"
 	"iuic-env.cppm"
 )
 

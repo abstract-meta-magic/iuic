@@ -21,6 +21,7 @@ struct test_persist : iuic::test::unit<test_persist> {
     advance::pool pool;
     environment::persist penv{pool};
     environment::tmp tenv{pool};
+    environment::domain denv{};
 
     tree::flat_unordered_type<scheme::sketch::value_t> tree;
 
@@ -36,7 +37,7 @@ struct test_persist : iuic::test::unit<test_persist> {
       return style;
     }({});
 
-    scheme::builder builder{penv, tenv, {tree.root()}};
+    scheme::builder builder{penv, tenv, denv, {tree.root()}};
 
     auto sid_1 = builder.style.make(style_1);
     auto sid_2 = builder.style.make(style_2);

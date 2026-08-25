@@ -19,10 +19,11 @@ struct test_basic : iuic::test::unit<test_basic> {
     advance::pool pool;
     environment::persist penv{pool};
     environment::tmp tenv{pool};
+    environment::domain denv{};
 
     tree::flat_unordered_type<scheme::sketch::value_t> tree;
 
-    scheme::builder builder{penv, tenv, {tree.root()}};
+    scheme::builder builder{penv, tenv, denv, {tree.root()}};
 
     struct data {
       int x, y;
@@ -44,10 +45,11 @@ struct test_ex : iuic::test::unit<test_ex> {
     advance::pool pool;
     environment::persist penv{pool};
     environment::tmp tenv{pool};
+    environment::domain denv{};
 
     tree::flat_unordered_type<scheme::sketch::value_t> tree;
 
-    scheme::builder builder{penv, tenv, {tree.root()}};
+    scheme::builder builder{penv, tenv, denv, {tree.root()}};
 
     struct large_type {
       std::byte data[iuic::cenv::num("iuic::env.tmp_buffer_size")

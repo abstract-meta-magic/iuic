@@ -19,10 +19,11 @@ struct test : iuic::test::unit<test> {
     advance::pool p;
     environment::persist penv{p};
     environment::tmp tenv{p};
+    environment::domain denv{};
 
     tree::flat_unordered_type<scheme::sketch::value_t> tree;
 
-    scheme::builder builder{penv, tenv, {tree.root()}};
+    scheme::builder builder{penv, tenv, denv, {tree.root()}};
 
     auto uid_1 = builder.uid.make_ordered("unique");
     auto uid_2 = builder.uid.make_ordered("unique");

@@ -17,11 +17,11 @@ struct visited {
   struct as_garbage;
   struct as_factory;
 
-  template <is_pure_type T> bool as() const noexcept {
+  template <is_pure_type T> bool is() const noexcept {
     return type::from<T>() == type;
   };
 
-  constexpr bool as(const type *t) const noexcept { return t == type; };
+  constexpr bool is(const type *t) const noexcept { return t == type; };
 
   constexpr const type *get_type() const noexcept { return type; };
 

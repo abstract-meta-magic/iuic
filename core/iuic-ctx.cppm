@@ -22,6 +22,8 @@ public: // api
     scheme = scheme::explorer_assign{blueprint.begin(), &tenv, &penv};
   };
 
+  template <typename T> auto domain() { return denv.get<T>(); };
+
 private:
   // sync
   advance::pool adp;
@@ -30,6 +32,7 @@ private:
   scheme::blueprint blueprint;
   environment::tmp tenv{adp};
   environment::persist penv{adp};
+  environment::domain denv;
 
   // TODO : backend capabilities
 public:
@@ -51,7 +54,7 @@ void context::make(units::ui::size vp, units::upixel seg,
   tenv.meta.viewport_size = vp;
   tenv.meta.segment_size = seg;
 
-  scheme::director d{tenv, penv};
+  scheme::director d{tenv, penv, denv};
 
   auto sketch = d.make(vp, std::forward<decltype(call)>(call));
 
