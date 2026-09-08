@@ -24,6 +24,13 @@ public: // api
 
   template <typename T> auto domain() { return denv.get<T>(); };
 
+  void eval(std::invocable<iuic::scheme::explorer &> auto &&call) {
+    // ... sync ??
+    call(scheme);
+  };
+
+  // void eval(std::invocable<domai_proxy> auto &&);
+
 private:
   // sync
   advance::pool adp;
@@ -33,9 +40,6 @@ private:
   environment::tmp tenv{adp};
   environment::persist penv{adp};
   environment::domain denv;
-
-  // TODO : backend capabilities
-public:
   scheme::explorer scheme{};
 };
 

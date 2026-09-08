@@ -1,5 +1,6 @@
 # iuic::style::delc
 Class for stilization elements.
+Work in progress.
 
 - [shape]
   - [size]

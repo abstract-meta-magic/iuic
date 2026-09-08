@@ -1,20 +1,20 @@
 # IUIC :: Independent User Interface Core
-
+## Warning
+API is unstable.
 ---
 ## Intro
-- Requires
-- Install
-- Concept
+- [Requires](./intro/requires.md)
+- [Install](./intro/install.md)
 ---
+## Usage
+- [Context](./usage/context.md) - Main class.
+- [Builder](./usage/builder.md) - Class for frontend.
+- [Scheme](./usage/scheme.md)   - Class for backend.
+- [Style](./usage/style.md)
 ## Concept
 - [Protocol](./concept/protocol.md)
-- [Front](./concept/front.md)
-- [Back](./concept/back.md)
-## Usage
-- [Context](./usage/context.md)
-- [Builder](./usage/builder.md)
-- [Scheme](./usage/scheme.md)
-- [Style](./usage/style.md)
+- [Frontend](./concept/frontend.md)
+- [Backend](./concept/backend.md)
 ---
 ## How to :
 ### Component
@@ -25,4 +25,4 @@
 - [text](./how-to/text-layout.md)
 ### Text
 - [decoder](./how-to/text-decoder.md)
-- [atlas](./hot-to/text-atlas.md)
+- [atlas](./how-to/text-atlas.md)
