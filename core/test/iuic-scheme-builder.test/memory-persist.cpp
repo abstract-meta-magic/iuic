@@ -36,46 +36,41 @@ struct test_persist : iuic::test::unit<test_persist> {
     struct wrong_type {};
 
     // reserve slot
-    builder.memory.persist<data>(uid);
+    auto persist = builder.memory.persist<data>(uid);
 
-    utils.rq_false(builder.memory.try_visit<data>(uid, [&](data &d) {}),
+    utils.rq_false(persist.get().try_visit([&](data &d) {}),
                    "Visit unintialized value");
 
     ///----
     bool res_1{false};
 
     // persist has other type
-    builder.memory.init_if_not(uid, []() { return wrong_type{}; });
+    persist.init_if_not([]() { return wrong_type{}; });
 
     // persist has other type
-    utils.rq_false(builder.memory.try_visit<data>(uid, [&](data &d) {}),
+    utils.rq_false(persist.get().try_visit([&](data &d) {}),
                    "Visit unintialized value");
     // persist has other type
-    utils.rq_false(
-        builder.memory.try_visit<wrong_type>(uid, [&](wrong_type &d) {}),
-        "Visit wrong type");
+    utils.rq_false(persist.get().try_visit([&](wrong_type &d) {}),
+                   "Visit wrong type");
 
-    builder.memory.init_if_not(uid, []() { return data{.x = 10, .y = 5}; });
+    persist.init_if_not([]() { return data{.x = 10, .y = 5}; });
 
-    utils.rq_true(
-        builder.memory.try_visit<data>(uid,
-                                       [&](data &d) {
-                                         utils.eq(d.x, 10, "wrong value");
-                                         utils.eq(d.y, 5, "wrong value");
-                                         d.x = 20;
-                                         d.y = 40;
-                                       }),
-        "Object is not visited");
+    utils.rq_true(persist.get().try_visit([&](data &d) {
+      utils.eq(d.x, 10, "wrong value");
+      utils.eq(d.y, 5, "wrong value");
+      d.x = 20;
+      d.y = 40;
+    }),
+                  "Object is not visited");
 
     ///----
 
-    utils.rq_true(
-        builder.memory.try_visit<data>(uid,
-                                       [&](data &d) {
-                                         utils.eq(d.x, 20, "wrong value");
-                                         utils.eq(d.y, 40, "wrong value");
-                                       }),
-        "Object is not visited");
+    utils.rq_true(persist.get().try_visit([&](data &d) {
+      utils.eq(d.x, 20, "wrong value");
+      utils.eq(d.y, 40, "wrong value");
+    }),
+                  "Object is not visited");
 
     // 15 strong
     // but default lifetime ~3-5
@@ -83,11 +78,11 @@ struct test_persist : iuic::test::unit<test_persist> {
       pool.advance();
     }
 
-    utils.rq_false(builder.memory.try_visit<data>(uid, [&](data &d) {}),
-                   "Use after free");
+    utils.rq_false(persist.get().try_visit([&](data &d) {}), "Use after free");
 
     builder.memory.persist<data>(uid);
-    builder.memory.init_if_not(uid, []() { return data{.x = 100, .y = 100}; });
+
+    persist.init_if_not([]() { return data{.x = 100, .y = 100}; });
 
     for (int i{0}; i < 15; ++i) {
       pool.advance();
@@ -95,7 +90,7 @@ struct test_persist : iuic::test::unit<test_persist> {
       builder.memory.persist<data>(uid);
     }
 
-    builder.memory.try_visit<data>(uid, [&](data &d) {
+    persist.get().try_visit([&](data &d) {
       utils.eq(d.x, 100, "wrong value");
       utils.eq(d.y, 100, "wrong value");
     });
@@ -106,12 +101,10 @@ struct test_persist : iuic::test::unit<test_persist> {
       builder.memory.persist<wrong_type>(uid);
     }
 
-    utils.rq_false(builder.memory.try_visit<data>(uid, [&](data &d) {}),
-                   "Use after free");
+    utils.rq_false(persist.get().try_visit([&](data &d) {}), "Use after free");
 
-    utils.rq_false(
-        builder.memory.try_visit<wrong_type>(uid, [&](wrong_type &d) {}),
-        "wrong type visit");
+    utils.rq_false(persist.get().try_visit([&](wrong_type &d) {}),
+                   "wrong type visit");
   };
 
 } _{};

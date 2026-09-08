@@ -411,3 +411,30 @@ template <std::size_t N> struct str {
 
 }; // namespace ct
 }; // namespace iuic::utils
+
+namespace iuic::utils {
+
+// for fun ?
+template <std::size_t N, typename CharType, bool is_null_term = true,
+          bool use_char_size = false>
+struct fstring_base {
+  template <std::size_t ON>
+    requires(ON <= N)
+  constexpr fstring_base(const CharType (&e)[ON]){};
+
+  std::basic_string_view<CharType> to_view() const {
+    return std::basic_string_view<CharType>{&data[0], N};
+  };
+
+  template <std::size_t ON>
+  fstring_base<ON + N, CharType, is_null_term>
+  operator+(const fstring_base<ON, CharType, is_null_term> &);
+
+private:
+  std::array<CharType, is_null_term ? N + 1 : N> data;
+  std::uint8_t size;
+};
+
+using fstring = fstring_base<31, char, false>;
+using flstring = fstring_base<63, char, false>;
+}; // namespace iuic::utils

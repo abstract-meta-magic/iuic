@@ -14,6 +14,8 @@ struct element {
   units::ui::area arrange;
   std::span<const text::present::token> text;
   style::value style;
+  units::clip_id clipzone{
+      std::numeric_limits<std::underlying_type_t<units::clip_id>>::max()};
 
   struct meta {
     void set_discarded() { value.set(static_cast<int>(map::discarded), true); };

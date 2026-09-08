@@ -55,6 +55,10 @@ constexpr inline auto operator<=>(hash lhs, hash rhs) {
   return std::to_underlying(lhs) <=> std::to_underlying(rhs);
 };
 
+constexpr inline auto operator<=>(clip_id lhs, clip_id rhs) {
+  return std::to_underlying(lhs) <=> std::to_underlying(rhs);
+};
+
 constexpr inline percent operator+(percent lhs, percent rhs) {
   // TODO : Write overflow rule
   if (255 - static_cast<std::uint8_t>(lhs) > static_cast<std::uint8_t>(rhs)) {

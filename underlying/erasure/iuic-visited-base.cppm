@@ -5,11 +5,18 @@ import iuic.underlying.cenv;
 import :decl;
 import :type;
 
+namespace iuic::erasure {}; // namespace iuic::erasure
+
 export namespace iuic::erasure {
 struct visited {
+protected:
+  struct result_proxy;
+
+public:
   // TODO : replace to env or cenv or macros
   static constexpr bool unsafe_check{
       not iuic::cenv::logic("iuic::runtime.unsafe").value_or(false)};
+  struct as_owner; //  only move
   struct as_const;
   struct as_const_sync;
   struct as_mutable;
@@ -50,4 +57,37 @@ private:
   const type *type;
 };
 
+struct visited::result_proxy {
+  constexpr explicit result_proxy(bool result_) : result{result_} {};
+
+  constexpr operator bool() const noexcept { return result; };
+
+  constexpr decltype(auto) or_else(this auto &&self,
+                                   std::invocable<> auto &&call) {
+    if constexpr (requires() { self.result = call(); }) {
+      if (not self.result) {
+        self.result = call();
+      }
+    } else {
+      call();
+    }
+
+    return std::forward<decltype(self)>(self);
+  };
+
+  constexpr decltype(auto) and_than(this auto &&self,
+                                    std::invocable<> auto &&call) {
+    if constexpr (requires() { self.result = call(); }) {
+      if (self.result) {
+        self.result = call();
+      }
+    } else {
+      call();
+    }
+    return std::forward<decltype(self)>(self);
+  };
+
+private:
+  bool result;
+};
 }; // namespace iuic::erasure

@@ -150,7 +150,10 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
     std::visit(
         [&](auto obj) {
           if constexpr (std::same_as<decltype(obj), const layout::frame *>) {
-            // frame
+            if (iuic::tree::root_iterator rit{tree_ait}; ++rit) {
+              tree_ait->clipzone = iuic::tree::access_iterator{rit}->clipzone;
+            }
+
             if (not obj->arrange(iuic::layout::arrange::frame_utils{
                     tenv, tree::base_iterator{tree_ait}})) {
               tree_ait->meta.set_discarded();

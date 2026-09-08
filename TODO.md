@@ -2,6 +2,8 @@
 - iuic::external       -> v0.4.0
 - docs/examples        -> v0.4.++
 - replace iuic::cenv   -> v0.4.++
+- iuic::env.domain 
+  refactoring          -> v0.4.++
 ### Next
 - iuic::state::machine -> v0.++.0
 - iuic::log            -> v0.++.0

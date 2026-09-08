@@ -147,15 +147,22 @@ struct builder_memory_interface : protected virtual builder_base {
                            struct builder &builder_)
       : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
-  // TODO : MB replace to decoy
-  template <typename T>
-  bool try_visit(units::uid uid, std::invocable<T &> auto &&call);
+  template <typename T> struct persist_proxy {
 
-  void init_if_not(units::uid uid, std::invocable<> auto &&call);
+    persist_proxy(builder_base *owner_, units::uid uid_)
+        : owner{owner_}, uid{uid_} {};
 
-  // TODO : replace to proxy interface
+    bool init_if_not(auto &&call);
+
+    erasure::visited::as_mutable get();
+
+  private:
+    builder_base *owner;
+    units::uid uid;
+  };
+
   template <typename T>
-  void persist(units::uid uid, std::type_identity<T> = {});
+  persist_proxy<T> persist(units::uid uid, std::type_identity<T> = {});
 
   template <typename T> T &tmp(T &&);
 
@@ -603,7 +610,8 @@ template <typename T> auto builder_memory_interface::domain() {
 };
 
 template <typename T>
-void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
+builder_memory_interface::persist_proxy<T>
+builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
   const erasure::type *type{erasure::type::from<T>()};
 
   auto access = penv.object.access(uid, type);
@@ -611,32 +619,35 @@ void builder_memory_interface::persist(units::uid uid, std::type_identity<T>) {
   if (auto state = access.state();
       state == environment::object_state::non_exist) {
     access.reserve();
+    return {static_cast<builder_base *>(this), uid};
   } else if (state == environment::object_state::alive_this_type) {
     access.update_lifetime();
+    return {static_cast<builder_base *>(this), uid};
   }
+  return {nullptr, units::uid{0}};
 };
 
 template <typename T>
-bool builder_memory_interface::try_visit(units::uid uid,
-                                         std::invocable<T &> auto &&call) {
+erasure::visited::as_mutable builder_memory_interface::persist_proxy<T>::get() {
   return erasure::visited::as_mutable{
-      penv.object.access(uid, erasure::type::from<T>()).get()}
-      .try_visit(std::forward<decltype(call)>(call));
+      owner->penv.object.access(uid, erasure::type::from<T>()).get()};
 };
 
-void builder_memory_interface::init_if_not(units::uid uid,
-                                           std::invocable<> auto &&call) {
+template <typename T>
+bool builder_memory_interface::persist_proxy<T>::init_if_not(auto &&call) {
   using traits = typename decltype(erasure::func_type{call})::traits;
 
   using type = std::remove_cvref_t<typename traits::return_t>;
 
-  auto access = penv.object.access(uid, erasure::type::from<type>());
+  auto access = owner->penv.object.access(uid, erasure::type::from<type>());
 
   if (auto state = access.state();
       state == environment::object_state::reserve_this_type) {
     access.allocate();
     access.construct([&](void *mem) { new (mem) type{call()}; });
+    return true;
   }
+  return false;
 };
 
 // ---- IMPL [text] ----

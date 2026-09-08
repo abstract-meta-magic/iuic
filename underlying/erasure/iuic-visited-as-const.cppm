@@ -16,7 +16,7 @@ struct visited::as_const : private visited {
 
   constexpr as_const(std::nullptr_t) : visited{nullptr, type::none()} {};
 
-  constexpr bool
+  constexpr result_proxy
   try_visit(func_as_decoy<decoy(const decoy &)> auto &&call) const {
     using traits = decltype(func_type{call})::traits;
 
@@ -27,10 +27,10 @@ struct visited::as_const : private visited {
 
     if (otype == type) {
       call(*static_cast<arg_ptr>(data));
-      return true;
+      return result_proxy{true};
     }
 
-    return false;
+    return result_proxy{false};
   };
 
   decltype(auto) unsafe_visit(auto &&call) const {
