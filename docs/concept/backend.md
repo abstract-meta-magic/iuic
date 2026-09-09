@@ -1,3 +1,12 @@
-# Back abstraction
+# Backend abstraction
 
-for wat
+## For what
+
+
+## Responsibilities
+??
+- gfx
+- events
+- sys
+- proto
+??

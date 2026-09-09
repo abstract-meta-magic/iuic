@@ -1,5 +1,11 @@
 # iuic::scheme::builder
+
+## For what
 Main class for building UI components.
+
+## Usage
+??
+## API
 - [uid](./builder.uid.md)
   - [make_static](./builder.uid.make_static.md)
   - [make_ordered](./builder.uid.make_ordered.md)

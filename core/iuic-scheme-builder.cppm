@@ -164,7 +164,9 @@ struct builder_memory_interface : protected virtual builder_base {
   template <typename T>
   persist_proxy<T> persist(units::uid uid, std::type_identity<T> = {});
 
-  template <typename T> T &tmp(T &&);
+  template <typename T> auto &tmp(T &&);
+
+  template <typename T, typename... ARGS> T &tmp(ARGS &&...);
 
   template <typename T> auto domain();
 };
@@ -243,6 +245,8 @@ struct builder_state_interface : protected virtual builder_base {
                           environment::domain &denv_, insert_iterator it_,
                           struct builder &builder_)
       : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+
+  bool has(state::value s);
 
   bool has(units::uid uid, state::value s);
 
@@ -519,6 +523,11 @@ void builder_state_interface::attach(units::uid uid, state::value v) {
 void builder_state_interface::detach(units::uid uid, state::value v) {
   penv.state.access(uid).detach(v);
 };
+
+bool builder_state_interface::has(state::value v) {
+  return penv.state.access(tree::access_iterator{it}->uid).has(v);
+};
+
 bool builder_state_interface::has(units::uid uid, state::value v) {
   return penv.state.access(uid).has(v);
 };
@@ -599,9 +608,17 @@ style::value builder_style_interface::get(style::sid sid) {
 };
 
 // ---- IMPL [memory] ----
-template <typename T> T &builder_memory_interface::tmp(T &&value) {
+template <typename T> auto &builder_memory_interface::tmp(T &&value) {
+  using type = std::remove_cvref_t<T>;
+  type &ptr = tenv.memory.allocate<type>()[0]; // unsafe ???
+  new (&ptr) type{std::forward<T>(value)};
+  return ptr;
+};
+
+template <typename T, typename... ARGS>
+T &builder_memory_interface::tmp(ARGS &&...args) {
   T &ptr = tenv.memory.allocate<T>()[0];
-  new (&ptr) T{std::move(value)};
+  new (&ptr) T{std::forward<ARGS>(args)...};
   return ptr;
 };
 

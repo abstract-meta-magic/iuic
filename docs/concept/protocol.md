@@ -1,4 +1,6 @@
 # Protocol abstraction.
+
+## For what
 Abstract bridge before [backend](./backend.md) and [frontend](./frontend.md).
 
 
