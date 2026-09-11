@@ -11,6 +11,15 @@ import :scheme.explorer;
 
 export namespace iuic {
 
+struct domain {
+  domain(iuic::environment::domain *ptr_) : ptr{ptr_} {};
+
+  template <typename T> auto get() { return ptr->get<T>(); }
+
+private:
+  iuic::environment::domain *ptr;
+};
+
 class context {
 public: // api
   void make(units::ui::size viewport, scheme::builder_block_cpt auto &&call);
@@ -22,7 +31,9 @@ public: // api
     scheme = scheme::explorer_assign{blueprint.begin(), &tenv, &penv};
   };
 
-  template <typename T> auto domain() { return denv.get<T>(); };
+  void domain(std::invocable<domain> auto &&call) {
+    call(iuic::domain{&denv});
+  };
 
   void eval(std::invocable<iuic::scheme::explorer &> auto &&call) {
     // ... sync ??

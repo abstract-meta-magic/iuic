@@ -59,6 +59,8 @@ export struct explorer : base {
       return self().get_element(it).text;
     };
 
+    auto clipzone() { return self().tenv->clip; };
+
     auto get_clipzones() { return self().tenv->clip.get(); };
   } props{*this};
 

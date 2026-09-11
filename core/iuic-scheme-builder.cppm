@@ -129,9 +129,10 @@ struct builder_uid_interface : protected virtual builder_base {
                         struct builder &builder_)
       : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
-  units::uid
-  make_static(const std::string &str,
-              const utils::anchor &anchor = default_anchor) const noexcept;
+  units::uid make_static(const std::string &str) const noexcept;
+
+  units::uid make_indexed(std::size_t,
+                          const utils::anchor &anchor) const noexcept;
 
   units::uid make_ordered(const std::string &str,
                           const utils::anchor &anchor = default_anchor);
@@ -450,12 +451,18 @@ void builder_element_interface::text(
 // ---- IMPL [uid] ----
 
 units::uid
-builder_uid_interface::make_static(const std::string &str,
-                                   const utils::anchor &anchor) const noexcept {
-
+builder_uid_interface::make_static(const std::string &str) const noexcept {
   std::stringstream ss;
-  ss << anchor.value;
   ss << str;
+  return units::uid{
+      static_cast<std::uint64_t>(std::hash<std::string>{}(ss.str()))};
+};
+
+units::uid builder_uid_interface::make_indexed(
+    std::size_t index, const utils::anchor &anchor) const noexcept {
+  std::stringstream ss;
+  ss << index;
+  ss << anchor.value;
   return units::uid{
       static_cast<std::uint64_t>(std::hash<std::string>{}(ss.str()))};
 };
@@ -478,8 +485,6 @@ units::uid builder_uid_interface::make_ordered(const std::string &str,
   size += sizeof(anchor.value);
   std::memcpy(&buff[size], str.data(), str.size());
   size += str.size();
-  // make_ordered();
-  // make_stable();
 
   std::size_t hash = std::hash<std::string_view>{}({buff, size});
 

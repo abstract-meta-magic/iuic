@@ -404,9 +404,25 @@ template <typename T, T... value> struct list {
   };
 };
 
-template <std::size_t N> struct str {
-  char cstr[N];
-  constexpr std::string_view to_view() const { return {cstr}; };
+template <typename Char, std::size_t N> struct str {
+  constexpr str(const Char (&data_)[N]) {
+    for (std::size_t i{0}; i < N; ++i) {
+      data[i] = data_[i];
+    }
+  };
+
+  constexpr operator std::basic_string_view<Char>() const {
+    return std::basic_string_view<Char>{data};
+  };
+
+  template <std::size_t ON>
+  constexpr bool operator==(const Char (&other)[ON]) const {
+    return std::basic_string_view<Char>{data} ==
+           std::basic_string_view<Char>{other};
+  };
+
+  Char data[N];
+  static constexpr std::size_t size{N - 1};
 };
 
 }; // namespace ct
