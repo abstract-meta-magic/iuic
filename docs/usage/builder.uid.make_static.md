@@ -4,13 +4,14 @@
 
 Make static uid from string.
 
+## Behavior
+- Use string hash as uid.
+- **Stable**
+
 ## Use-case
 
 Used for static elements.
 
-## Behavior
-- Use string hash as uid.
-- **Stable**
 
 ## Example
 

@@ -1,6 +1,7 @@
 # style
 
-## For what
+## Purpose 
+Element customization.
 
 ## Links
 - [self](./builder.style.self.md)

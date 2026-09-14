@@ -1,7 +1,16 @@
 # replace\_self\_style
 
+## Description
 
-Replace self style.
+Apply new style.
+
+## Behavior
+- replace current element sid.
+
+## Use-case
+If needs apply dynamically changed style. 
+
+## Example
 
 ```c++
 

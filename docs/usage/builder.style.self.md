@@ -1,9 +1,21 @@
 # self()
 
+## Description
+
 Return current self style.
 
-```c++
+## Behavior
+- Get sid from the current builder state.
 
-auto sid = b.style.self();
+## Use-case
+
+Use when you don't have direct access to element-local context. 
+
+## Example
+
+```c++
+void my_element_extension(builder& b) {
+  auto sid = b.style.self();
+}
 
 ```
