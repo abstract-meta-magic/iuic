@@ -31,4 +31,6 @@ b.element.text(tokens,uid,sid,layout);
 ```
 
 ## Links
+- [uid](./builder.uid.md)
+- [sid](./builder.style.md)
 ??

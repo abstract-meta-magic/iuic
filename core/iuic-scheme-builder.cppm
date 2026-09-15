@@ -99,11 +99,17 @@ struct builder_order_interface : protected virtual builder_base {
                           struct builder &builder_)
       : builder_base{penv_, tenv_, denv_, it_, builder_} {}
 
-  void group(std::uint16_t value);
+  void priority_set(std::int16_t value);
 
-  void up();
+  void priority_up();
 
-  void set(std::uint16_t value);
+  void priority_down();
+
+  void layer_set(std::int16_t value);
+
+  void layer_up();
+
+  void layer_down();
 };
 
 struct builder_policy_interface : protected virtual builder_base {
@@ -338,8 +344,10 @@ void builder_element_interface::frame(style::sid sid_,
       .layout = &layout,
       .uid = ait ? ait->uid : units::uid{0},
       .sid = sid_,
-      .order = ait ? units::ui::order{global_index++, ait->order.layer}
-                   : units::ui::order{global_index++, 0}});
+      .order = ait ? units::ui::order{global_index++, ait->order.layer,
+                                      ait->order.priority}
+                   : units::ui::order{global_index++, 0, 0},
+      .text = {}});
 
   std::swap(nit, it);
 
@@ -364,8 +372,10 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
       .layout = &layout_,
       .uid = uid_,
       .sid = sid_,
-      .order = ait ? units::ui::order{global_index++, ait->order.layer}
-                   : units::ui::order{global_index++, 0}});
+      .order = ait ? units::ui::order{global_index++, ait->order.layer,
+                                      ait->order.priority}
+                   : units::ui::order{global_index++, 0, 0},
+      .text = {}});
 
   std::swap(nit, it);
   ++current_deep;
@@ -388,8 +398,10 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
       .layout = &layout_,
       .uid = uid_,
       .sid = sid_,
-      .order = ait ? units::ui::order{global_index++, ait->order.layer}
-                   : units::ui::order{global_index++, 0}});
+      .order = ait ? units::ui::order{global_index++, ait->order.layer,
+                                      ait->order.priority}
+                   : units::ui::order{global_index++, 0, 0},
+      .text = {}});
 };
 
 void builder_element_interface::frame(style::sid sid_,
@@ -402,8 +414,10 @@ void builder_element_interface::frame(style::sid sid_,
       .layout = &layout_,
       .uid = ait ? ait->uid : units::uid{0},
       .sid = sid_,
-      .order = ait ? units::ui::order{global_index++, ait->order.layer}
-                   : units::ui::order{global_index++, 0}});
+      .order = ait ? units::ui::order{global_index++, ait->order.layer,
+                                      ait->order.priority}
+                   : units::ui::order{global_index++, 0, 0},
+      .text = {}});
 };
 
 void builder_element_interface::text(const iuic::text::raw::token &token,
@@ -426,8 +440,9 @@ void builder_element_interface::text(const iuic::text::raw::token &token,
       .layout = &layout_,
       .uid = uid_,
       .sid = sid_,
-      .order = ait ? units::ui::order{global_index++, ait->order.layer}
-                   : units::ui::order{global_index++, 0},
+      .order = ait ? units::ui::order{global_index++, ait->order.priority,
+                                      ait->order.layer}
+                   : units::ui::order{global_index++, 0, 0},
       .text = {&token, 1} // SINGLE TOKEN SPAN
   });
 };
@@ -442,8 +457,9 @@ void builder_element_interface::text(
       .layout = &layout_,
       .uid = ait ? ait->uid : units::uid{0},
       .sid = iuic::style::sid{0},
-      .order = ait ? units::ui::order{global_index++, ait->order.layer}
-                   : units::ui::order{global_index++, 0},
+      .order = ait ? units::ui::order{global_index++, ait->order.priority,
+                                      ait->order.layer}
+                   : units::ui::order{global_index++, 0, 0},
       .text = tokens
 
   });
@@ -770,5 +786,26 @@ template <typename T> T builder_policy_interface::get(units::uid uid) {
 
 template <typename T> T builder_policy_interface::get() {
   return get<T>(tree::access_iterator{it}->uid);
+};
+
+// ---- IMPL [order] ----
+void builder_order_interface::layer_set(std::int16_t value) {
+  tree::access_iterator{it}->order.layer = value;
+};
+void builder_order_interface::layer_up() {
+  ++tree::access_iterator{it}->order.layer;
+};
+void builder_order_interface::layer_down() {
+  --tree::access_iterator{it}->order.layer;
+};
+
+void builder_order_interface::priority_set(std::int16_t value) {
+  tree::access_iterator{it}->order.priority = value;
+};
+void builder_order_interface::priority_up() {
+  ++tree::access_iterator{it}->order.priority;
+};
+void builder_order_interface::priority_down() {
+  --tree::access_iterator{it}->order.priority;
 };
 }; // namespace iuic::scheme

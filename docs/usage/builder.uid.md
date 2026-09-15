@@ -3,6 +3,9 @@
 ## Purpose 
 Providing tools for creating a unique identifier.
 
+## Behavior
+- **Default** : Inherits the parent uid.
+
 ## Links
 - [make_static](./builder.uid.make_static.md)
 - [make_ordered](./builder.uid.make_ordered.md)

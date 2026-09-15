@@ -21,7 +21,8 @@ struct copy {};
 
 struct order {
   std::uint32_t index;
-  std::uint32_t layer;
+  std::int16_t layer;
+  std::int16_t priority;
 };
 
 struct position {
