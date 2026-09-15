@@ -1,6 +1,7 @@
 # element
 
-What is element ??
+## Purpose 
+Elements creations.
 
 ## Links
 - [frame](./builder.element.frame.md)

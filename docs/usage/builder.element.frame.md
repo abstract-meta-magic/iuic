@@ -1,8 +1,18 @@
 # frame(...)
 
+## Description
+Create a frame element.
 
-Make frame element.
+## Behavior
+- **Recursive construction** : processes nested children within the builder's scope.
+- **Warning** : deep nesting may lead to **stack overflow**.
+- **Implementation-defined optimization** : compiler behavior for inlining lambdas and short functions.
 
+## Use-case
+- grouping of elements.
+- visual representation.
+
+## Example
 
 ```c++
 

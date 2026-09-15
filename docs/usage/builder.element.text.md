@@ -1,6 +1,19 @@
 # text(...)
 
-Make text element.
+## Description
+
+Create a text element.
+
+## Behavior
+- **Endpoint** : In the hierarchy, it is always the final element.
+- **Warning** : The **token** must have a stable address until the end of the **make** phase.
+- **Note** : The token can be copied as needed.
+- **Implementation-defined optimization** : Compiler behavior for inlining lambdas and short functions.
+
+## Use-case
+- text representation.
+
+## Example
 
 ```c++
 
@@ -16,3 +29,6 @@ b.element.text(tokens,sid,layout);
 b.element.text(tokens,uid,sid,layout);
 
 ```
+
+## Links
+??
