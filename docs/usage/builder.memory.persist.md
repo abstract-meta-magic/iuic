@@ -1,31 +1,35 @@
 # persist
 
+## Purpose 
+Stable memory between ticks.
 
-## For what
+## Behavior
+- **Uniqueness** : the uid is used.
+- **Registration** : Reserves or gets a `slot` in an open-address map. No memory is allocated at this point.
+- **Access** : All access to the stored object goes through the proxy (see below).
 
 ## Lifetime
+- 3 tick
 
+## Use-case
+Use this when you need an object whose address remains valid for several ticks.
 
+## Proxy 
+### Purpose
+Provides control operations over a reserved slot.
+
+### Members
+- [init_if_not](./builder.memory.persist.init_if_not.md)
+- [get](./builder.memory.persist.get.md)
+
+## Example
 ```c++
-struct point {
- int x,y;
-};
 
 iuic::units::uid uid = ...;
 
-auto persist = b.memory.persist<point>(uid);
+struct point { 
+  int x,y;
+};
 
-persist.init_if_not([&]() -> point {
-  ...
-});
-
-persist.get().try_visit([](point&){ ... });
-
-
+auto persist = builder.memory.persist<point>(uid);
 ```
-
-
-## Links
-- [uid](./builder.uid.md)
-
-Erasure ???

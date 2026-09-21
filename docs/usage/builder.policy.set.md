@@ -1,7 +1,16 @@
 # set(...)
 
+## Description
+Set policy by uid.
 
-Set policy by uid. 
+## Behavior
+- **Default** : use self uid.
+- **Replace** : If the policy has already been assigned, the value is replaced..
+
+## Use-case
+If you need behavior in relation to the specified policy.
+
+## Example
 
 ```c++
 

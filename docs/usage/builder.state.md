@@ -1,14 +1,10 @@
 # state
 
-## For what
+## Purpose 
+Semantic tags.
 
-
-```c++
-
-static constexpr iuic::state::decl state;
-
-```
-
+## Behavior
+- **GC** : lifetime of state - 3 ticks.
 
 ## Links
 - [has](./builder.state.has.md)

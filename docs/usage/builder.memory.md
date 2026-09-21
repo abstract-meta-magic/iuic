@@ -1,5 +1,7 @@
 # memory
 
+## Purpose 
+Working with memory.
 
 ## Links
 - [tmp](./builder.memory.tmp.md)

@@ -1,6 +1,7 @@
 # policy
 
-## For what
+## Purpose
+Organization of policies.
 
 ## Requires
 - field **unset** with value == 0.
@@ -14,3 +15,7 @@ enum class my_policy {
 };
 
 ```
+
+## Links
+- [set](./builder.policy.set.md)
+- [get](./builder.policy.get.md)

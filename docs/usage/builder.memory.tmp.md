@@ -1,11 +1,21 @@
-# tmp
+# tmp(...)
 
-Frame memory.
-## For what
+## Purpose 
+Temporary memory.
 
-## Requires
+## Behavior
+- **Allocation** : Linear allocation.
+- **Overflow** : throws `std::bad_alloc` when out of memory.
+- **Size IS** : Fixed. By default is 4MB. Configurable.
+- **Overloads** : copy, move, emplace. 
 
 ## Lifetime
+- 1 tick
+
+## Use-case
+Use this when you need a temporary object whose address will be valid until the end of the current tick.
+
+## Example
 
 ```c++
 

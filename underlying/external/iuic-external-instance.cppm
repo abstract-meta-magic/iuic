@@ -130,3 +130,17 @@ private:
 };
 
 }; // namespace iuic::external
+
+/* TODO
+
+instance i_1 = ...;
+
+// общий bind
+// общий decl
+instance i_2 = i_1; // no-copy
+
+// общий bind
+// свой decl
+instance i_3 = i_1.fork();
+
+*/

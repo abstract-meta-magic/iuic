@@ -36,6 +36,22 @@ struct domain {
       }
     };
 
+    const erasure::type *get_native_type() const {
+      if (auto it = owner->data.find(type); it != owner->data.end()) {
+        return it->second.get_type();
+      } else {
+        return erasure::type::none();
+      };
+    };
+
+    erasure::visited::as_mutable get_native() {
+      if (auto it = owner->data.find(type); it != owner->data.end()) {
+        return it->second;
+      } else {
+        return nullptr;
+      }
+    };
+
     template <typename U = T, typename... ARGS>
       requires std::is_base_of_v<T, U>
     bool try_emplace(ARGS &&...args) {
@@ -45,14 +61,6 @@ struct domain {
         return true;
       }
       return false;
-    };
-
-    const erasure::type *get_native_type() const {
-      if (auto it = owner->data.find(type); it != owner->data.end()) {
-        return it->second.get_type();
-      } else {
-        return erasure::type::none();
-      };
     };
 
     template <typename U = T> bool try_set(U &&value) {
