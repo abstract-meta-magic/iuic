@@ -1,6 +1,10 @@
 # event
 
-## For what
+## Purpose 
+Event emission within the builder.
+
+## Warning
+Under research. The API and contract may change.
 
 ## Links
 - [emit](./builder.event.emit.md)
