@@ -1,7 +1,7 @@
 # detach(...)
 
 ## Description
-Check uid has state.
+Detaches state from uid.
 
 ## Behavior
 - **Default** : use self **uid**.

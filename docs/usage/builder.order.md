@@ -4,7 +4,7 @@
 Assigns ordering of elements.
 
 ## Behavior
-- Inherits the parent layout.
+- Inherits the parent layer.
 - Inherits the parent priority.
 
 ## Links

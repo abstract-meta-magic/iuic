@@ -18,7 +18,7 @@ struct IService {
 
 auto proxy = b.memory.domain<IService>();
 
-struct ServiceImpl : Service {
+struct ServiceImpl : IService {
 ...
 };
 

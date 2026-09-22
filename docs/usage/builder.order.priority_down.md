@@ -14,7 +14,7 @@ Use when you need to change the element's position within its layer.
 ```c++
 
 // priority = 0
-b.order.priority_up();
+b.order.priority_down();
 // priority = -1
 
 ```

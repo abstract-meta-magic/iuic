@@ -5,7 +5,7 @@ Set policy by uid.
 
 ## Behavior
 - **Default** : use self uid.
-- **Replace** : If the policy has already been assigned, the value is replaced..
+- **Replace** : If the policy has already been assigned, the value is replaced.
 
 ## Use-case
 If you need behavior in relation to the specified policy.

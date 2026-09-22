@@ -1,7 +1,7 @@
 # get()
 
 ## Description
-Get accessor to the storaged value.
+Get accessor to the stored value.
 
 ## Behavior
 - **Null** : can return null is object does not exist.

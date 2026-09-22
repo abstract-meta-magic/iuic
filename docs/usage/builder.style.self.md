@@ -2,7 +2,7 @@
 
 ## Description
 
-Return current self style.
+Returns current self style.
 
 ## Behavior
 - Get sid from the current builder state.

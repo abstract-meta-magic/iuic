@@ -25,7 +25,7 @@ auto uid_2 = b.uid.make_ordered("button-uid");
 ```c++
 auto uid_1 = b.uid.make_ordered("button-uid");
 
-b.element.frame(...,[](builedr& b){
+b.element.frame(...,[](builder& b){
   auto uid_2 = b.uid.make_ordered("button-uid");
 });
 

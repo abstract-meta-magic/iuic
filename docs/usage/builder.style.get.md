@@ -4,7 +4,7 @@
 Get style.
 
 ## Behavior
-- return style::vaule by sid. 
+- **Returns** : `iuic::style::value` by sid. 
 
 ## Use-case
 If needs access to style.

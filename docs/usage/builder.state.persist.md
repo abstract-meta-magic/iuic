@@ -4,7 +4,7 @@
 Update lifetime of states.
 
 ## Behavior
-- **No-op** : if states by uid doesn't exists.
+- **No-op** : if states by uid doesn't exist.
 
 ## Use-case
 If long‑lived states are required.

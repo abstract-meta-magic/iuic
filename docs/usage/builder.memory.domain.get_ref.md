@@ -1,7 +1,7 @@
-# get()
+# get_ref()
 
 ## Description
-Get reference to the storaged value.
+Get reference to the stored value.
 
 ## Behavior
 - **Exeption** : if object does not exist.

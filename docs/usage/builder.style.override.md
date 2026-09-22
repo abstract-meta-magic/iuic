@@ -1,10 +1,10 @@
 # [try_-]override(...)
 
 ## Description
-Use fore override style by sid.
+Use for override style by sid.
 
 ## Behavior
-- get access, by sid, to override style property
+- Gets access by sid to override style property
 
 ## Use-case
 If needs dynamic changes in style.

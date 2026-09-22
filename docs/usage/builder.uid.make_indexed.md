@@ -1,7 +1,6 @@
 # make_indexed(...)
 
 ## Description
-
 Make static uid from number and anchor.
 
 
