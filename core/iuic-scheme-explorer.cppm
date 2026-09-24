@@ -33,6 +33,21 @@ export struct explorer : base {
       return self().get_element(it).area;
     };
 
+    template <typename T> T policy(iterators::base it) {
+      return self().tenv->policy.get<T>(self().get_uid(it));
+    };
+
+    units::uid uid(iterators::base it) { return self().get_element(it).uid; };
+
+    std::span<const text::present::token> text(iterators::base it) {
+      return self().get_element(it).text;
+    };
+
+    auto clipzone() { return self().tenv->clip; };
+
+  } props{*this};
+
+  struct : utils::member_for<explorer> {
     bool is_virtualized(iterators::base it) {
       auto &el = self().get_element(it);
 
@@ -45,24 +60,10 @@ export struct explorer : base {
       return el.meta.has(el.meta.discarded);
     }
 
-    template <typename T> T policy(iterators::base it) {
-      return self().tenv->policy.get<T>(self().get_uid(it));
-    };
-
     bool has_text(iterators::base it) {
       return not self().get_element(it).text.empty();
     };
-
-    units::uid uid(iterators::base it) { return self().get_element(it).uid; };
-
-    std::span<const text::present::token> text(iterators::base it) {
-      return self().get_element(it).text;
-    };
-
-    auto clipzone() { return self().tenv->clip; };
-
-    auto get_clipzones() { return self().tenv->clip.get(); };
-  } props{*this};
+  } traits{*this};
 
   struct : utils::member_for<explorer> {
     bool has(iterators::base it, state::value state) {
@@ -96,6 +97,8 @@ export struct explorer : base {
       return ranges::postorder{
           tree::hierarchy::bfs::base_iterator{self().begin_}};
     };
+
+    auto clipzones() { return self().tenv->clip.get(); };
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
@@ -155,6 +158,7 @@ export struct explorer : base {
       }
       return res;
     }
+
   } query{*this};
 
 public: // assign
