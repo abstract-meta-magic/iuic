@@ -12,9 +12,7 @@ struct test : iuic::test::unit<test> {
   void body(iuic::test::utils utils) {
     static constexpr iuic::external::type::decl test_type;
     static constexpr iuic::external::binding test_bind{
-        test_type,
-        {"res://my/path"},
-        iuic::external::self_identity<test_bind>{}};
+        iuic::external::ct_binding<test_type, "res://my/path">{}};
 
     struct image_data {
       int x, y;
@@ -29,26 +27,25 @@ struct test : iuic::test::unit<test> {
     };
 
     constexpr auto test_inst_ct =
-        test_bind.make_declaration<image_data{4, 4}>();
+        test_bind.make_ct_instance<image_data{4, 4}>();
 
-    static_assert(test_inst_ct.get_binding_type() == test_type,
-                  "invalid binding type");
+    utils.eq(test_inst_ct.get_binding_type(), test_type,
+             "invalid binding type");
 
-    static_assert(test_inst_ct.get_declaration_type() ==
-                      iuic::erasure::type::from<image_data>(),
-                  "invalid decl type");
+    utils.eq(test_inst_ct.get_declaration_type(),
+             iuic::erasure::type::from<image_data>(), "invalid decl type");
 
-    static_assert(test_inst_ct.get_uri().get_scheme() == "res://",
-                  "invalid uri scheme");
+    utils.eq(test_inst_ct.get_uri().get_scheme(), "res://",
+             "invalid uri scheme");
 
-    static_assert(test_inst_ct.get_uri().get_path() == "my/path",
-                  "invalid uri path");
+    utils.eq(test_inst_ct.get_uri().get_path(), "my/path", "invalid uri path");
 
     // RUNTIME
     utils.rq_true(
         test_inst_ct.try_visit_declaration([&](const image_data &data) {
           utils.eq(data.x, 4, "check value");
           utils.eq(data.y, 4, "check value");
+          std::println("data has : {} , {}", data.x, data.y);
         }),
         "check data ct-inst in rt");
 
@@ -92,13 +89,44 @@ struct test : iuic::test::unit<test> {
         }),
         "visit shared");
 
-    auto inst_2 = test_bind.make_declaration();
+    auto inst_2 = test_bind.make_instance();
 
     utils.rq_true(inst_2.try_visit_shared_object([&](image_shared_data &data) {
       utils.eq(data.x, 12, "check value");
       utils.eq(data.y, 12, "check value");
     }),
                   "visit shared");
+
+    auto inst_3 = test_bind.make_instance(image_data{10, 10});
+
+    utils.rq_true(inst_3.try_visit_declaration([&](const image_data &data) {
+      utils.eq(data.x, 10, "check value");
+      utils.eq(data.y, 10, "check value");
+      std::println("data has : {} , {}", data.x, data.y);
+    }),
+                  "visit dynamic data");
+
+    iuic::external::instance inst_4{};
+
+    inst_4 = inst_3;
+
+    utils.rq_true(inst_4.try_visit_declaration([&](const image_data &data) {
+      utils.eq(data.x, 10, "check value");
+      utils.eq(data.y, 10, "check value");
+      std::println("data has : {} , {}", data.x, data.y);
+    }),
+                  "visit dynamic data");
+
+    iuic::external::instance inst_5{};
+
+    inst_5 = std::move(inst_4);
+
+    utils.rq_true(inst_5.try_visit_declaration([&](const image_data &data) {
+      utils.eq(data.x, 10, "check value");
+      utils.eq(data.y, 10, "check value");
+      std::println("data has : {} , {}", data.x, data.y);
+    }),
+                  "visit dynamic data");
   };
 } _{};
 }; // namespace

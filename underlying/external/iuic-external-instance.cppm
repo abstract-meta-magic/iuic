@@ -12,36 +12,39 @@ namespace iuic::external {
 
 static constexpr type::decl null_extern_type__;
 
-// TODO : нужно уменьшить вес
-// т.к. 64 byte довольно много
-export struct instance : private declaration_segment {
+export struct instance {
   decltype(auto) resolve(std::invocable<resolution_context> auto &&call) const {
-    return call(resolution_context{this,
-                                   block_ptr->get_resolution_segment_for(this),
+    return call(resolution_context{decl,
+                                   block_ptr->get_resolution_segment_for(decl),
                                    block_ptr->get_general_context()});
   }; // use 'utils'{block} ???
 
-  void reset() const {};
+  void reset() const {
+    // TODO : IMPL
+  };
 
-  constexpr const uri &get_uri() const { return path; };
+  constexpr const uri &get_uri() const {
+    return block_ptr->get_general_context()->uri;
+  };
 
   constexpr type::value get_binding_type() const {
-    return type;
+    return block_ptr->get_general_context()->type;
   }; // -> binding::type::decl
   constexpr const erasure::type *get_declaration_type() const {
-    return object.get_type();
+    return decl->get_object().get_type();
   }; // -> erasure::type
+
   constexpr const erasure::type *get_resolution_type() const {
-    return block_ptr->get_resolution_segment_for(this)->object.get_type();
+    return block_ptr->get_resolution_segment_for(decl)->object.get_type();
   }; // -> erasure::type
+
   constexpr bool try_visit_declaration(auto &&call) const {
-    return erasure::visited::as_const{object}.try_visit(
-        std::forward<decltype(call)>(call));
+    return decl->get_object().try_visit(std::forward<decltype(call)>(call));
   };
 
   constexpr bool try_visit_resolution(auto &&call) const {
     return erasure::visited::as_mutable{
-        block_ptr->get_resolution_segment_for(this)->object}
+        block_ptr->get_resolution_segment_for(decl)->object}
         .try_visit(std::forward<decltype(call)>(call));
   };
 
@@ -66,49 +69,48 @@ export struct instance : private declaration_segment {
     return false;
   };
 
-  // try_visit_shared(...)
+  instance fork() {
+    // TODO : make fork
+    // copy block
+    // but new rt decl
+    return {nullptr, nullptr};
+  };
 
 public: // ctor
-  constexpr instance()
-      : declaration_segment{null_extern_type__, uri{"", ""}},
-        block_ptr{nullptr} {}
+  constexpr instance() : block_ptr{nullptr}, decl{nullptr} {}
 
-  constexpr instance(type::value type_, uri path_, block *block_ptr_)
-      : declaration_segment{type_, path_}, block_ptr{block_ptr_} {}
-
-  template <typename T, typename UNIQUE = decltype([]() {})>
-  constexpr instance(type::value type_, uri path_, block *block_ptr_, T &&obj)
-      : declaration_segment{type_, path_, obj}, block_ptr{block_ptr_} {}
-
-  template <typename T, typename UNIQUE = decltype([]() {})>
-  instance(type::value type_, uri path_, block *block_ptr_, T *obj)
-      : declaration_segment{type_, path_, obj}, block_ptr{block_ptr_} {}
+  constexpr instance(block *block_ptr_, declaration_segment *decl_)
+      : block_ptr{block_ptr_}, decl{decl_} {}
 
 public: // BIG-V + RAII
-  constexpr instance(instance &&other)
-      : declaration_segment{other}, block_ptr{other.block_ptr} {}
+  constexpr instance(instance &&other) : block_ptr{nullptr}, decl{nullptr} {
+    std::swap(block_ptr, other.block_ptr);
+    std::swap(decl, other.decl);
+  }
 
   constexpr instance(const instance &other)
-      : declaration_segment{other}, block_ptr{other.block_ptr} {}
+      : block_ptr{other.block_ptr}, decl{other.decl} {
+    if not consteval {
+      if (decl) {
+        decl->retain();
+      }
+    }
+  }
 
   constexpr instance &operator=(instance &&other) {
-    std::swap(type, other.type);
-    std::swap(object, other.object);
-    std::swap(path, other.path);
     std::swap(block_ptr, other.block_ptr);
+    std::swap(decl, other.decl);
 
     return *this;
   }
 
   constexpr instance &operator=(const instance &other) {
-    // TODO : нужно уметь различать CT и RT
-    if consteval {
-      type = other.type;
-      object = other.object;
-      path = other.path;
+    if not consteval {
+      if (other.decl) {
+        other.decl->retain();
+      }
       block_ptr = other.block_ptr;
-    } else {
-      // TODO : DO RT COPY
+      decl = other.decl;
     }
 
     return *this;
@@ -116,16 +118,14 @@ public: // BIG-V + RAII
 
   constexpr ~instance() {
     if not consteval {
-      /* this mb leak
-    if (declaration.get_type() != nullptr) {
-      erasure::visited::as_garbage{declaration}.destruct();
-      erasure::visited::as_garbage{declaration}.free();
-    }
-      */
+      if (decl) {
+        decl->release();
+      }
     }
   };
 
 private:
+  declaration_segment *decl;
   block *block_ptr;
 };
 

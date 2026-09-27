@@ -6,6 +6,7 @@ target_sources(${PROJECT_NAME}_underlying__external PUBLIC
 	FILES
 	"iuic-external-type.cppm" 
 	"iuic-external-uri.cppm" 
+	"iuic-external-ct-binding.cppm" 
 	"iuic-external-block-base.cppm" 
 	"iuic-external-block-static.cppm" 
 	"iuic-external-block-dynamic.cppm" 

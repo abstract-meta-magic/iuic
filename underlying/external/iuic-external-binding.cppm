@@ -12,42 +12,75 @@ import :instance;
 
 namespace iuic::external {
 
-export struct binding;
-
-export template <const binding &> struct self_identity {};
+template <typename T> constinit T civalue{};
+template <auto v> constinit decltype(v) ivalue{v};
 
 export struct binding {
-
-  // CT\RT - Safe Binding
-  template <const binding &self>
-  constexpr binding(type::value type_, uri path_, self_identity<self> = {})
-      : type{type_}, path{path_}, block_ptr{nullptr} {
-    if consteval {
-      block_ptr = &static_block<decltype(self_identity<self>{})>;
-    } else {
-      block_ptr = new dynamic_block__{};
-    }
+  template <const type::decl &type, utils::ct::str str,
+            utils::unique_type unique = {{}}>
+  consteval binding(ct_binding<type, str> info) : block_ptr{nullptr} {
+    block_ptr = &static_block<decltype(unique), decltype(info)>;
   };
 
   // RT - Binding
-  binding(type::value type_, uri path_)
-      : type{type_}, path{path_}, block_ptr{nullptr} {
-    block_ptr = new dynamic_block__{};
+  binding(type::value type_, uri path_) : block_ptr{nullptr} {
+    block_ptr = new dynamic_block__{type_.decl, path_};
   };
 
-  // make conceptr is_data_type
-  template <auto obj> constexpr instance make_declaration() const {
-    return {type, path, block_ptr, obj};
+  template <auto obj, utils::unique_type = {{}}>
+  consteval instance make_ct_instance() const {
+    struct _ : declaration_segment {
+      erasure::visited::as_const get_object() override {
+        return erasure::visited{&ivalue<obj>};
+      };
+      void retain() override {};
+      void release() override {};
+    };
+    return {block_ptr, &civalue<_>};
   };
 
-  template <typename T> instance make_declaration(T &&obj) const {
-    using otype = std::remove_cvref_t<T>;
-    otype *ptr = new otype{std::forward<T>(obj)};
-    return instance{type, path, block_ptr, ptr};
+  template <utils::unique_type = {{}}>
+  consteval instance make_ct_instance() const {
+    struct _ : declaration_segment {
+      erasure::visited::as_const get_object() override { return nullptr; };
+      void retain() override {};
+      void release() override {};
+    };
+
+    return {block_ptr, &civalue<_>};
   };
 
-  constexpr instance make_declaration() const {
-    return {type, path, block_ptr};
+  instance make_instance() const {
+    struct _ : declaration_segment {
+      erasure::visited::as_const get_object() override { return nullptr; };
+      void retain() override {};
+      void release() override {};
+    };
+
+    return {block_ptr, &civalue<_>};
+  };
+
+  template <typename T> instance make_instance(T &&obj) const {
+    using type = std::remove_cv_t<T>;
+    struct _ : declaration_segment {
+      erasure::visited::as_const get_object() override {
+        return erasure::visited{obj};
+      };
+      void retain() override { ++counter; };
+      void release() override {
+        if (--counter < 1) {
+          delete this; // Not good , but OK
+        }
+      };
+      constexpr _(decltype(std::forward<T>(obj)) obj_)
+          : obj{std::forward<T>(obj_)} {}
+      std::atomic_int32_t counter{1};
+      type obj;
+    };
+
+    auto *ptr = new _{std::forward<T>(obj)};
+
+    return {block_ptr, ptr};
   };
 
 public: // BIG-V + RAII
@@ -59,16 +92,12 @@ public: // BIG-V + RAII
   constexpr ~binding() {
     if not consteval {
       if (block_ptr) {
-        block_ptr->die();
+        block_ptr->release();
       }
     }
   };
 
 private:
-  type::value type;
-  uri path;
-  // TODO : std::visit | union
-  // отказ от virtual
   block *block_ptr{nullptr};
 };
 }; // namespace iuic::external

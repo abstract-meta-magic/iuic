@@ -8,13 +8,15 @@ import :block.base;
 namespace iuic::external {
 
 struct dynamic_block__ : block {
+  constexpr dynamic_block__(const type::decl *type_, uri uri_)
+      : gctx{type_, uri_} {}
   general_context gctx;
 
   constexpr virtual bool try_acquire() override { return true; };
 
-  constexpr virtual void retire() override {};
+  constexpr virtual void retain() override {};
 
-  constexpr virtual void die() override {};
+  constexpr virtual void release() override {};
 
   constexpr virtual resolution_segment *
   get_resolution_segment_for(const declaration_segment *ptr) override {
@@ -27,6 +29,9 @@ struct dynamic_block__ : block {
   };
 
   constexpr general_context *get_general_context() override { return &gctx; };
+  constexpr const general_context *get_general_context() const override {
+    return &gctx;
+  };
 
   std::map<const declaration_segment *, resolution_segment> segments;
 };

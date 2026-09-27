@@ -11,9 +11,10 @@ import :uri;
 namespace iuic::external {
 
 struct declaration_segment {
-  type::value type;
-  uri path;
-  erasure::visited object{nullptr};
+  constexpr virtual ~declaration_segment() {}
+  constexpr virtual erasure::visited::as_const get_object() = 0;
+  constexpr virtual void retain() = 0;
+  constexpr virtual void release() = 0;
 };
 
 struct resolution_segment {
@@ -25,6 +26,10 @@ struct resolution_segment {
 // resolution_segment -> general_context
 // instance           -> binding
 struct general_context {
+
+  constexpr general_context(const type::decl *type_, uri uri_)
+      : type{type_}, uri{uri_} {}
+
   template <typename T> T *allocate() {
     T *ptr = static_cast<T *>(operator new(sizeof(T)));
 
@@ -77,6 +82,12 @@ struct general_context {
     }
   };
 
+public:
+  const type::decl *type;
+
+  uri uri;
+
+private:
   std::vector<erasure::visited> allocated;
 
   std::vector<erasure::visited> shared;
@@ -183,13 +194,15 @@ struct block {
 
   constexpr virtual bool try_acquire() = 0;
 
-  constexpr virtual void retire() = 0;
+  constexpr virtual void retain() = 0;
 
-  constexpr virtual void die() = 0;
+  constexpr virtual void release() = 0;
 
   constexpr virtual resolution_segment *
   get_resolution_segment_for(const declaration_segment *) = 0;
 
   constexpr virtual general_context *get_general_context() = 0;
+
+  constexpr virtual const general_context *get_general_context() const = 0;
 };
 }; // namespace iuic::external

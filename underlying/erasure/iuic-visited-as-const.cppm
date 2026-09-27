@@ -5,14 +5,18 @@ import :visited.base;
 
 export namespace iuic::erasure {
 
-struct visited::as_const : private visited {
+struct visited::as_const : public visited {
+
+  constexpr as_const(visited v) : visited{v} {};
+
   template <is_pure_type T>
   constexpr as_const(const T &data_)
       : visited{static_cast<void *>(const_cast<T *>(std::addressof(data_))),
                 type::from<T>()} {};
-  constexpr as_const(visited v) : visited{v} {};
+
   template <is_pure_type T>
-  constexpr as_const(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
+  constexpr as_const(const T *data_)
+      : visited{data_, type::from<pure_t<T>>()} {};
 
   constexpr as_const(std::nullptr_t) : visited{nullptr, type::none()} {};
 
@@ -33,7 +37,7 @@ struct visited::as_const : private visited {
     return result_proxy{false};
   };
 
-  decltype(auto) unsafe_visit(auto &&call) const {
+  constexpr decltype(auto) unsafe_visit(auto &&call) const {
     using traits = decltype(func_type{call})::traits;
 
     using arg_t = traits::func_args::template arg_t<0>;
@@ -53,7 +57,8 @@ struct visited::as_const : private visited {
     return call(*static_cast<arg_ptr>(data));
   };
 
-  auto try_visit_opt(func_as_decoy<decoy(const decoy &)> auto &&call) const {
+  constexpr auto
+  try_visit_opt(func_as_decoy<decoy(const decoy &)> auto &&call) const {
     using traits = decltype(func_type{call})::traits;
 
     using arg_t = traits::func_args::template arg_t<0>;
@@ -70,12 +75,14 @@ struct visited::as_const : private visited {
     }
   }
 
-  bool visit_any(func_as_decoy<decoy(const decoy &)> auto &&...calls) const {
+  constexpr bool
+  visit_any(func_as_decoy<decoy(const decoy &)> auto &&...calls) const {
     return (try_visit(std::forward<decltype(calls)>(calls)) || ...);
   };
 
-  decltype(auto) visit_or(func_as_decoy<decoy(const decoy &)> auto &&call,
-                          std::invocable<> auto call_or);
+  constexpr decltype(auto)
+  visit_or(func_as_decoy<decoy(const decoy &)> auto &&call,
+           std::invocable<> auto call_or);
 };
 
 }; // namespace iuic::erasure

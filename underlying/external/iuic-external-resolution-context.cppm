@@ -26,28 +26,29 @@ export struct resolution_context {
     return {general};
   };
 
-  const uri &get_uri() const { return declaration->path; };
+  const uri &get_uri() const { return general->uri; };
 
-  const type::value get_binding_type() const { return declaration->type; };
+  const type::value get_binding_type() const { return general->type; };
 
   const erasure::type *get_declaration_type() const {
-    return declaration->object.get_type();
+    // TODO : Fixme
+    return erasure::visited{declaration->get_object()}.get_type();
   };
 
   bool try_visit_declaration(auto &&call) const {
-    return erasure::visited::as_const{declaration->object}.try_visit(
+    return erasure::visited::as_const{declaration->get_object()}.try_visit(
         std::forward<decltype(call)>(call));
   };
 
   // TODO : add reset mechanism for backend
   // void add_reset_token(reset_token<resolution_context>);
 
-  resolution_context(const declaration_segment *declaration_,
+  resolution_context(declaration_segment *declaration_,
                      resolution_segment *resolution_, general_context *general_)
       : declaration{declaration_}, resolution{resolution_}, general{general_} {}
 
 private:
-  const declaration_segment *declaration;
+  declaration_segment *declaration;
   resolution_segment *resolution;
   general_context *general;
 };

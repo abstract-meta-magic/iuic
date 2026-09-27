@@ -4,11 +4,12 @@
 export module iuic.underlying.external:block.static__;
 import std;
 import :block.base;
+import :ct_binding;
 
 namespace iuic::external {
 
-struct static_block__ : block {
-  general_context gctx;
+template <ct_binding info> struct static_block__ : block {
+  general_context gctx{&info.type, info.uri};
 
   struct node {
     const declaration_segment *owner{nullptr};
@@ -17,9 +18,9 @@ struct static_block__ : block {
 
   constexpr virtual bool try_acquire() override { return true; };
 
-  constexpr virtual void retire() override {};
+  constexpr virtual void retain() override {};
 
-  constexpr virtual void die() override {};
+  constexpr virtual void release() override {};
 
   constexpr virtual resolution_segment *
   get_resolution_segment_for(const declaration_segment *ptr) override {
@@ -35,10 +36,14 @@ struct static_block__ : block {
   };
 
   constexpr general_context *get_general_context() override { return &gctx; };
+  constexpr const general_context *get_general_context() const override {
+    return &gctx;
+  };
 
   std::vector<node> segments{};
 };
 
-template <typename T> constinit static_block__ static_block{};
+template <typename T, typename Info>
+constinit static_block__<Info{}> static_block{};
 
 }; // namespace iuic::external

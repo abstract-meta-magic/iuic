@@ -7,3 +7,4 @@ export import :uri;
 export import :resolution_context;
 export import :instance;
 export import :binding;
+export import :ct_binding;

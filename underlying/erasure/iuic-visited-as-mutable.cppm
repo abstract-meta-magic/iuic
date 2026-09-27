@@ -7,17 +7,18 @@ export namespace iuic::erasure {
 
 // TODO : make contsexpr
 struct visited::as_mutable : private visited {
+  constexpr as_mutable(visited v) : visited{v} {};
 
   template <is_pure_type T>
-  as_mutable(const T &data_)
+  constexpr as_mutable(const T &data_)
       : visited{static_cast<void *>(const_cast<T *>(std::addressof(data_))),
                 type::from<T>()} {};
 
-  as_mutable(visited v) : visited{v} {};
-  template <typename T>
-  as_mutable(T *data_) : visited{data_, type::from<pure_t<T>>()} {};
+  template <is_pure_type T>
+  constexpr as_mutable(const T *data_)
+      : visited{data_, type::from<pure_t<T>>()} {};
 
-  as_mutable(std::nullptr_t) : visited{nullptr, type::none()} {};
+  constexpr as_mutable(std::nullptr_t) : visited{nullptr, type::none()} {};
 
   result_proxy try_visit(func_as_decoy<decoy(decoy &)> auto &&call) {
     using traits = decltype(func_type{call})::traits;

@@ -6,7 +6,6 @@ import iuic.underlying.cenv;
 import iuic.underlying.erasure;
 
 export namespace iuic::utils {
-
 struct deduction_context final {};
 
 template <typename T>
@@ -453,4 +452,40 @@ private:
 
 using fstring = fstring_base<31, char, false>;
 using flstring = fstring_base<63, char, false>;
+}; // namespace iuic::utils
+
+// unique
+namespace iuic::utils {
+struct unique_id_t {};
+
+template <typename UNIQUE = decltype([]() {})>
+static constexpr unique_id_t unique_id{};
+
+template <typename T, auto &id> struct unique_index {};
+
+template <typename T> struct is_unique_index_impl : std::false_type {};
+
+template <typename T, auto &id>
+struct is_unique_index_impl<unique_index<T, id>> : std::true_type {};
+
+template <typename T>
+concept is_unique_indext = is_unique_index_impl<T>::value;
+
+export template <is_unique_indext T> struct unique_type {
+  template <typename U = decltype([] {}), auto &id = unique_id<>>
+  constexpr unique_type(unique_index<U, id> = {}) {};
+};
+
+template <typename U = decltype([] {}), auto &id = unique_id<>>
+unique_type(unique_index<U, id>) -> unique_type<unique_index<U, id>>;
+
+static_assert(
+    not std::same_as<decltype(unique_type{{}}), decltype(unique_type{{}})>,
+    "unique type is broken");
+
+template <unique_type t = {{}}> constexpr decltype(t) test__() { return {}; };
+
+static_assert(not std::same_as<decltype(test__()), decltype(test__())>,
+              "default NTTP unique type is broken");
+
 }; // namespace iuic::utils
