@@ -6,6 +6,19 @@ import iuic.underlying.cenv;
 import iuic.underlying.erasure;
 
 export namespace iuic::utils {
+
+constexpr void assert(std::invocable<> auto &&call,
+                      std::string_view msg = "No diagnostic",
+                      std::source_location source = {}) {
+  if constexpr (iuic::cenv::logic("iuic::debug.assert").value_or(false)) {
+    if (not call()) {
+      throw std::logic_error{std::format("{}:{} :: Assertion failure :: {}",
+                                         source.file_name(), source.line(),
+                                         msg)};
+    };
+  }
+};
+
 struct deduction_context final {};
 
 template <typename T>

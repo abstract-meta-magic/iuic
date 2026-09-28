@@ -16,7 +16,7 @@ struct visited::as_const : public visited {
 
   template <is_pure_type T>
   constexpr as_const(const T *data_)
-      : visited{data_, type::from<pure_t<T>>()} {};
+      : visited{const_cast<T *>(data_), type::from<pure_t<T>>()} {};
 
   constexpr as_const(std::nullptr_t) : visited{nullptr, type::none()} {};
 

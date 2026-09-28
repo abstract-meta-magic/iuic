@@ -109,9 +109,9 @@ public: // BIG-V + RAII
       if (other.decl) {
         other.decl->retain();
       }
-      block_ptr = other.block_ptr;
-      decl = other.decl;
     }
+    block_ptr = other.block_ptr;
+    decl = other.decl;
 
     return *this;
   }

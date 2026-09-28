@@ -61,24 +61,26 @@ export struct binding {
   };
 
   template <typename T> instance make_instance(T &&obj) const {
-    using type = std::remove_cv_t<T>;
+    using type = std::remove_cvref_t<T>;
+
+    // TODO : thread unsafe
     struct _ : declaration_segment {
       erasure::visited::as_const get_object() override {
-        return erasure::visited{obj};
+        return erasure::visited::as_const{obj};
       };
       void retain() override { ++counter; };
       void release() override {
         if (--counter < 1) {
-          delete this; // Not good , but OK
+          delete this;
         }
       };
       constexpr _(decltype(std::forward<T>(obj)) obj_)
           : obj{std::forward<T>(obj_)} {}
-      std::atomic_int32_t counter{1};
       type obj;
+      std::atomic_int64_t counter{1};
     };
 
-    auto *ptr = new _{std::forward<T>(obj)};
+    auto *ptr = ::new _{std::forward<T>(obj)};
 
     return {block_ptr, ptr};
   };
