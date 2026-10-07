@@ -5,6 +5,13 @@ import std;
 import iuic.underlying.cenv;
 import iuic.underlying.erasure;
 
+export namespace iuic {
+
+template <typename T> struct container {
+  static_assert(false, "Has no impl");
+};
+}; // namespace iuic
+
 export namespace iuic::utils {
 
 constexpr void assert(std::invocable<> auto &&call,

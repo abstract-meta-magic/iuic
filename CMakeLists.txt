@@ -31,6 +31,7 @@ endif()
 add_subdirectory(test)
 add_subdirectory(underlying)
 ## lvl - 1
+add_subdirectory(asset)
 add_subdirectory(text)
 add_subdirectory(state)
 add_subdirectory(style)
