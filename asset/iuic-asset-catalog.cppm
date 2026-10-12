@@ -39,6 +39,7 @@ template <> struct hash_from<static_instance> {
 
 }; // namespace map
 
+// TODO: work with error's
 struct catalog_records {
   container<map::fixed<declaration, definition_record, 1024>> definitions;
   container<map::fixed<static_instance, instance_id, 512>>
@@ -104,7 +105,18 @@ export struct catalog {
   };
 
   template <typename... Binds>
-  instance_id make_dynamic_instance(static_instance si, Binds &&...);
+  instance_id make_dynamic_instance(declaration decl, Binds &&...binds) {
+    auto iid = make_default_instance(decl);
+
+    if (iid != invalid_id) {
+      auto &inst = get_instance(iid).value().get();
+
+      (inst.get_bind<std::remove_cvref_t<Binds>>().emplace(
+           std::forward<Binds>(binds)),
+       ...);
+    };
+    return iid;
+  };
 
   instance_id make_default_instance(declaration decl) {
     if (auto access = records.definitions.access(decl); access.has_value()) {
@@ -121,7 +133,18 @@ export struct catalog {
   };
 
   template <typename... Binds>
-  instance_id make_default_instance(static_instance si, Binds &&...);
+  instance_id make_default_instance(declaration decl, Binds &&...binds) {
+    auto iid = make_default_instance(decl);
+
+    if (iid != invalid_id) {
+      auto &inst = get_instance(iid).value().get();
+
+      (inst.get_bind<std::remove_cvref_t<Binds>>().emplace(
+           std::forward<Binds>(binds)),
+       ...);
+    };
+    return iid;
+  };
 
   instance_id get_default_instance(declaration decl) {
     if (auto access = records.definitions.access(decl); access.has_value()) {
@@ -145,6 +168,7 @@ export struct catalog {
         if (insert != invalid_id) {
           def_record.instances.push_back(insert);
           std::move(ins_found).set(insert);
+          return insert;
         }
       }
     }
@@ -153,7 +177,19 @@ export struct catalog {
   };
 
   template <typename... Binds>
-  instance_id make_static_instance(static_instance si, Binds &&...);
+  instance_id make_static_instance(static_instance si, Binds &&...binds) {
+    auto iid = make_static_instance(si);
+
+    if (iid != invalid_id) {
+      auto &inst = get_instance(iid).value().get();
+
+      (inst.get_bind<std::remove_cvref_t<Binds>>().emplace(
+           std::forward<Binds>(binds)),
+       ...);
+    };
+    return iid;
+  };
+
   instance_id get_static_instance(static_instance si) {
     if (auto found = records.definitions_static_instances.access(si);
         found.has_value()) {
@@ -242,30 +278,4 @@ private:
 private:
   catalog_records records;
 };
-
-void sus(catalog &cr) {
-  /*
-  cr.add_declaration("font.base");
-  cr.get_declaration("font.base").value().get().get_bind<int>();
-  cr.make_default_instance("font.base");
-
-  cr.add_declaration("icon.up");
-  cr.make_static_instance("icon.up@idle");
-  cr.make_static_instance("icon.up@hovered");
-  struct image {};
-  struct info {};
-  cr.make_static_instance("icon.up@sus", image{}, info{});
-
-
-  //                               decl            bind              bind
-  //
-  cr.make_static_instance("icon.up@hovered",gpu::texture{...},meta::info{...});
-  //
-  instance_id si = cr.get_static_instance("icon.up@idle");
-  instance_id di = cr.get_default_instance("icon.up");
-
-  auto i = cr.get_instance(si);
-
-  */
-}
 }; // namespace iuic::asset

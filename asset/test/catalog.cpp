@@ -131,20 +131,40 @@ struct test_2 : iuic::test::unit<test_2> {
       utils.eq(image_value.x, 7, "value");
       utils.eq(image_value.y, 8, "value");
 
-      static constexpr iuic::asset::tag gc;
+      { // tags
+        static constexpr iuic::asset::tag gc;
 
-      inst.add_tag(gc);
-      utils.rq_true(inst.has_tag(gc), "has tag");
-      inst.remove_tag(gc);
-      utils.rq_false(inst.has_tag(gc), "remove tag");
-      inst.add_tag(gc);
-      utils.rq_true(inst.has_tag(gc), "has tag");
+        inst.add_tag(gc);
+        utils.rq_true(inst.has_tag(gc), "has tag");
+        inst.remove_tag(gc);
+        utils.rq_false(inst.has_tag(gc), "remove tag");
+        inst.add_tag(gc);
+        utils.rq_true(inst.has_tag(gc), "has tag");
 
-      std::println("type-ptr lhs - {}  : {} - rhs",
-                   (void *)inst.get_type().decl,
-                   (void *)iuic::asset::undefined.decl);
+        utils.eq(inst.get_type(), iuic::asset::undefined, "type");
+      }
+    }
 
-      utils.eq(inst.get_type(), iuic::asset::undefined, "type");
+    {
+      c.make_definition("icon.new");
+      auto iid =
+          c.make_static_instance("icon.new@idle", image{5, 10}, info{20, 40});
+      auto &inst = c.get_instance(iid).value().get();
+
+      utils.rq_true(inst.get_bind<image>().has_value(), "has value");
+      utils.rq_true(inst.get_bind<info>().has_value(), "has value");
+
+      if (inst.get_bind<image>().has_value()) {
+        auto &image_value = inst.get_bind<image>().get();
+        utils.eq(image_value.x, 5, "value");
+        utils.eq(image_value.y, 10, "value");
+      }
+
+      if (inst.get_bind<info>().has_value()) {
+        auto &info_value = inst.get_bind<info>().get();
+        utils.eq(info_value.x, 20, "value");
+        utils.eq(info_value.y, 40, "value");
+      }
     }
   };
 
