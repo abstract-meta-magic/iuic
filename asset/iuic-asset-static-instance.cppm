@@ -56,4 +56,10 @@ private:
   std::variant<std::string, std::string_view> name_;
   hash_t hash_;
 };
+
+constexpr bool operator==(const static_instance &lhs,
+                          const static_instance &rhs) {
+  return lhs.get_hash() == rhs.get_hash();
+};
+
 }; // namespace iuic::asset

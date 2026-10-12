@@ -8,26 +8,44 @@ import :bind;
 import :definition;
 
 namespace iuic::asset {
+
+static constexpr type use_of;
+
 export struct instance {
   constexpr instance(const definition *of) : of_{of} {};
 
   const definition &of() const { return *of_; };
-  // by default is definition.get_type()
-  void set_type(type);
 
-  type get_type() const;
+  void set_type(type t) { type_ = t; };
 
-  template <typename T> bind<T> get_bind() const;
+  void reset_type() { type_ = use_of; };
 
-  void add_tag(tag);
+  type get_type() const {
+    return undefined;
+    if (type_ != use_of) {
+      return type_;
+    } else if (of_) {
+      return of_->get_type();
+    };
+    return undefined;
+  };
 
-  void remove_tag(tag);
+  template <typename T> bind<T> get_bind() const { return bind<T>{bindings}; };
 
-  bool has_tag(tag);
+  template <typename T> void remove_bind() { bindings.remove<T>(); };
 
-  // tag range ???
+  void add_tag(tag t) { tags.insert(t); };
 
-  bool is_reachable();
+  void remove_tag(tag t) { tags.erase(t); };
+
+  bool has_tag(tag t) const { return tags.contains(t); };
+
+  bool is_reachable() const {
+    if (of_) {
+      return of_->is_reachable();
+    }
+    return false;
+  };
 
   callback_handl on_reset(auto &&call);
 
@@ -35,9 +53,9 @@ export struct instance {
 
 private:
   const definition *of_;
-  type type_;
-  std::vector<tag> tags;
-  // binds
+  type type_{use_of};
+  std::flat_set<tag> tags;
+  mutable binding_storage bindings;
 };
 
 } // namespace iuic::asset

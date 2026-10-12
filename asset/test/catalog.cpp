@@ -37,11 +37,118 @@ struct test : iuic::test::unit<test> {
       utils.rq_false(i.has_value(), "after remove");
     }
 
-    // catalog.make_static_instance("font.base@idle");
-    // catalog.make_static_instance("font.base@hovered");
+    { // base place
+      catalog.make_static_instance("font.base@idle");
+      auto inst_id = catalog.get_static_instance("font.base@idle");
+      auto inst_ = catalog.get_instance(inst_id);
+
+      utils.rq_true((bool)inst_, "has value");
+      if (inst_) {
+        auto &inst = inst_.value().get();
+        utils.eq(inst.of().of().get_name(), "font.base", "name");
+      };
+
+      catalog.remove_instance(inst_id);
+
+      inst_id = catalog.get_static_instance("font.base@idle");
+
+      utils.eq(inst_id, iuic::asset::invalid_id, "remove");
+    }
+    { // after remove place
+      catalog.make_static_instance("font.base@idle");
+      auto inst_id = catalog.get_static_instance("font.base@idle");
+      auto inst_ = catalog.get_instance(inst_id);
+
+      utils.rq_true((bool)inst_, "has value");
+      if (inst_) {
+        auto &inst = inst_.value().get();
+        utils.eq(inst.of().of().get_name(), "font.base", "name");
+      };
+
+      catalog.remove_instance(inst_id);
+
+      inst_id = catalog.get_static_instance("font.base@idle");
+
+      utils.eq(inst_id, iuic::asset::invalid_id, "remove");
+    }
   }
 } _{};
 
-}; // namespace
+struct test_2 : iuic::test::unit<test_2> {
+
+  static constexpr std::string_view name{"iuic::asset::map"};
+
+  void body(iuic::test::utils utils) {
+    iuic::asset::catalog c;
+
+    struct info {
+      int x, y;
+    };
+    struct image {
+      int x, y;
+    };
+
+    c.make_definition("icon.close");
+    auto i = c.get_instance(c.make_default_instance("icon.close"));
+
+    utils.rq_true(i.has_value(), "validate");
+
+    if (i.has_value()) {
+      auto &i_ = i.value().get();
+      auto info_b = i_.get_bind<info>();
+      auto image_b = i_.get_bind<image>();
+
+      if (not info_b.has_value()) {
+        info_b.emplace(4, 8);
+      }
+
+      if (not image_b.has_value()) {
+        image_b.emplace(12, 20);
+      }
+
+      auto &ib = info_b.get();
+      auto &imb = image_b.get();
+
+      utils.eq(ib.x, 4, "value");
+      utils.eq(ib.y, 8, "value");
+      utils.eq(imb.x, 12, "value");
+      utils.eq(imb.y, 20, "value");
+    };
+
+    // check static
+    {
+      c.make_static_instance("icon.close@idle");
+      auto iid = c.get_static_instance("icon.close@idle");
+      auto &inst = c.get_instance(iid).value().get();
+      inst.get_bind<image>().emplace(7, 8);
+    }
+    {
+      c.make_static_instance("icon.close@idle");
+      auto iid = c.get_static_instance("icon.close@idle");
+      auto &inst = c.get_instance(iid).value().get();
+      auto &image_value = inst.get_bind<image>().get();
+
+      utils.eq(image_value.x, 7, "value");
+      utils.eq(image_value.y, 8, "value");
+
+      static constexpr iuic::asset::tag gc;
+
+      inst.add_tag(gc);
+      utils.rq_true(inst.has_tag(gc), "has tag");
+      inst.remove_tag(gc);
+      utils.rq_false(inst.has_tag(gc), "remove tag");
+      inst.add_tag(gc);
+      utils.rq_true(inst.has_tag(gc), "has tag");
+
+      std::println("type-ptr lhs - {}  : {} - rhs",
+                   (void *)inst.get_type().decl,
+                   (void *)iuic::asset::undefined.decl);
+
+      utils.eq(inst.get_type(), iuic::asset::undefined, "type");
+    }
+  };
+
+} _1{};
+} // namespace
 
 extern "C++" int main() { return iuic::test::run(); };

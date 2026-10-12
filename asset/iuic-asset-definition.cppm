@@ -8,6 +8,7 @@ import :declaration;
 import :bind;
 
 namespace iuic::asset {
+
 export struct definition {
   const declaration &of() const { return decl_; };
 
@@ -15,13 +16,15 @@ export struct definition {
 
   type get_type() const { return type_; };
 
-  template <typename T> bind<T> get_bind() const;
+  template <typename T> bind<T> get_bind() const { return bind<T>{bindings}; };
 
-  void add_tag(tag);
+  template <typename T> void remove_bind() { bindings.remove<T>(); };
 
-  void remove_tag(tag);
+  void add_tag(tag t) { tags.insert(t); };
 
-  bool has_tag(tag);
+  void remove_tag(tag t) { tags.erase(t); };
+
+  bool has_tag(tag t) const { return tags.contains(t); };
 
   void set_reachable(bool value = true) { is_reachable_ = value; };
 
@@ -31,11 +34,13 @@ export struct definition {
 
   callback_handl on_reachable_change(auto &&call);
 
+  definition(declaration decl) : decl_{decl} {};
+
 private:
   declaration decl_;
-  type type_;
-  // for bind
-  std::vector<tag> tags;
+  type type_{undefined};
+  std::flat_set<tag> tags;
   bool is_reachable_{true};
+  mutable binding_storage bindings;
 };
 }; // namespace iuic::asset

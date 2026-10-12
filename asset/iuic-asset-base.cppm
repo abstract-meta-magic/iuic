@@ -13,22 +13,19 @@ export enum class instance_id : std::uint64_t {};
 
 constexpr instance_id invalid_id{std::numeric_limits<std::uint64_t>::max()};
 
-template <typename T> struct decl_t {};
-
-template <typename T, typename UNIQUE> constexpr decl_t<T> decl_v{};
-
 export struct tag {
-  template <iuic::utils::unique_type t = {{}}>
-  consteval tag() : decl{&decl_v<tag, decltype(t)>} {}
-  const decl_t<tag> *decl;
+  consteval tag() : decl{this} {}
+  const tag *decl;
+  constexpr auto operator<=>(const tag &) const = default;
 };
 
 export struct type {
-  template <iuic::utils::unique_type t = {{}}>
-  consteval type() : decl{&decl_v<type, decltype(t)>} {}
-
-  const decl_t<type> *decl;
+  template <iuic::utils::unique_type t = {{}}> consteval type() : decl{this} {}
+  const type *decl;
+  constexpr auto operator<=>(const type &) const = default;
 };
+
+export inline constexpr type undefined{};
 
 // WARNING
 // GENERATED CODE WITH LLM
@@ -108,3 +105,18 @@ constexpr hash_t from(std::string_view str) noexcept {
 } // namespace hash
 
 }; // namespace iuic::asset
+
+namespace std {
+template <> struct hash<iuic::asset::tag> {
+  std::size_t operator()(const iuic::asset::tag &t) const {
+    return reinterpret_cast<std::uintptr_t>(t.decl);
+  };
+};
+
+template <> struct hash<iuic::asset::type> {
+  std::size_t operator()(const iuic::asset::type &t) const {
+    return reinterpret_cast<std::uintptr_t>(t.decl);
+  };
+};
+
+}; // namespace std

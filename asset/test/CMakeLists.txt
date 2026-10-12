@@ -13,10 +13,9 @@ target_link_libraries(test_map
 
 
 add_test(NAME "iuic::asset::map"
-	COMMAND test_map 
+	COMMAND valgrind --error-exitcode=1 --leak-check=full $<TARGET_FILE:test_map>
 	LABELS "unit;asset"
 )
-
 
 add_executable(test_list)
 
@@ -53,7 +52,7 @@ target_link_libraries(test_catalog
 
 
 add_test(NAME "iuic::asset::catalog"
-	COMMAND test_catalog
+	COMMAND valgrind --error-exitcode=1 --leak-check=full $<TARGET_FILE:test_catalog>
 	LABELS "unit;asset"
 )
 
