@@ -9,7 +9,7 @@ import :declaration;
 namespace iuic::asset {
 
 // decl@instance
-struct static_instance {
+export struct static_instance {
 
   consteval static_instance()
       : decl{}, name_{std::string_view{""}}, hash_{0} {};

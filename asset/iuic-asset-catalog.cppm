@@ -91,6 +91,16 @@ export struct catalog {
     return records.definitions.access(decl).has_value();
   };
 
+  bool try_visit_definition(declaration decl,
+                            std::invocable<definition &> auto &&call) {
+    auto a = records.definitions.access(decl);
+    if (a.has_value()) {
+      call(a.get().def);
+      return true;
+    };
+    return false;
+  };
+
   // used before defined ?
   instance_id make_dynamic_instance(declaration decl) {
     if (auto access = records.definitions.access(decl); access.has_value()) {
@@ -106,7 +116,7 @@ export struct catalog {
 
   template <typename... Binds>
   instance_id make_dynamic_instance(declaration decl, Binds &&...binds) {
-    auto iid = make_default_instance(decl);
+    auto iid = make_dynamic_instance(decl);
 
     if (iid != invalid_id) {
       auto &inst = get_instance(iid).value().get();
@@ -270,6 +280,7 @@ private:
       std::swap(*found, def.instances.back());
       def.instances.pop_back();
       records.definitions_static_instances.access(inst).reset();
+      records.instances.erase(id);
     };
     // remove
     // remove in def list

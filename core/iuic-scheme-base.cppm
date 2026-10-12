@@ -4,6 +4,7 @@
 export module iuic.core:scheme.base;
 import std;
 import iuic.underlying;
+import iuic.asset;
 import iuic.text;
 import iuic.layout;
 import iuic.style;
@@ -17,6 +18,7 @@ namespace iuic::scheme {
 export struct base {
 
 protected:
+  asset::catalog *assets;
   environment::tmp *tenv;
   environment::persist *penv;
 };

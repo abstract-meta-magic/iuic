@@ -14,6 +14,7 @@ endif()
 target_link_libraries(${PROJECT_NAME}_style
 	PUBLIC
 	iuic::underlying
+	iuic::asset
 )
 
 target_compile_features(${PROJECT_NAME}_style

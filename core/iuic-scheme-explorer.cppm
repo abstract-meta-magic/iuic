@@ -4,6 +4,7 @@
 export module iuic.core:scheme.explorer;
 import std;
 import iuic.underlying;
+import iuic.asset;
 import iuic.state;
 import iuic.style;
 import iuic.event;
@@ -15,6 +16,7 @@ namespace iuic::scheme {
 
 struct explorer_assign {
   blueprint::base_iterator it;
+  asset::catalog *assets;
   environment::tmp *tenv;
   environment::persist *penv;
 };
@@ -161,9 +163,22 @@ export struct explorer : base {
 
   } query{*this};
 
+  struct : utils::member_for<explorer> {
+    asset::definition &get_definition(const asset::declaration &decl) {
+      return self().assets->get_definition(decl);
+    };
+    asset::instance &get_static_instance(const asset::static_instance &si) {
+      return self()
+          .assets->get_instance(self().assets->get_static_instance(si))
+          .value()
+          .get();
+    };
+  } asset{*this};
+
 public: // assign
   explorer &operator=(explorer_assign assing) {
     begin_ = assing.it;
+    assets = assing.assets;
     tenv = assing.tenv;
     penv = assing.penv;
 

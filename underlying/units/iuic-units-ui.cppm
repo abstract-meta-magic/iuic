@@ -87,8 +87,6 @@ struct inherit {};
 
 struct adapt {};
 
-using fill = std::variant<none, color, iuic::external::instance>;
-
 struct border_radius {
   // TODO : body
 };

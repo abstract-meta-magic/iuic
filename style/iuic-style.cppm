@@ -4,6 +4,13 @@
 export module iuic.style;
 import std;
 import iuic.underlying;
+import iuic.asset;
+
+export namespace iuic::units::ui {
+
+using fill = std::variant<none, color, asset::declaration,
+                          asset::static_instance, asset::instance_id>;
+};
 
 export namespace iuic::policy {
 enum class usage {

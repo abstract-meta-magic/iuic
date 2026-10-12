@@ -4,6 +4,7 @@
 export module iuic.core:context;
 import std;
 import iuic.underlying;
+import iuic.asset;
 import iuic.env;
 import :scheme.builder;
 import :scheme.compute;
@@ -28,7 +29,7 @@ public: // api
             scheme::builder_block_cpt auto &&call);
 
   context() {
-    scheme = scheme::explorer_assign{blueprint.begin(), &tenv, &penv};
+    scheme = scheme::explorer_assign{blueprint.begin(), &asset_, &tenv, &penv};
   };
 
   void domain(std::invocable<domain> auto &&call) {
@@ -40,11 +41,16 @@ public: // api
     call(scheme);
   };
 
+  void asset(std::invocable<iuic::asset::catalog &> auto &&call) {
+    call(asset_);
+  };
+
   // void eval(std::invocable<domai_proxy> auto &&);
 
 private:
   // sync
   advance::pool adp;
+  asset::catalog asset_;
 
   // explore
   scheme::blueprint blueprint;
@@ -75,7 +81,7 @@ void context::make(units::ui::size vp, units::upixel seg,
 
   blueprint = scheme::compute(sketch, tenv, penv);
 
-  scheme = {blueprint.begin(), &tenv, &penv};
+  scheme = {blueprint.begin(), &asset_, &tenv, &penv};
 };
 
 } // namespace iuic
