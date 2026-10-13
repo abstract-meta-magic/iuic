@@ -21,7 +21,6 @@ export struct instance {
   void reset_type() { type_ = use_of; };
 
   type get_type() const {
-    return undefined;
     if (type_ != use_of) {
       return type_;
     } else if (of_) {

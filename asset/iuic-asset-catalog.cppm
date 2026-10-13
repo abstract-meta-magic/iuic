@@ -98,7 +98,10 @@ export struct catalog {
 
   void remove_definition(declaration decl) {
     auto a = records.definitions.access(decl);
-    if (not a.has_value()) {
+    if (a.has_value()) {
+      for (auto &inst : a.get().instances) {
+        remove_instance(inst);
+      };
       std::move(a).reset();
     }
   };
