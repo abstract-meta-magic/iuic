@@ -47,19 +47,43 @@ struct catalog_records {
   container<free_list::fixed<instance_record, 4096>> instances;
 };
 
-struct definition_query_proxy {
-  constexpr definition_query_proxy(const catalog_records &cr) : records{cr} {};
+namespace query {
 
-private:
-  const catalog_records &records;
+template <typename T> struct type {};
+
+struct basic_pred {};
+
+template <typename T>
+concept is_pred = std::is_base_of_v<basic_pred, std::remove_cvref_t<T>>;
+
+export constexpr type<asset::definition> definition;
+
+export constexpr type<asset::instance> instance;
+
+export template <typename T> struct has_bind_t : basic_pred {};
+
+export template <typename T> constexpr has_bind_t<T> has_bind;
+
+export struct has_tag : basic_pred {
+  has_tag(asset::tag tag_) : tag{tag_} {};
+  asset::tag tag;
 };
 
-struct instance_query_proxy {
-  constexpr instance_query_proxy(const catalog_records &cr) : records{cr} {};
-
-private:
-  const catalog_records &records;
+export struct as_type : basic_pred {
+  as_type(asset::type type_) : type{type_} {};
+  asset::type type;
 };
+
+export struct name_contains : basic_pred {
+  name_contains(std::string_view str_) : str{str_} {};
+  std::string_view str;
+};
+
+export template <is_pred T> struct qnot : basic_pred {
+  qnot(T pred_) : pred{pred_} {};
+  T pred;
+};
+}; // namespace query
 
 export struct catalog {
   // rcode and std::expected for noexcept API
@@ -91,6 +115,21 @@ export struct catalog {
     return records.definitions.access(decl).has_value();
   };
 
+  bool contains(instance_id iid) {
+    return records.instances.has_value(std::to_underlying(iid));
+  };
+
+  bool try_visit_definition(
+      declaration decl,
+      std::invocable<const definition &> auto &&call) const noexcept {
+    auto a = records.definitions.access(decl);
+    if (a.has_value()) {
+      call(a.get().def);
+      return true;
+    };
+    return false;
+  };
+
   bool try_visit_definition(declaration decl,
                             std::invocable<definition &> auto &&call) {
     auto a = records.definitions.access(decl);
@@ -119,7 +158,7 @@ export struct catalog {
     auto iid = make_dynamic_instance(decl);
 
     if (iid != invalid_id) {
-      auto &inst = get_instance(iid).value().get();
+      auto &inst = get_instance(iid);
 
       (inst.get_bind<std::remove_cvref_t<Binds>>().emplace(
            std::forward<Binds>(binds)),
@@ -147,7 +186,7 @@ export struct catalog {
     auto iid = make_default_instance(decl);
 
     if (iid != invalid_id) {
-      auto &inst = get_instance(iid).value().get();
+      auto &inst = get_instance(iid);
 
       (inst.get_bind<std::remove_cvref_t<Binds>>().emplace(
            std::forward<Binds>(binds)),
@@ -191,7 +230,7 @@ export struct catalog {
     auto iid = make_static_instance(si);
 
     if (iid != invalid_id) {
-      auto &inst = get_instance(iid).value().get();
+      auto &inst = get_instance(iid);
 
       (inst.get_bind<std::remove_cvref_t<Binds>>().emplace(
            std::forward<Binds>(binds)),
@@ -230,25 +269,140 @@ export struct catalog {
     }
   };
 
-  std::expected<std::reference_wrapper<instance>, int>
-  get_instance(instance_id id_) {
+  // TODO
+  // in std-c++ 26
+  // std::optional<instance&> try_get_instance(instance_id id_);
 
-    utils::assert([&] { return id_ != invalid_id; },
-                  "try access to invalid instance");
-
-    std::println("index {}", std::to_underlying(id_));
+  instance &get_instance(instance_id id_) {
     if (records.instances.has_value(std::to_underlying(id_))) {
       return records.instances.at(std::to_underlying(id_)).inst;
     }
-    return std::unexpected{0};
+    throw std::logic_error{"Invalid instance ID"};
   };
-  // call on_reset(...) callback's
+
+  const instance &get_instance(instance_id id_) const {
+    if (records.instances.has_value(std::to_underlying(id_))) {
+      return records.instances.at(std::to_underlying(id_)).inst;
+    }
+    throw std::logic_error{"Invalid instance ID"};
+  };
+
+  bool try_visit_instance(instance_id id_,
+                          std::invocable<instance &> auto &&call) noexcept {
+    if (records.instances.has_value(std::to_underlying(id_))) {
+      call(records.instances.at(std::to_underlying(id_)).inst);
+      return true;
+    }
+    return false;
+  };
+
+  bool try_visit_instance(
+      instance_id id_,
+      std::invocable<const instance &> auto &&call) const noexcept {
+    if (records.instances.has_value(std::to_underlying(id_))) {
+      call(records.instances.at(std::to_underlying(id_)).inst);
+      return true;
+    }
+    return false;
+  };
+
   void reset();
 
-  // query_result is std::vector<instance_id>
-  instance_query_proxy instance_query();
-  // query_result is std::vector<declaration>
-  definition_query_proxy definition_query();
+  std::vector<instance_id> query(query::type<instance>,
+                                 query::is_pred auto &&...preds) const {
+    std::vector<instance_id> res;
+    for (auto &ir : records.instances) {
+      if ((do_eval(ir, preds) && ...)) {
+        // make distance ???
+        utils::assert([] { return false; }, "TODO: support base query");
+      };
+    }
+    return res;
+  };
+
+  void query(query::type<instance>, std::invocable<instance &> auto &&func,
+             query::is_pred auto &&...preds) {
+    for (auto &ir : records.instances) {
+      if ((do_eval(ir, preds) && ...)) {
+        std::invoke(std::forward<decltype(func)>(func), ir.inst);
+      };
+    }
+  };
+
+  void query(query::type<instance>,
+             std::invocable<const instance &> auto &&func,
+             query::is_pred auto &&...preds) const {
+    for (auto &ir : records.instances) {
+      if ((do_eval(ir, preds) && ...)) {
+        std::invoke(std::forward<decltype(func)>(func), ir.inst);
+      };
+    }
+  };
+
+  std::vector<declaration> query(query::type<definition>,
+                                 query::is_pred auto &&...preds) const {
+    std::vector<declaration> res;
+    for (auto &dr : records.definitions) {
+      if ((do_eval(dr, preds) && ...)) {
+        res.push_back(dr.def.of());
+      }
+    }
+    return res;
+  };
+
+  void query(query::type<definition>, std::invocable<definition &> auto &&func,
+             query::is_pred auto &&...preds) {
+    for (auto &dr : records.definitions) {
+      if ((do_eval(dr, preds) && ...)) {
+        std::invoke(std::forward<decltype(func)>(func), dr.def);
+      }
+    }
+  };
+
+  void query(query::type<definition>,
+             std::invocable<const definition &> auto &&func,
+             query::is_pred auto &&...preds) const {
+    for (auto &dr : records.definitions) {
+      if ((do_eval(dr, preds) && ...)) {
+        std::invoke(std::forward<decltype(func)>(func), dr.def);
+      }
+    }
+  };
+
+private:
+  bool do_eval(const definition_record &dr, const query::name_contains &pred) {
+    return dr.def.of().get_name().contains(pred.str);
+  };
+
+  bool do_eval(const definition_record &dr, const query::as_type &pred) {
+    return dr.def.get_type() == pred.type;
+  };
+
+  bool do_eval(const definition_record &dr, const query::has_tag &pred) {
+    return dr.def.has_tag(pred.tag);
+  };
+
+  template <typename T>
+  bool do_eval(const definition_record &dr, const query::has_bind_t<T> &pred) {
+    return dr.def.get_bind<T>().has_value();
+  };
+
+  bool do_eval(const instance_record &ir, const query::name_contains &pred) {
+    return ir.inst.of().of().get_name().contains(pred.str);
+  };
+
+  bool do_eval(const instance_record &ir, const query::as_type &pred) {
+    return ir.inst.get_type() == pred.type;
+  };
+
+  bool do_eval(const instance_record &ir, const query::has_tag &pred) {
+    return ir.inst.has_tag(pred.tag);
+  };
+
+  template <typename T>
+  bool do_eval(const instance_record &ir, const query::has_bind_t<T> &pred) {
+    return ir.inst.get_bind<T>().has_value();
+  };
 
 private:
   void remove_dynamic_instance_(instance_id id, instance_record &ir) {

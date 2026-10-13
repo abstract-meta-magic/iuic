@@ -16,37 +16,21 @@ struct test : iuic::test::unit<test> {
     auto sti_1 = catalog.make_default_instance("font.base");
     auto dyi_1 = catalog.make_dynamic_instance("font.base");
 
-    auto i_1 = catalog.get_instance(sti_1);
-    auto i_2 = catalog.get_instance(dyi_1);
-    if (i_1) {
-      auto &i = i_1.value().get();
+    auto &i_1 = catalog.get_instance(sti_1);
+    auto &i_2 = catalog.get_instance(dyi_1);
 
-      utils.eq(i.of().of().get_name(), "font.base", "check name");
-    };
+    utils.eq(i_1.of().of().get_name(), "font.base", "check name");
 
-    if (i_2) {
-      auto &i = i_2.value().get();
-
-      utils.eq(i.of().of().get_name(), "font.base", "check name");
-    };
+    utils.eq(i_2.of().of().get_name(), "font.base", "check name");
 
     catalog.remove_instance(sti_1);
-
-    {
-      auto i = catalog.get_instance(sti_1);
-      utils.rq_false(i.has_value(), "after remove");
-    }
 
     { // base place
       catalog.make_static_instance("font.base@idle");
       auto inst_id = catalog.get_static_instance("font.base@idle");
       auto inst_ = catalog.get_instance(inst_id);
 
-      utils.rq_true((bool)inst_, "has value");
-      if (inst_) {
-        auto &inst = inst_.value().get();
-        utils.eq(inst.of().of().get_name(), "font.base", "name");
-      };
+      utils.eq(inst_.of().of().get_name(), "font.base", "name");
 
       catalog.remove_instance(inst_id);
 
@@ -59,11 +43,7 @@ struct test : iuic::test::unit<test> {
       auto inst_id = catalog.get_static_instance("font.base@idle");
       auto inst_ = catalog.get_instance(inst_id);
 
-      utils.rq_true((bool)inst_, "has value");
-      if (inst_) {
-        auto &inst = inst_.value().get();
-        utils.eq(inst.of().of().get_name(), "font.base", "name");
-      };
+      utils.eq(inst_.of().of().get_name(), "font.base", "name");
 
       catalog.remove_instance(inst_id);
 
@@ -91,41 +71,36 @@ struct test_2 : iuic::test::unit<test_2> {
     c.make_definition("icon.close");
     auto i = c.get_instance(c.make_default_instance("icon.close"));
 
-    utils.rq_true(i.has_value(), "validate");
+    auto info_b = i.get_bind<info>();
+    auto image_b = i.get_bind<image>();
 
-    if (i.has_value()) {
-      auto &i_ = i.value().get();
-      auto info_b = i_.get_bind<info>();
-      auto image_b = i_.get_bind<image>();
+    if (not info_b.has_value()) {
+      info_b.emplace(4, 8);
+    }
 
-      if (not info_b.has_value()) {
-        info_b.emplace(4, 8);
-      }
+    if (not image_b.has_value()) {
+      image_b.emplace(12, 20);
+    }
 
-      if (not image_b.has_value()) {
-        image_b.emplace(12, 20);
-      }
+    auto &ib = info_b.get();
+    auto &imb = image_b.get();
 
-      auto &ib = info_b.get();
-      auto &imb = image_b.get();
-
-      utils.eq(ib.x, 4, "value");
-      utils.eq(ib.y, 8, "value");
-      utils.eq(imb.x, 12, "value");
-      utils.eq(imb.y, 20, "value");
-    };
+    utils.eq(ib.x, 4, "value");
+    utils.eq(ib.y, 8, "value");
+    utils.eq(imb.x, 12, "value");
+    utils.eq(imb.y, 20, "value");
 
     // check static
     {
       c.make_static_instance("icon.close@idle");
       auto iid = c.get_static_instance("icon.close@idle");
-      auto &inst = c.get_instance(iid).value().get();
+      auto &inst = c.get_instance(iid);
       inst.get_bind<image>().emplace(7, 8);
     }
     {
       c.make_static_instance("icon.close@idle");
       auto iid = c.get_static_instance("icon.close@idle");
-      auto &inst = c.get_instance(iid).value().get();
+      auto &inst = c.get_instance(iid);
       auto &image_value = inst.get_bind<image>().get();
 
       utils.eq(image_value.x, 7, "value");
@@ -143,31 +118,30 @@ struct test_2 : iuic::test::unit<test_2> {
 
         utils.eq(inst.get_type(), iuic::asset::undefined, "type");
       }
-    }
 
-    {
-      c.make_definition("icon.new");
-      auto iid =
-          c.make_static_instance("icon.new@idle", image{5, 10}, info{20, 40});
-      auto &inst = c.get_instance(iid).value().get();
+      {
+        c.make_definition("icon.new");
+        auto iid =
+            c.make_static_instance("icon.new@idle", image{5, 10}, info{20, 40});
+        auto &inst = c.get_instance(iid);
 
-      utils.rq_true(inst.get_bind<image>().has_value(), "has value");
-      utils.rq_true(inst.get_bind<info>().has_value(), "has value");
+        utils.rq_true(inst.get_bind<image>().has_value(), "has value");
+        utils.rq_true(inst.get_bind<info>().has_value(), "has value");
 
-      if (inst.get_bind<image>().has_value()) {
-        auto &image_value = inst.get_bind<image>().get();
-        utils.eq(image_value.x, 5, "value");
-        utils.eq(image_value.y, 10, "value");
+        if (inst.get_bind<image>().has_value()) {
+          auto &image_value = inst.get_bind<image>().get();
+          utils.eq(image_value.x, 5, "value");
+          utils.eq(image_value.y, 10, "value");
+        }
+
+        if (inst.get_bind<info>().has_value()) {
+          auto &info_value = inst.get_bind<info>().get();
+          utils.eq(info_value.x, 20, "value");
+          utils.eq(info_value.y, 40, "value");
+        }
       }
-
-      if (inst.get_bind<info>().has_value()) {
-        auto &info_value = inst.get_bind<info>().get();
-        utils.eq(info_value.x, 20, "value");
-        utils.eq(info_value.y, 40, "value");
-      }
-    }
-  };
-
+    };
+  }
 } _1{};
 } // namespace
 

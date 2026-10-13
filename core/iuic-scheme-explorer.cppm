@@ -164,15 +164,54 @@ export struct explorer : base {
   } query{*this};
 
   struct : utils::member_for<explorer> {
+    bool is_definition_exist(const asset::declaration &decl) const {
+      return self().assets->contains(decl);
+    };
+
+    bool is_instance_exist(asset::instance_id iid) const {
+      return self().assets->contains(iid);
+    };
+
+    bool is_instance_exist(asset::static_instance si) const {
+      return self().assets->get_static_instance(si) != asset::invalid_id;
+    };
+
     asset::definition &get_definition(const asset::declaration &decl) {
       return self().assets->get_definition(decl);
     };
+
     asset::instance &get_static_instance(const asset::static_instance &si) {
-      return self()
-          .assets->get_instance(self().assets->get_static_instance(si))
-          .value()
-          .get();
+      return self().assets->get_instance(
+          self().assets->get_static_instance(si));
     };
+
+    asset::instance &get_instance(asset::instance_id iid) {
+      return self().assets->get_instance(iid);
+    };
+
+    bool try_visit_definition(
+        const asset::declaration &decl,
+        std::invocable<const asset::definition &> auto &&call) noexcept {
+      self().assets->try_visit_definition(decl,
+                                          std::forward<decltype(call)>(call));
+    };
+
+    bool try_visit_static_instance(
+        const asset::static_instance &si,
+        std::invocable<const asset::instance &> auto &&call) noexcept {
+      self().assets->try_visit_instance(self().assets->get_static_instance(si),
+                                        std::forward<decltype(call)>(call));
+    };
+
+    bool try_visit_instance(
+        asset::instance_id iid,
+        std::invocable<const asset::instance &> auto &&call) noexcept {
+      self().assets->try_visit_instance(iid,
+                                        std::forward<decltype(call)>(call));
+    };
+
+    // query def
+    // query inst
   } asset{*this};
 
 public: // assign

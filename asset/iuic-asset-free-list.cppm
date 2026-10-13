@@ -77,19 +77,54 @@ public:
 
   const Value &at(std::size_t I) const {
     if (occuped.test(I)) {
-      return data.at(I).value;
+      return data[I].value;
     };
     throw std::logic_error{"try get uninitialized variable"};
   };
 
-  bool has_value(std::size_t I) { return occuped.test(I); };
+  bool has_value(std::size_t I) const { return occuped.test(I); };
 
   bool full() const { return head == end_; };
 
-  struct iterator {};
+  struct iterator {
+    iterator(container *owner_, std::size_t index_)
+        : owner{owner_}, index{index_} {}
 
-  // iterator begin();
-  // iterator end();
+    bool operator==(const iterator &other) const {
+      return index == other.index;
+    };
+
+    Value &operator*() {
+      utils::assert([&]() { return owner->occuped.test(index); },
+                    "invalid iterator access");
+      return owner->data[index].value;
+    };
+
+    iterator &operator++() {
+      ++index;
+      return +*this;
+    };
+
+    iterator &operator+() {
+      for (; index < S; ++index) {
+        if (owner->occuped.test(index)) {
+          break;
+        }
+      };
+      return *this;
+    };
+
+  private:
+    container *owner;
+    std::size_t index;
+  };
+
+  iterator begin() { return +iterator{this, 0}; };
+  iterator end() { return iterator{this, S}; };
+
+  // TOTO : const_iterator
+  iterator begin() const { return +iterator{this, 0}; };
+  iterator end() const { return iterator{this, S}; };
 
 private:
   slot data[S]{}; // not std::array -> union

@@ -1,6 +1,12 @@
 ### Current(Refactoring+test)
 - iuic::asset          -> v0.5.0
-  + clear iuic::external
+  - add query
+  - migrate to `iuic.asset`
+    - update `iuic::scheme::builder` API
+    - update `iuic::scheme::explorer` API
+    - update `iuic::scheme::style` API
+    - update `iuic::scheme::text` API
+  - clear `iuic::external`
 - docs/examples        -> v0.?.++
 - replace iuic::cenv   -> v0.?.++
 ### Next

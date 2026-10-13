@@ -264,6 +264,14 @@ struct builder_state_interface : protected virtual builder_base {
   void persist(units::uid uid);
 };
 
+struct builder_asset_interface : protected virtual builder_base {
+  builder_asset_interface(environment::tmp &tenv_, environment::persist &penv_,
+                          environment::domain &denv_, insert_iterator it_,
+                          struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+  // mimimum + const
+};
+
 export struct builder final : protected virtual builder_base,
                               private builder_element_interface,
                               private builder_state_interface,
@@ -272,7 +280,8 @@ export struct builder final : protected virtual builder_base,
                               private builder_memory_interface,
                               private builder_text_interface,
                               private builder_event_interface,
-                              private builder_style_interface {
+                              private builder_style_interface,
+                              private builder_asset_interface {
   // TOTO пересмотреть концепцию конструктора
   // перестроить его через kernel(module private)
   builder(environment::persist &penv, environment::tmp &tenv,
@@ -285,7 +294,8 @@ export struct builder final : protected virtual builder_base,
         builder_memory_interface{tenv, penv, denv, it, *this},
         builder_text_interface{tenv, penv, denv, it, *this},
         builder_event_interface{tenv, penv, denv, it, *this},
-        builder_style_interface{tenv, penv, denv, it, *this} {};
+        builder_style_interface{tenv, penv, denv, it, *this},
+        builder_asset_interface{tenv, penv, denv, it, *this} {};
 
   builder_element_interface &element{*this};
   builder_state_interface &state{*this};
@@ -749,8 +759,6 @@ builder_text_interface::dynamic_token(std::string_view text,
 
   if (atlas.decoder->capabilities().is_std_char_support()) {
     auto res = atlas.decoder->decode(text); // exceptions
-
-    text::raw::token tk{.atlas_id = atlas.get_id(), .glyphs = res};
 
     text::raw::token &tk_mem = tenv.memory.allocate<text::raw::token>()[0];
 

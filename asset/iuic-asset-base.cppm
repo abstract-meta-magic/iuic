@@ -11,7 +11,8 @@ struct callback_handl {};
 
 export enum class instance_id : std::uint64_t {};
 
-constexpr instance_id invalid_id{std::numeric_limits<std::uint64_t>::max()};
+export constexpr instance_id invalid_id{
+    std::numeric_limits<std::uint64_t>::max()};
 
 export struct tag {
   consteval tag() : decl{this} {}
