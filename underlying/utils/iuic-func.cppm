@@ -159,16 +159,76 @@ type(R (*)(ARGS...) noexcept) -> type<R (*)(ARGS...) noexcept>;
 type(auto &&lambda)
     -> type<decltype(&std::remove_cvref_t<decltype(lambda)>::operator())>;
 
-struct nonvoid {};
-struct lvalue {};
-struct const_lvalue {};
-struct rvalue {};
-struct pvalue {};
-struct pointer {};
+struct any {};
+
+template <typename, typename> struct eval {
+  static constexpr bool value{false};
+};
+
+template <typename, typename> struct type_check {
+  static constexpr bool value{false};
+};
+
+template <typename T> struct type_check<T, any> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<T &, any &> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<T &&, any &&> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<const T, const any> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<const T &, const any &> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<const T &&, const any &&> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<volatile T, volatile any> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<volatile T &, volatile any &> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<volatile T &&, volatile any &&> {
+  static constexpr bool value{true};
+};
+
+template <typename T>
+struct type_check<const volatile T &, const volatile any &> {
+  static constexpr bool value{true};
+};
+
+template <typename T> struct type_check<T, T> {
+  static constexpr bool value{true};
+};
+
+template <typename FRET, typename... FARGS, typename SRET, typename... SARGS>
+struct eval<FRET(FARGS...), SRET(SARGS...)> {
+  static constexpr bool value{type_check<FRET, SRET>::value &&
+                              (type_check<FARGS, SARGS>::value && ...)};
+};
 
 template <typename FUNC, typename TEMPLATE>
-concept func_template = true;
+concept as =
+    is_pure_function_signature_cpt<TEMPLATE> &&
+    eval<typename decltype(type{
+             std::declval<std::remove_cvref_t<FUNC>>()})::signature::value,
+         TEMPLATE>::value;
 
-void test(func::func_template<nonvoid(const_lvalue, pointer)> auto &&) {};
+// TODO: support packs
+// like
+// func::as<void(any&,pack<any>>)
 
 }; // namespace iuic::func

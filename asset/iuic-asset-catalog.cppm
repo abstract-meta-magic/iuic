@@ -53,7 +53,7 @@ template <typename T> struct type {};
 
 struct basic_pred {};
 
-template <typename T>
+export template <typename T>
 concept is_pred = std::is_base_of_v<basic_pred, std::remove_cvref_t<T>>;
 
 export constexpr type<asset::definition> definition;
@@ -323,7 +323,7 @@ export struct catalog {
     return res;
   };
 
-  void query(query::type<instance>, std::invocable<instance &> auto &&func,
+  void query(query::type<instance>, func::as<void(instance &)> auto &&func,
              query::is_pred auto &&...preds) {
     for (auto &ir : records.instances) {
       if ((do_eval(ir, preds) && ...)) {
@@ -333,7 +333,7 @@ export struct catalog {
   };
 
   void query(query::type<instance>,
-             std::invocable<const instance &> auto &&func,
+             func::as<void(const instance &)> auto &&func,
              query::is_pred auto &&...preds) const {
     for (auto &ir : records.instances) {
       if ((do_eval(ir, preds) && ...)) {
@@ -353,7 +353,7 @@ export struct catalog {
     return res;
   };
 
-  void query(query::type<definition>, std::invocable<definition &> auto &&func,
+  void query(query::type<definition>, func::as<void(definition &)> auto &&func,
              query::is_pred auto &&...preds) {
     for (auto &dr : records.definitions) {
       if ((do_eval(dr, preds) && ...)) {
@@ -363,7 +363,7 @@ export struct catalog {
   };
 
   void query(query::type<definition>,
-             std::invocable<const definition &> auto &&func,
+             func::as<void(const definition &)> auto &&func,
              query::is_pred auto &&...preds) const {
     for (auto &dr : records.definitions) {
       if ((do_eval(dr, preds) && ...)) {
@@ -373,37 +373,41 @@ export struct catalog {
   };
 
 private:
-  bool do_eval(const definition_record &dr, const query::name_contains &pred) {
+  bool do_eval(const definition_record &dr,
+               const query::name_contains &pred) const {
     return dr.def.of().get_name().contains(pred.str);
   };
 
-  bool do_eval(const definition_record &dr, const query::as_type &pred) {
+  bool do_eval(const definition_record &dr, const query::as_type &pred) const {
     return dr.def.get_type() == pred.type;
   };
 
-  bool do_eval(const definition_record &dr, const query::has_tag &pred) {
+  bool do_eval(const definition_record &dr, const query::has_tag &pred) const {
     return dr.def.has_tag(pred.tag);
   };
 
   template <typename T>
-  bool do_eval(const definition_record &dr, const query::has_bind_t<T> &pred) {
+  bool do_eval(const definition_record &dr,
+               const query::has_bind_t<T> &pred) const {
     return dr.def.get_bind<T>().has_value();
   };
 
-  bool do_eval(const instance_record &ir, const query::name_contains &pred) {
+  bool do_eval(const instance_record &ir,
+               const query::name_contains &pred) const {
     return ir.inst.of().of().get_name().contains(pred.str);
   };
 
-  bool do_eval(const instance_record &ir, const query::as_type &pred) {
+  bool do_eval(const instance_record &ir, const query::as_type &pred) const {
     return ir.inst.get_type() == pred.type;
   };
 
-  bool do_eval(const instance_record &ir, const query::has_tag &pred) {
+  bool do_eval(const instance_record &ir, const query::has_tag &pred) const {
     return ir.inst.has_tag(pred.tag);
   };
 
   template <typename T>
-  bool do_eval(const instance_record &ir, const query::has_bind_t<T> &pred) {
+  bool do_eval(const instance_record &ir,
+               const query::has_bind_t<T> &pred) const {
     return ir.inst.get_bind<T>().has_value();
   };
 

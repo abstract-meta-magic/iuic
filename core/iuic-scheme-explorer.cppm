@@ -210,8 +210,20 @@ export struct explorer : base {
                                         std::forward<decltype(call)>(call));
     };
 
-    // query def
-    // query inst
+    // TODO : replace to normal concept
+    void query(decltype(asset::query::definition) type,
+               func::as<void(const asset::definition &)> auto &&func,
+               asset::query::is_pred auto &&...preds) const {
+      self().assets->query(type, std::forward<decltype(func)>(func),
+                           std::forward<decltype(preds)>(preds)...);
+    };
+
+    void query(decltype(asset::query::instance) type,
+               func::as<void(const asset::instance &)> auto &&func,
+               asset::query::is_pred auto &&...preds) const {
+      self().assets->query(type, std::forward<decltype(func)>(func),
+                           std::forward<decltype(preds)>(preds)...);
+    };
   } asset{*this};
 
 public: // assign

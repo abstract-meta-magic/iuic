@@ -137,10 +137,6 @@ struct container<iuic::asset::map::fixed<Key, Value, S>> {
   };
 
   struct iterator {
-    // value type is proxy
-    // ++
-    // --
-    // ==
     iterator(container *owner_, std::size_t index_)
         : owner{owner_}, index{index_} {}
 
@@ -171,6 +167,37 @@ struct container<iuic::asset::map::fixed<Key, Value, S>> {
     std::size_t index;
   };
 
+  struct const_iterator {
+    const_iterator(const container *owner_, std::size_t index_)
+        : owner{owner_}, index{index_} {}
+
+    bool valid() const { return index != S && owner->data[index].has_value(); };
+
+    bool operator==(const const_iterator &other) const {
+      return index == other.index;
+    };
+
+    const Value &operator*() { return owner->data[index].value.value(); };
+
+    const_iterator &operator++() {
+      ++index;
+      return +*this;
+    };
+
+    const_iterator &operator+() {
+      for (; index < S; ++index) {
+        if (owner->data[index].value.has_value()) {
+          break;
+        }
+      }
+      return *this;
+    };
+
+  private:
+    const container *owner;
+    std::size_t index;
+  };
+
   accessor access(Key key) { return accessor{key, this}; };
   const_accessor access(Key key) const { return const_accessor{key, this}; }
 
@@ -184,15 +211,15 @@ struct container<iuic::asset::map::fixed<Key, Value, S>> {
 
   iterator end() { return iterator{this, S}; };
 
-  iterator begin() const {
+  const_iterator begin() const {
     if (empty()) {
-      return iterator{this, S};
+      return const_iterator{this, S};
     } else {
-      return +iterator{this, 0};
+      return +const_iterator{this, 0};
     };
   };
 
-  iterator end() const { return iterator{this, S}; };
+  const_iterator end() const { return const_iterator{this, S}; };
 
   std::size_t size() const { return size_; };
 

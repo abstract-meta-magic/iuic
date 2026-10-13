@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 4.0)
 
 project(iuic
-	VERSION 0.4.0
+	VERSION 0.4.17
 	LANGUAGES CXX
 )
 

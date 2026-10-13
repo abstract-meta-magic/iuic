@@ -687,13 +687,15 @@ bool builder_memory_interface::persist_proxy<T>::init_if_not(auto &&call) {
 
   using type = std::remove_cvref_t<typename traits::return_t>;
 
-  auto access = owner->penv.object.access(uid, erasure::type::from<type>());
+  if (owner) {
+    auto access = owner->penv.object.access(uid, erasure::type::from<type>());
 
-  if (auto state = access.state();
-      state == environment::object_state::reserve_this_type) {
-    access.allocate();
-    access.construct([&](void *mem) { new (mem) type{call()}; });
-    return true;
+    if (auto state = access.state();
+        state == environment::object_state::reserve_this_type) {
+      access.allocate();
+      access.construct([&](void *mem) { new (mem) type{call()}; });
+      return true;
+    }
   }
   return false;
 };

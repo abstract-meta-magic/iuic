@@ -86,6 +86,39 @@ public:
 
   bool full() const { return head == end_; };
 
+  struct const_iterator {
+    const_iterator(const container *owner_, std::size_t index_)
+        : owner{owner_}, index{index_} {}
+
+    bool operator==(const const_iterator &other) const {
+      return index == other.index;
+    };
+
+    const Value &operator*() {
+      utils::assert([&]() { return owner->occuped.test(index); },
+                    "invalid iterator access");
+      return owner->data[index].value;
+    };
+
+    const_iterator &operator++() {
+      ++index;
+      return +*this;
+    };
+
+    const_iterator &operator+() {
+      for (; index < S; ++index) {
+        if (owner->occuped.test(index)) {
+          break;
+        }
+      };
+      return *this;
+    };
+
+  private:
+    const container *owner;
+    std::size_t index;
+  };
+
   struct iterator {
     iterator(container *owner_, std::size_t index_)
         : owner{owner_}, index{index_} {}
@@ -119,12 +152,12 @@ public:
     std::size_t index;
   };
 
+  // TOTO : ITERATOR REFACTORING
   iterator begin() { return +iterator{this, 0}; };
   iterator end() { return iterator{this, S}; };
 
-  // TOTO : const_iterator
-  iterator begin() const { return +iterator{this, 0}; };
-  iterator end() const { return iterator{this, S}; };
+  const_iterator begin() const { return +const_iterator{this, 0}; };
+  const_iterator end() const { return const_iterator{this, S}; };
 
 private:
   slot data[S]{}; // not std::array -> union
