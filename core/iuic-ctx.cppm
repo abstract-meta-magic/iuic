@@ -75,7 +75,7 @@ void context::make(units::ui::size vp, units::upixel seg,
   tenv.meta.viewport_size = vp;
   tenv.meta.segment_size = seg;
 
-  scheme::director d{tenv, penv, denv};
+  scheme::director d{tenv, penv, denv, asset_};
 
   auto sketch = d.make(vp, std::forward<decltype(call)>(call));
 

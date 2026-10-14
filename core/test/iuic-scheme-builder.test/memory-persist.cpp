@@ -23,10 +23,11 @@ struct test_persist : iuic::test::unit<test_persist> {
     environment::persist penv{pool};
     environment::tmp tenv{pool};
     environment::domain denv{};
+    asset::catalog assets;
 
     tree::flat_unordered_type<scheme::sketch::value_t> tree;
 
-    scheme::builder builder{penv, tenv, denv, {tree.root()}};
+    scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
     units::uid uid{547665327}; // rand
 

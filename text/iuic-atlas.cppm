@@ -133,7 +133,8 @@ public:
   bool is_kerning_supported() const { return meta__.kerning_support; };
 
   std::string name;
-  external::instance binding;
+  std::variant<asset::declaration, asset::static_instance, asset::instance_id>
+      binding;
   std::unique_ptr<decoder> decoder;
 
   // directional

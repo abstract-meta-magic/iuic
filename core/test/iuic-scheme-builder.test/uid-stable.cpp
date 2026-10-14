@@ -20,10 +20,11 @@ struct test : iuic::test::unit<test> {
     environment::persist penv{p};
     environment::tmp tenv{p};
     environment::domain denv{};
+    asset::catalog assets;
 
     tree::flat_unordered_type<scheme::sketch::value_t> tree;
 
-    scheme::builder builder{penv, tenv, denv, {tree.root()}};
+    scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
     units::uid uid{547665327}; // rand
     style::sid sid{547665327}; // rand

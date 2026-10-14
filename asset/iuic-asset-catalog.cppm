@@ -144,7 +144,8 @@ export struct catalog {
   };
 
   // used before defined ?
-  instance_id make_dynamic_instance(declaration decl) {
+  [[nodiscard("Instance leak")]] instance_id
+  make_dynamic_instance(declaration decl) {
     if (auto access = records.definitions.access(decl); access.has_value()) {
       auto &record = access.get();
       auto iid = instance_id{records.instances.insert(instance_record{
@@ -157,7 +158,8 @@ export struct catalog {
   };
 
   template <typename... Binds>
-  instance_id make_dynamic_instance(declaration decl, Binds &&...binds) {
+  [[nodiscard("Instance leak")]] instance_id
+  make_dynamic_instance(declaration decl, Binds &&...binds) {
     auto iid = make_dynamic_instance(decl);
 
     if (iid != invalid_id) {
@@ -311,6 +313,30 @@ export struct catalog {
 
   void reset();
 
+  bool is_static(instance_id iid) const {
+    auto index = std::to_underlying(iid);
+    if (records.instances.has_value(index)) {
+      return records.instances.at(index).type == instance_record::Static;
+    }
+    return false;
+  };
+  bool is_dynamic(instance_id iid) const {
+    auto index = std::to_underlying(iid);
+    if (records.instances.has_value(index)) {
+      return records.instances.at(index).type == instance_record::Dynamic;
+    }
+    return false;
+  };
+
+  bool is_default(instance_id iid) const {
+    auto index = std::to_underlying(iid);
+    if (records.instances.has_value(index)) {
+      return records.instances.at(index).type == instance_record::Default;
+    }
+    return false;
+  };
+
+public: // QUERY
   std::vector<instance_id> query(query::type<instance>,
                                  query::is_pred auto &&...preds) const {
     std::vector<instance_id> res;

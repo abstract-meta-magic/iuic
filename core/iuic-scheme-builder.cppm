@@ -29,9 +29,10 @@ public:
   };
 
   builder_base(environment::persist &penv_, environment::tmp &tenv_,
-               environment::domain &denv_, insert_iterator it_,
-               builder &builder_)
-      : penv{penv_}, tenv{tenv_}, denv{denv_}, it{it_}, builder{builder_} {
+               environment::domain &denv_, asset::catalog &assets_,
+               insert_iterator it_, builder &builder_)
+      : penv{penv_}, tenv{tenv_}, denv{denv_}, assets{assets_}, it{it_},
+        builder{builder_} {
     deep_index.reserve(200);
     deep_index.push_back({});
   }
@@ -39,6 +40,7 @@ public:
   environment::persist &penv;
   environment::tmp &tenv;
   environment::domain &denv;
+  asset::catalog &assets;
   insert_iterator it;
   builder &builder;
 
@@ -59,9 +61,9 @@ struct builder_element_interface : protected virtual builder_base {
 
   builder_element_interface(environment::tmp &tenv_,
                             environment::persist &penv_,
-                            environment::domain &denv_, insert_iterator it_,
-                            struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                            environment::domain &denv_, asset::catalog &assets,
+                            insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   /*
     Базовая форма для всего.Стелизуемый рамка.
@@ -95,9 +97,9 @@ struct builder_element_interface : protected virtual builder_base {
 
 struct builder_order_interface : protected virtual builder_base {
   builder_order_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          environment::domain &denv_, insert_iterator it_,
-                          struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                          environment::domain &denv_, asset::catalog &assets,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   void priority_set(std::int16_t value);
 
@@ -114,9 +116,9 @@ struct builder_order_interface : protected virtual builder_base {
 
 struct builder_policy_interface : protected virtual builder_base {
   builder_policy_interface(environment::tmp &tenv_, environment::persist &penv_,
-                           environment::domain &denv_, insert_iterator it_,
-                           struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                           environment::domain &denv_, asset::catalog &assets,
+                           insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   void set(auto p);
 
@@ -131,9 +133,9 @@ struct builder_uid_interface : protected virtual builder_base {
   static inline utils::anchor default_anchor{};
 
   builder_uid_interface(environment::tmp &tenv_, environment::persist &penv_,
-                        environment::domain &denv_, insert_iterator it_,
-                        struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                        environment::domain &denv_, asset::catalog &assets,
+                        insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   units::uid make_static(const std::string &str) const noexcept;
 
@@ -150,9 +152,9 @@ struct builder_uid_interface : protected virtual builder_base {
 
 struct builder_memory_interface : protected virtual builder_base {
   builder_memory_interface(environment::tmp &tenv_, environment::persist &penv_,
-                           environment::domain &denv_, insert_iterator it_,
-                           struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                           environment::domain &denv_, asset::catalog &assets,
+                           insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   template <typename T> struct persist_proxy {
 
@@ -180,9 +182,9 @@ struct builder_memory_interface : protected virtual builder_base {
 
 struct builder_event_interface : protected virtual builder_base {
   builder_event_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          environment::domain &denv_, insert_iterator it_,
-                          struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                          environment::domain &denv_, asset::catalog &assets,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   template <const iuic::event::channel &ch> void emit(auto &&...args) {
     if constexpr (requires { tenv.event.emit<ch>(builder, args...); }) {
@@ -197,9 +199,9 @@ struct builder_event_interface : protected virtual builder_base {
 
 struct builder_text_interface : protected virtual builder_base {
   builder_text_interface(environment::tmp &tenv_, environment::persist &penv_,
-                         environment::domain &denv_, insert_iterator it_,
-                         struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                         environment::domain &denv_, asset::catalog &assets,
+                         insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   // UTF-8
   const text::raw::token &static_token(std::string_view, std::string_view);
@@ -210,9 +212,9 @@ struct builder_text_interface : protected virtual builder_base {
 
 struct builder_style_interface : protected virtual builder_base {
   builder_style_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          environment::domain &denv_, insert_iterator it_,
-                          struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                          environment::domain &denv_, asset::catalog &assets,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   style::sid self();
 
@@ -249,9 +251,9 @@ struct builder_style_interface : protected virtual builder_base {
 
 struct builder_state_interface : protected virtual builder_base {
   builder_state_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          environment::domain &denv_, insert_iterator it_,
-                          struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                          environment::domain &denv_, asset::catalog &assets,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
 
   bool has(state::value s);
 
@@ -266,10 +268,55 @@ struct builder_state_interface : protected virtual builder_base {
 
 struct builder_asset_interface : protected virtual builder_base {
   builder_asset_interface(environment::tmp &tenv_, environment::persist &penv_,
-                          environment::domain &denv_, insert_iterator it_,
-                          struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, it_, builder_} {}
+                          environment::domain &denv_, asset::catalog &assets,
+                          insert_iterator it_, struct builder &builder_)
+      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
   // mimimum + const
+
+  template <typename... Binds>
+  [[nodiscard("Instance leak")]] asset::instance_id
+  make_dynamic_instance(asset::declaration decl, Binds &&...binds) {
+    return assets.make_dynamic_instance(decl, std::forward<Binds>(binds)...);
+  }
+
+  asset::instance &get_instance(asset::instance_id iid) {
+    if (assets.is_dynamic(iid)) {
+      return assets.get_instance(iid);
+    }
+    throw std::logic_error{"Bad access"}; // TODO: normar exc
+  };
+
+  const asset::instance &get_const_instance(asset::instance_id iid) {
+    return assets.get_instance(iid);
+  }
+
+  bool try_visit_instance(asset::instance_id iid,
+                          func::as<void(asset::instance &)> auto &&func) {
+    if (assets.is_dynamic(iid)) {
+      return assets.try_visit_instance(iid, std::forward<decltype(func)>(func));
+    }
+    return false;
+  };
+
+  void remove_dynamic_instance(asset::instance_id iid) {
+    if (assets.is_dynamic(iid)) {
+      assets.remove_instance(iid);
+    }
+  };
+
+  void query(decltype(asset::query::definition) type,
+             func::as<void(const asset::definition &)> auto &&func,
+             asset::query::is_pred auto &&...preds) const {
+    assets.query(type, std::forward<decltype(func)>(func),
+                 std::forward<decltype(preds)>(preds)...);
+  };
+
+  void query(decltype(asset::query::instance) type,
+             func::as<void(const asset::instance &)> auto &&func,
+             asset::query::is_pred auto &&...preds) const {
+    assets.query(type, std::forward<decltype(func)>(func),
+                 std::forward<decltype(preds)>(preds)...);
+  };
 };
 
 export struct builder final : protected virtual builder_base,
@@ -285,17 +332,18 @@ export struct builder final : protected virtual builder_base,
   // TOTO пересмотреть концепцию конструктора
   // перестроить его через kernel(module private)
   builder(environment::persist &penv, environment::tmp &tenv,
-          environment::domain &denv, insert_iterator it) noexcept
-      : builder_base{penv, tenv, denv, it, *this},
-        builder_element_interface{tenv, penv, denv, it, *this},
-        builder_state_interface{tenv, penv, denv, it, *this},
-        builder_uid_interface{tenv, penv, denv, it, *this},
-        builder_policy_interface{tenv, penv, denv, it, *this},
-        builder_memory_interface{tenv, penv, denv, it, *this},
-        builder_text_interface{tenv, penv, denv, it, *this},
-        builder_event_interface{tenv, penv, denv, it, *this},
-        builder_style_interface{tenv, penv, denv, it, *this},
-        builder_asset_interface{tenv, penv, denv, it, *this} {};
+          environment::domain &denv, asset::catalog &assets,
+          insert_iterator it) noexcept
+      : builder_base{penv, tenv, denv, assets, it, *this},
+        builder_element_interface{tenv, penv, denv, assets, it, *this},
+        builder_state_interface{tenv, penv, denv, assets, it, *this},
+        builder_uid_interface{tenv, penv, denv, assets, it, *this},
+        builder_policy_interface{tenv, penv, denv, assets, it, *this},
+        builder_memory_interface{tenv, penv, denv, assets, it, *this},
+        builder_text_interface{tenv, penv, denv, assets, it, *this},
+        builder_event_interface{tenv, penv, denv, assets, it, *this},
+        builder_style_interface{tenv, penv, denv, assets, it, *this},
+        builder_asset_interface{tenv, penv, denv, assets, it, *this} {};
 
   builder_element_interface &element{*this};
   builder_state_interface &state{*this};
@@ -321,14 +369,14 @@ namespace iuic::scheme {
 
 struct director {
   director(environment::tmp &tenv_, environment::persist &penv_,
-           environment::domain &denv_)
-      : tenv{tenv_}, penv{penv_}, denv{denv_} {};
+           environment::domain &denv_, asset::catalog &assets_)
+      : tenv{tenv_}, penv{penv_}, denv{denv_}, assets{assets_} {};
 
   sketch make(units::ui::size viewport, std::invocable<builder &> auto &&call) {
     tenv.meta.viewport_size = viewport;
     tree::flat_unordered_type<sketch::value_t> tree;
 
-    builder b{penv, tenv, denv, {tree.root()}};
+    builder b{penv, tenv, denv, assets, {tree.root()}};
 
     call(b);
 
@@ -339,6 +387,7 @@ private:
   environment::tmp &tenv;
   environment::persist &penv;
   environment::domain &denv;
+  asset::catalog &assets;
 };
 
 // ---- IMPL ----

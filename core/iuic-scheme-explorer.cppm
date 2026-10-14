@@ -198,19 +198,18 @@ export struct explorer : base {
 
     bool try_visit_static_instance(
         const asset::static_instance &si,
-        std::invocable<const asset::instance &> auto &&call) noexcept {
+        func::as<void(const asset::instance &)> auto &&call) noexcept {
       self().assets->try_visit_instance(self().assets->get_static_instance(si),
                                         std::forward<decltype(call)>(call));
     };
 
     bool try_visit_instance(
         asset::instance_id iid,
-        std::invocable<const asset::instance &> auto &&call) noexcept {
+        func::as<void(const asset::instance &)> auto &&call) noexcept {
       self().assets->try_visit_instance(iid,
                                         std::forward<decltype(call)>(call));
     };
 
-    // TODO : replace to normal concept
     void query(decltype(asset::query::definition) type,
                func::as<void(const asset::definition &)> auto &&func,
                asset::query::is_pred auto &&...preds) const {

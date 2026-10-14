@@ -71,7 +71,6 @@ struct decoration {
   units::ui::fill background{units::ui::none{}};
   units::ui::fill foreground{units::ui::none{}};
   units::ui::fill border{units::ui::none{}};
-  iuic::external::instance extended{};
 };
 
 enum class position { STATIC, RELATIVE, FIXED, ABSOLUTE, STICKY };

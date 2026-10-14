@@ -3,7 +3,7 @@ add_library(${PROJECT_NAME}_underlying STATIC)
 # 1
 add_subdirectory(cenv)
 add_subdirectory(erasure)
-add_subdirectory(external)
+# add_subdirectory(external) [depricated]
 add_subdirectory(tree)
 # 2
 add_subdirectory(utils)
