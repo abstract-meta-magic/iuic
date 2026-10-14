@@ -8,14 +8,13 @@ import :utils.base;
 export namespace iuic::layout::measure {
 
 struct text_utils : public utils_base {
-  text_utils(environment::tmp &tenv,
-             std::span<const iuic::text::raw::token> tokens_,
+  text_utils(environment::tmp &tenv, text::decoded text_,
              element_base_iterator it)
-      : utils_base{tenv, it}, tokens{tokens_} {};
+      : utils_base{tenv, it}, text{text_} {};
 
-  std::span<const iuic::text::raw::token> get_tokens() { return tokens; };
+  text::decoded get_text() { return text; };
 
 private:
-  std::span<const iuic::text::raw::token> tokens;
+  text::decoded text;
 };
 }; // namespace iuic::layout::measure

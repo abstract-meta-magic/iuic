@@ -21,7 +21,6 @@ struct text {
   virtual std::optional<units::ui::adaptive::size>
   measure(measure::text_utils utils) const = 0;
 
-  virtual std::span<const iuic::text::present::token>
-  arrange(arrange::text_utils utils) const = 0;
+  virtual iuic::text::present arrange(arrange::text_utils utils) const = 0;
 };
 }; // namespace iuic::layout

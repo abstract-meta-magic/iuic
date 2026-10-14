@@ -12,7 +12,7 @@ export namespace iuic::layout {
 struct element {
   units::ui::adaptive::size measure;
   units::ui::area arrange;
-  std::span<const text::present::token> text;
+  text::present text;
   style::value style;
   units::clip_id clipzone{
       std::numeric_limits<std::underlying_type_t<units::clip_id>>::max()};
