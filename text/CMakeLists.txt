@@ -4,6 +4,15 @@ target_sources(${PROJECT_NAME}_text PUBLIC
 	FILE_SET iuic_text_modules
 	TYPE CXX_MODULES
 	FILES
+	"iuic-text-base.cppm"
+	"iuic-text-decoded.cppm"
+	"iuic-text-decoded-tool.cppm"
+	"iuic-text-present.cppm"
+	"iuic-text-present-tool.cppm"
+	"iuic-text-model.cppm"
+	"iuic-text-model-profile.cppm"
+	"iuic-text-model-decoder.cppm"
+	"iuic-text-model-tool.cppm"
 	"iuic-text.cppm"
 )
 
@@ -16,7 +25,6 @@ endif()
 target_link_libraries(${PROJECT_NAME}_text 
 	PUBLIC
 	iuic::underlying
-	iuic::asset
 )
 
 target_compile_features(${PROJECT_NAME}_text
@@ -29,3 +37,8 @@ target_compile_options(${PROJECT_NAME}_text PRIVATE
 )
 
 add_library(${PROJECT_NAME}::text ALIAS ${PROJECT_NAME}_text)
+
+
+if(${IUIC_BUILD_TESTS})
+	add_subdirectory(test)
+endif()

@@ -33,6 +33,27 @@ export struct utils {
     }
   };
 
+  void
+  rq_true_then(bool value, std::string_view msg, std::invocable<> auto &&call,
+               std::source_location loc = std::source_location::current()) {
+    if (not value) {
+      result.msg += std::format("[RQ_TRUE(FAILED)] --- {} --- ", msg);
+      result.msg += '\n';
+      result.msg += '\n';
+
+      auto fmt_location = std::format("location : {}:{}:{}", loc.file_name(),
+                                      loc.line(), loc.column());
+      result.msg += fmt_location;
+      result.msg += '\n';
+      result.msg += '\n';
+      result.msg += std::format("[RQ_TRUE(FAILED)] --- {} --- ", msg);
+
+      result.value = false;
+    } else {
+      call();
+    }
+  };
+
   template <typename T>
   void ex_catch(std::invocable<> auto &&call, std::string_view msg,
                 std::source_location loc = std::source_location::current()) {
@@ -95,6 +116,27 @@ export struct utils {
     }
   };
 
+  void
+  rq_false_then(bool res, std::string_view msg, std::invocable<> auto &&call,
+                std::source_location loc = std::source_location::current()) {
+    if (res) {
+      result.msg += std::format("[RQ_FALSE(FAILED)] --- {} --- ", msg);
+      result.msg += '\n';
+      result.msg += '\n';
+
+      auto fmt_location = std::format("location : {}:{}:{}", loc.file_name(),
+                                      loc.line(), loc.column());
+      result.msg += fmt_location;
+      result.msg += '\n';
+      result.msg += '\n';
+      result.msg += std::format("[RQ_FALSE(FAILED)] --- {} --- ", msg);
+
+      result.value = false;
+    } else {
+      call();
+    }
+  };
+
   template <typename T, typename U>
   void eq(const T &exp, const U &dir, std::string_view msg,
           std::source_location loc = std::source_location::current()) {
@@ -115,6 +157,28 @@ export struct utils {
   };
 
   template <typename T, typename U>
+  void eq_then(const T &exp, const U &dir, std::string_view msg,
+               std::invocable<> auto &&call,
+               std::source_location loc = std::source_location::current()) {
+    if (exp != dir) {
+      result.msg += std::format("[QE(FAILED)] --- {} --- ", msg);
+      result.msg += '\n';
+      result.msg += '\n';
+
+      auto fmt_location = std::format("location : {}:{}:{}", loc.file_name(),
+                                      loc.line(), loc.column());
+      result.msg += fmt_location;
+      result.msg += '\n';
+      result.msg += '\n';
+      result.msg += std::format("[QE(FAILED)] --- {} --- ", msg);
+
+      result.value = false;
+    } else {
+      call();
+    }
+  };
+
+  template <typename T, typename U>
   void neq(const T &exp, const U &dir, std::string_view msg,
            std::source_location loc = std::source_location::current()) {
     if (exp == dir) {
@@ -130,6 +194,28 @@ export struct utils {
       result.msg += std::format("[NQE(FAILED)] --- {} --- ", msg);
 
       result.value = false;
+    }
+  };
+
+  template <typename T, typename U>
+  void neq_than(const T &exp, const U &dir, std::string_view msg,
+                std::invocable<> auto &&call,
+                std::source_location loc = std::source_location::current()) {
+    if (exp == dir) {
+      result.msg += std::format("[NQE(FAILED)] --- {} --- ", msg);
+      result.msg += '\n';
+      result.msg += '\n';
+
+      auto fmt_location = std::format("location : {}:{}:{}", loc.file_name(),
+                                      loc.line(), loc.column());
+      result.msg += fmt_location;
+      result.msg += '\n';
+      result.msg += '\n';
+      result.msg += std::format("[NQE(FAILED)] --- {} --- ", msg);
+
+      result.value = false;
+    } else {
+      call();
     }
   };
 
