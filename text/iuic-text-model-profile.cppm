@@ -49,7 +49,7 @@ struct model::profile::tool {
     block.glyph.reserve(m.block->glyph.size());
     block.glyph.assign(m.block->glyph.size(), cmid::null);
     block.context.reserve(m.block->context.size());
-    block.context.assign(m.block->glyph.size(), lmid::null);
+    block.context.assign(m.block->context.size(), lmid::null);
   };
   cmid create_metrics_for_cell(metrics::cell m = {}) {
     block.cell_metrics.push_back(m);
