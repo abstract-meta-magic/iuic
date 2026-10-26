@@ -76,7 +76,6 @@ void measure(environment::tmp &tenv, scheme::blueprint &bp) {
               ait->is = ui::element::measured{res.value()};
             } else {
               ait->is = ui::element::discarded{};
-              return;
             };
           } else if constexpr (std::same_as<decltype(obj),
                                             const layout::text *>) {
@@ -85,7 +84,6 @@ void measure(environment::tmp &tenv, scheme::blueprint &bp) {
               ait->is = ui::element::measured{res.value()};
             } else {
               ait->is = ui::element::discarded{};
-              return;
             };
           } else {
             ait->is = ui::element::discarded{};
@@ -129,18 +127,20 @@ void arrange(environment::tmp &tenv, scheme::blueprint &bp) {
     auto ait = tree::access_iterator{el};
 
     // TODO : DISCARTED | VIRTUALIZED
-    if (std::holds_alternative<ui::element::measured>(ait->is)) {
-      ait->is = ui::element::discarded{};
+    if (not std::holds_alternative<ui::element::placed>(ait->is)) {
+      if (std::holds_alternative<ui::element::virtualized>(ait->is)) {
+        // do virtualize
+      } else {
+        ait->is = ui::element::discarded{};
 
-      for (auto ch : tree::iterator_range_for{
-               tree::childs_of(ait),
-               tree::iterator_type<tree::access_iterator>{}}) {
-        ch->is = ui::element::discarded{};
-      };
+        for (auto ch : tree::iterator_range_for{
+                 tree::childs_of(ait),
+                 tree::iterator_type<tree::access_iterator>{}}) {
+          ch->is = ui::element::discarded{};
+        };
+      }
       continue;
-    } else if (std::holds_alternative<ui::element::virtualized>(ait->is)) {
-      // TODO: work
-    };
+    }
 
     std::visit(
         [&](auto obj) {
