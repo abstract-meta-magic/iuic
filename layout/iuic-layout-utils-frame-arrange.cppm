@@ -11,39 +11,37 @@ struct frame_utils : public utils_base {
       : utils_base{tenv, it} {};
 
   void apply_element(base_iterator el, units::ui::area a) {
-    tree::access_iterator ait{tree::shift(it, el)};
+    tree::access_iterator ait{iuic::tree::shift(it, el)};
 
     auto &veu = *ait;
 
     // make assert ??
-    if (not ait->meta.is_applyed()) {
-      ait->arrange = a;
-      ait->meta.set_applyed();
+    if (std::holds_alternative<ui::element::measured>(ait->is)) {
+      ait->is = ui::element::placed{a};
     }
   };
 
   void apply_element(base_iterator el, units::ui::area a,
                      units::clip_id clipzone) {
-    tree::access_iterator ait{tree::shift(it, el)};
+    tree::access_iterator ait{iuic::tree::shift(it, el)};
 
     auto &veu = *ait;
 
     // make assert ??
-    if (not ait->meta.is_applyed()) {
-      ait->arrange = a;
-      ait->clipzone = clipzone;
-      ait->meta.set_applyed();
+    if (std::holds_alternative<ui::element::measured>(ait->is)) {
+      ait->is = ui::element::placed{a};
+      ait->clip = clipzone;
     }
   };
 
   units::clip_id make_clipzone() {
     if (tree::access_iterator ait{it};
-        ait &&
-        ait->clipzone != units::clip_id{std::numeric_limits<
-                             std::underlying_type_t<units::clip_id>>::max()}) {
-      return tenv.clip.make_clipzone(ait->arrange, ait->style, ait->clipzone);
+        ait && ait->clip != units::clip_id::null) {
+      return tenv.clip.make_clipzone(std::get<ui::element::placed>(ait->is),
+                                     tenv.style.get(ait->sid), ait->clip);
     } else {
-      return tenv.clip.make_clipzone(ait->arrange, ait->style);
+      return tenv.clip.make_clipzone(std::get<ui::element::placed>(ait->is),
+                                     tenv.style.get(ait->sid));
     }
   };
 
@@ -51,12 +49,13 @@ struct frame_utils : public utils_base {
 
   struct : utils::member_for<frame_utils> {
     const units::ui::adaptive::size &operator[](base_iterator el) {
-      return tree::access_iterator{tree::shift(self().it, el)}->measure;
+      return std::get<ui::element::measured>(
+          tree::access_iterator{iuic::tree::shift(self().it, el)}->is);
     };
   } measure{*this};
 
   const units::ui::area &self_area() const {
-    return (tree::access_iterator{it})->arrange;
+    return std::get<ui::element::placed>((tree::access_iterator{it})->is);
   };
 };
 }; // namespace iuic::layout::arrange

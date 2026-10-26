@@ -12,8 +12,6 @@ set(TEST_NAMES
     state
     # policy
     policy
-    # text
-    text
     # event ???
 )
 

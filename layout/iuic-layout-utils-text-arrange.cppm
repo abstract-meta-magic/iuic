@@ -8,17 +8,28 @@ import :utils.base;
 export namespace iuic::layout::arrange {
 
 struct text_utils : public utils_base {
-  text_utils(environment::tmp &tenv, text::decoded text_,
+  text_utils(environment::tmp &tenv, iuic::text::id text_,
              element_base_iterator it)
       : utils_base{tenv, it}, text{text_} {};
 
   const units::ui::area &self_area() const {
-    return (tree::access_iterator{it})->arrange;
+    return std::get<ui::element::placed>((tree::access_iterator{it})->is);
   };
 
-  text::decoded get_text() { return text; };
+  iuic::text::decoded get_text() {
+    return std::get<iuic::text::decoded>(tenv.text.get(text).value);
+  };
 
+  iuic::text::model::decoder get_decoder() {
+    return tenv.text.get(text).decoder;
+  };
+
+  iuic::text::model::profile get_profile() {
+    return tenv.text.get(text).profile;
+  };
+
+  // TODO: work with memory
 private:
-  text::decoded text;
+  iuic::text::id text;
 };
 }; // namespace iuic::layout::arrange

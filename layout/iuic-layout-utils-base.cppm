@@ -11,8 +11,8 @@ struct utils_base {
   using sibling_iterator =
       iuic::tree::sibling_iterator<iuic::tree::hierarchy::bfs>;
   using root_iterator = iuic::tree::root_iterator<iuic::tree::hierarchy::bfs>;
-  using element_base_iterator = tree_type::base_iterator;
-  using element_access_iterator = tree_type::access_iterator;
+  using element_base_iterator = tree::base_iterator;
+  using element_access_iterator = tree::access_iterator;
 
   utils_base(environment::tmp &tenv_, element_base_iterator it_)
       : tenv{tenv_}, it{it_} {}
@@ -21,14 +21,16 @@ struct utils_base {
 
   base_iterator parent() { return ++tree::root_iterator{it}; };
 
-  tree::iterator_range_for<tree::iterator_range_trait<sibling_iterator>>
+  iuic::tree::iterator_range_for<
+      iuic::tree::iterator_range_trait<sibling_iterator>>
   childs() {
     return {iuic::tree::childs_of(base_iterator{it})};
   };
 
   struct : utils::member_for<utils_base> {
     style::value operator[](base_iterator el) {
-      return element_access_iterator{tree::shift(self().it, el)}->style;
+      return self().tenv.style.get(
+          element_access_iterator{iuic::tree::shift(self().it, el)}->sid);
     };
   } style{*this};
 

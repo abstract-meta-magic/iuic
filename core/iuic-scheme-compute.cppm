@@ -8,7 +8,6 @@ import :scheme.base;
 
 namespace iuic::scheme {
 
-blueprint compute(sketch &sketch, environment::tmp &tenv,
-                  environment::persist &penv);
+bool compute(blueprint &bp, environment::tmp &tenv, environment::persist &penv);
 
 }; // namespace iuic::scheme

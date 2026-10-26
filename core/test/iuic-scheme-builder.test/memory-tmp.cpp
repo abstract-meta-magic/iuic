@@ -22,7 +22,7 @@ struct test_basic : iuic::test::unit<test_basic> {
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<scheme::sketch::value_t> tree;
+    tree::flat_unordered_type<ui::element> tree;
 
     scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
@@ -49,7 +49,7 @@ struct test_ex : iuic::test::unit<test_ex> {
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<scheme::sketch::value_t> tree;
+    tree::flat_unordered_type<ui::element> tree;
 
     scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 

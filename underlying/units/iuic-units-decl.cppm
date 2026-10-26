@@ -46,7 +46,9 @@ enum class weight : std::uint64_t {};
 
 enum class keycode : std::uint64_t {};
 
-enum class clip_id : std::uint64_t {};
+enum class clip_id : std::uint64_t {
+  null = std::numeric_limits<std::uint64_t>::max()
+};
 
 struct protocol_ptr_t {
   consteval protocol_ptr_t() noexcept : self{this} {};

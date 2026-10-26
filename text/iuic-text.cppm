@@ -17,3 +17,4 @@ export import :model;
 export import :model.profile;
 export import :model.decoder;
 export import :model.tool;
+export import :data;

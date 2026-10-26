@@ -20,7 +20,7 @@ concept builder_block_cpt = std::invocable<T, builder &>;
 
 struct builder_base {
   using insert_iterator =
-      tree::insert_iterator<tree::flat_unordered_type<sketch::value_t>>;
+      tree::insert_iterator<tree::flat_unordered_type<ui::element>>;
 
 public:
   struct unit_t {
@@ -79,9 +79,13 @@ struct builder_element_interface : protected virtual builder_base {
 
   void frame(style::sid, const layout::frame &) noexcept;
 
+  void text(const text::data &, iuic::style::sid, const layout::text &);
   /*
     Является конечной точкой.Отрисовка текста
   */
+  /*
+
+
   void text(const iuic::text::raw::token &token, iuic::style::sid sid,
             const layout::text &);
 
@@ -93,6 +97,7 @@ struct builder_element_interface : protected virtual builder_base {
 
   void text(std::span<const iuic::text::raw::token> tokens, units::uid uid,
             iuic::style::sid sid, const layout::text &);
+  */
 };
 
 struct builder_order_interface : protected virtual builder_base {
@@ -195,19 +200,6 @@ struct builder_event_interface : protected virtual builder_base {
   };
 
   // custom
-};
-
-struct builder_text_interface : protected virtual builder_base {
-  builder_text_interface(environment::tmp &tenv_, environment::persist &penv_,
-                         environment::domain &denv_, asset::catalog &assets,
-                         insert_iterator it_, struct builder &builder_)
-      : builder_base{penv_, tenv_, denv_, assets, it_, builder_} {}
-
-  // UTF-8
-  const text::raw::token &static_token(std::string_view, std::string_view);
-
-  // UTF-8
-  const text::raw::token &dynamic_token(std::string_view, std::string_view);
 };
 
 struct builder_style_interface : protected virtual builder_base {
@@ -325,7 +317,6 @@ export struct builder final : protected virtual builder_base,
                               private builder_uid_interface,
                               private builder_policy_interface,
                               private builder_memory_interface,
-                              private builder_text_interface,
                               private builder_event_interface,
                               private builder_style_interface,
                               private builder_asset_interface {
@@ -340,7 +331,6 @@ export struct builder final : protected virtual builder_base,
         builder_uid_interface{tenv, penv, denv, assets, it, *this},
         builder_policy_interface{tenv, penv, denv, assets, it, *this},
         builder_memory_interface{tenv, penv, denv, assets, it, *this},
-        builder_text_interface{tenv, penv, denv, assets, it, *this},
         builder_event_interface{tenv, penv, denv, assets, it, *this},
         builder_style_interface{tenv, penv, denv, assets, it, *this},
         builder_asset_interface{tenv, penv, denv, assets, it, *this} {};
@@ -352,7 +342,6 @@ export struct builder final : protected virtual builder_base,
   builder_memory_interface &memory{*this};
   builder_event_interface &event{*this};
   builder_style_interface &style{*this};
-  builder_text_interface &text{*this};
 
 public: // public forward decl
   builder(const builder &) = delete;
@@ -372,15 +361,16 @@ struct director {
            environment::domain &denv_, asset::catalog &assets_)
       : tenv{tenv_}, penv{penv_}, denv{denv_}, assets{assets_} {};
 
-  sketch make(units::ui::size viewport, std::invocable<builder &> auto &&call) {
+  blueprint make(units::ui::size viewport,
+                 std::invocable<builder &> auto &&call) {
     tenv.meta.viewport_size = viewport;
-    tree::flat_unordered_type<sketch::value_t> tree;
+    tree::flat_unordered_type<ui::element> tree;
 
     builder b{penv, tenv, denv, assets, {tree.root()}};
 
     call(b);
 
-    return sketch{tree::move_iterator{tree.root()}};
+    return blueprint{tree::move_iterator{tree.root()}};
   };
 
 private:
@@ -399,14 +389,19 @@ void builder_element_interface::frame(style::sid sid_,
   auto ait = tree::access_iterator{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(sketch::value_t{
-      .layout = &layout,
+
+  // ~~~
+  auto nit = it.at(ui::element{
+      .type = &layout,
+      .is = ui::element::maked{},
       .uid = ait ? ait->uid : units::uid{0},
       .sid = sid_,
       .order = ait ? units::ui::order{global_index++, ait->order.layer,
                                       ait->order.priority}
                    : units::ui::order{global_index++, 0, 0},
-      .text = {}});
+      .clip = units::clip_id::null,
+      .text = text::id::null,
+  });
 
   std::swap(nit, it);
 
@@ -427,14 +422,17 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
   auto ait = tree::access_iterator{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(sketch::value_t{
-      .layout = &layout_,
+  auto nit = it.at(ui::element{
+      .type = &layout_,
+      .is = ui::element::maked{},
       .uid = uid_,
       .sid = sid_,
       .order = ait ? units::ui::order{global_index++, ait->order.layer,
                                       ait->order.priority}
                    : units::ui::order{global_index++, 0, 0},
-      .text = {}});
+      .clip = units::clip_id::null,
+      .text = text::id::null,
+  });
 
   std::swap(nit, it);
   ++current_deep;
@@ -453,14 +451,17 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
   auto ait = tree::access_iterator{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(sketch::value_t{
-      .layout = &layout_,
+  auto nit = it.at(ui::element{
+      .type = &layout_,
+      .is = ui::element::maked{},
       .uid = uid_,
       .sid = sid_,
       .order = ait ? units::ui::order{global_index++, ait->order.layer,
                                       ait->order.priority}
                    : units::ui::order{global_index++, 0, 0},
-      .text = {}});
+      .clip = units::clip_id::null,
+      .text = text::id::null,
+  });
 };
 
 void builder_element_interface::frame(style::sid sid_,
@@ -469,60 +470,40 @@ void builder_element_interface::frame(style::sid sid_,
   auto ait = tree::access_iterator{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(sketch::value_t{
-      .layout = &layout_,
+  auto nit = it.at(ui::element{
+      .type = &layout_,
+      .is = ui::element::maked{},
       .uid = ait ? ait->uid : units::uid{0},
       .sid = sid_,
       .order = ait ? units::ui::order{global_index++, ait->order.layer,
                                       ait->order.priority}
                    : units::ui::order{global_index++, 0, 0},
-      .text = {}});
-};
-
-void builder_element_interface::text(const iuic::text::raw::token &token,
-                                     iuic::style::sid sid_,
-
-                                     const layout::text &layout_) {
-  auto ait = tree::access_iterator{it};
-  text(token, (ait ? ait->uid : units::uid{0}), sid_, layout_);
-};
-
-void builder_element_interface::text(const iuic::text::raw::token &token,
-                                     iuic::units::uid uid_,
-                                     iuic::style::sid sid_,
-                                     const layout::text &layout_) {
-  auto ait = tree::access_iterator{it};
-
-  // if not insert ?
-  ++deep_index.at(current_deep).position;
-  auto nit = it.at(sketch::value_t{
-      .layout = &layout_,
-      .uid = uid_,
-      .sid = sid_,
-      .order = ait ? units::ui::order{global_index++, ait->order.priority,
-                                      ait->order.layer}
-                   : units::ui::order{global_index++, 0, 0},
-      .text = {&token, 1} // SINGLE TOKEN SPAN
+      .clip = units::clip_id::null,
+      .text = text::id::null,
   });
 };
 
-void builder_element_interface::text(
-    std::span<const iuic::text::raw::token> tokens, iuic::style::sid sid_,
-    const layout::text &layout_) {
+void builder_element_interface::text(const text::data &data,
+                                     iuic::style::sid sid,
+                                     const layout::text &layout) {
+
   auto ait = tree::access_iterator{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(sketch::value_t{
-      .layout = &layout_,
+
+  auto nit = it.at(ui::element{
+      .type = &layout,
+      .is = ui::element::maked{},
       .uid = ait ? ait->uid : units::uid{0},
-      .sid = iuic::style::sid{0},
-      .order = ait ? units::ui::order{global_index++, ait->order.priority,
-                                      ait->order.layer}
+      .sid = sid,
+      .order = ait ? units::ui::order{global_index++, ait->order.layer,
+                                      ait->order.priority}
                    : units::ui::order{global_index++, 0, 0},
-      .text = tokens
-
+      .clip = units::clip_id::null,
+      .text = tenv.text.push(data),
   });
 };
+
 // ---- IMPL [uid] ----
 
 units::uid
@@ -749,86 +730,6 @@ bool builder_memory_interface::persist_proxy<T>::init_if_not(auto &&call) {
   return false;
 };
 
-// ---- IMPL [text] ----
-const text::raw::token &
-builder_text_interface::static_token(std::string_view text,
-                                     std::string_view font) {
-  struct data {
-    text::raw::token token;
-    std::vector<iuic::text::glyph::id_t> memory;
-  };
-
-  static text::raw::token inv{.atlas_id = text::atlas::invalid_id};
-  static std::unordered_map<text::atlas::id,
-                            std::unordered_map<std::string, data>>
-      cache;
-  auto &atlas = text::atlas::by_name(font);
-  auto id = atlas.get_id();
-
-  if (atlas.get_id() == text::atlas::invalid_id || text.size() > 50) {
-    return inv;
-  }
-
-  if (atlas.decoder->capabilities().is_std_char_support()) {
-    if (auto map = cache.find(id); map != cache.end()) {
-      if (auto token = map->second.find(std::string{text});
-          token != map->second.end()) {
-        return token->second.token;
-      }
-    }
-    // wrap to try-block ??
-    auto res = atlas.decoder->decode(text); // exceptions
-
-    text::raw::token tk{.atlas_id = id, .glyphs = res};
-
-    auto it = cache[id].insert({std::string{text}, {}});
-
-    if (it.second) {
-      auto &d = it.first->second;
-      d.memory = res;
-      d.token.atlas_id = id;
-      d.token.glyphs = d.memory;
-    }
-
-    return it.first->second.token;
-  }
-
-  return inv;
-};
-
-// UTF-8
-const text::raw::token &
-builder_text_interface::dynamic_token(std::string_view text,
-                                      std::string_view font) {
-  static text::raw::token inv{.atlas_id = text::atlas::invalid_id};
-
-  auto &atlas = text::atlas::by_name(font);
-
-  if (atlas.get_id() == text::atlas::invalid_id || text.size() > 50) {
-    return inv;
-  }
-
-  if (atlas.decoder->capabilities().is_std_char_support()) {
-    auto res = atlas.decoder->decode(text); // exceptions
-
-    text::raw::token &tk_mem = tenv.memory.allocate<text::raw::token>()[0];
-
-    auto gl_mem = tenv.memory.allocate<text::glyph::id_t>(res.size());
-
-    if (not gl_mem.empty()) {
-      for (std::size_t i{0}; i < res.size(); ++i) {
-        gl_mem[i] = res[i];
-      }
-    }
-
-    tk_mem.atlas_id = atlas.get_id();
-    tk_mem.glyphs = gl_mem;
-
-    return tk_mem;
-  }
-
-  return inv;
-};
 // ---- IMPL [policy] ----
 
 void builder_policy_interface::set(units::uid uid, auto p) {

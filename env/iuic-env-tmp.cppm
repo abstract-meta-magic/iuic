@@ -4,8 +4,10 @@
 export module iuic.env:tmp;
 import std;
 import iuic.underlying;
+import iuic.asset;
 import iuic.state;
 import iuic.style;
+import iuic.text;
 import iuic.event;
 export import :tmp.exception;
 import :tmp.policy;
@@ -14,6 +16,7 @@ import :tmp.style;
 namespace iuic::environment {}; // namespace iuic::environment
 
 export namespace iuic::environment {
+
 struct tmp {
   event::hub event;
 
@@ -56,6 +59,30 @@ struct tmp {
     std::vector<clipzone_t> zone;
   } clip;
 
+  struct : advance::interface {
+    text::data &get(text::id id) { return data.at(std::to_underlying(id)); };
+
+    const text::data &get(text::id id) const {
+      return data.at(std::to_underlying(id));
+    };
+
+    text::id push(text::data &&text) {
+      data.push_back(std::move(text));
+      return text::id{data.size() - 1};
+    };
+
+    text::id push(const text::data &text) {
+      data.push_back(std::move(text));
+      return text::id{data.size() - 1};
+    };
+
+  private: // Advance
+    void advance() override { data.clear(); };
+
+  private:
+    std::vector<text::data> data;
+  } text;
+
   struct {
     units::ui::size viewport_size{units::upixel{0}, units::upixel{0}};
     units::upixel segment_size{4};
@@ -73,4 +100,5 @@ public: // BIG-V
   tmp operator=(tmp &&) = delete;
   ~tmp() {};
 };
+
 }; // namespace iuic::environment

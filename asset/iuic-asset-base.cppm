@@ -9,7 +9,9 @@ namespace iuic::asset {
 
 struct callback_handl {};
 
-export enum class instance_id : std::uint64_t {};
+export enum class instance_id : std::uint64_t {
+  null = std::numeric_limits<std::uint64_t>::max()
+};
 
 export constexpr instance_id invalid_id{
     std::numeric_limits<std::uint64_t>::max()};

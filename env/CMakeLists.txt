@@ -26,6 +26,7 @@ target_link_libraries(${PROJECT_NAME}_env
 	iuic::underlying
 	iuic::state
 	iuic::style
+	iuic::text
 	iuic::events
 )
 

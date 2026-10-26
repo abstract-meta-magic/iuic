@@ -32,7 +32,7 @@ export struct explorer : base {
     };
 
     const units::ui::area &area(iterators::base it) {
-      return self().get_element(it).area;
+      return std::get<ui::element::placed>(self().get_element(it).is);
     };
 
     template <typename T> T policy(iterators::base it) {
@@ -41,8 +41,9 @@ export struct explorer : base {
 
     units::uid uid(iterators::base it) { return self().get_element(it).uid; };
 
-    std::span<const text::present::token> text(iterators::base it) {
-      return self().get_element(it).text;
+    // TODO: mb wrap ??
+    const text::data &text(iterators::base it) {
+      return self().tenv->text.get(self().get_element(it).text);
     };
 
     auto clipzone() { return self().tenv->clip; };
@@ -53,18 +54,19 @@ export struct explorer : base {
     bool is_virtualized(iterators::base it) {
       auto &el = self().get_element(it);
 
-      return el.meta.has(el.meta.virtualized);
+      return std::holds_alternative<ui::element::virtualized>(el.is);
     };
 
     bool is_discarded(iterators::base it) {
       auto &el = self().get_element(it);
 
-      return el.meta.has(el.meta.discarded);
+      return std::holds_alternative<ui::element::discarded>(el.is);
     }
 
     bool has_text(iterators::base it) {
-      return not self().get_element(it).text.empty();
+      return self().get_element(it).text != text::id::null;
     };
+
   } traits{*this};
 
   struct : utils::member_for<explorer> {
@@ -107,8 +109,8 @@ export struct explorer : base {
   private:
     bool eval(scheme::iterators::base it, query::valid_t t) {
       auto &el = self().get_element(it);
-      return not(el.meta.has(el.meta.discarded) ||
-                 el.meta.has(el.meta.virtualized));
+      return not(std::holds_alternative<ui::element::discarded>(el.is) ||
+                 std::holds_alternative<ui::element::virtualized>(el.is));
     };
 
     bool eval(scheme::iterators::base it, query::state t) {
@@ -124,7 +126,7 @@ export struct explorer : base {
         return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
       };
 
-      return in__(t.point, el.area.bordered);
+      return in__(t.point, std::get<ui::element::placed>(el.is).bordered);
     };
 
     template <typename EXPR>
@@ -244,7 +246,7 @@ private:
     return tree::access_iterator{tree::shift(begin_, it)}->sid;
   };
 
-  const bp_element &get_element(iterators::base it) {
+  const ui::element &get_element(iterators::base it) {
     return *tree::const_access_iterator{tree::shift(begin_, it)};
   }
 

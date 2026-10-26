@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME}_text PUBLIC
 	"iuic-text-model-profile.cppm"
 	"iuic-text-model-decoder.cppm"
 	"iuic-text-model-tool.cppm"
+	"iuic-text-data.cppm"
 	"iuic-text.cppm"
 )
 
@@ -25,6 +26,7 @@ endif()
 target_link_libraries(${PROJECT_NAME}_text 
 	PUBLIC
 	iuic::underlying
+	iuic::asset
 )
 
 target_compile_features(${PROJECT_NAME}_text

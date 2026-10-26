@@ -77,9 +77,9 @@ void context::make(units::ui::size vp, units::upixel seg,
 
   scheme::director d{tenv, penv, denv, asset_};
 
-  auto sketch = d.make(vp, std::forward<decltype(call)>(call));
+  blueprint = d.make(vp, std::forward<decltype(call)>(call));
 
-  blueprint = scheme::compute(sketch, tenv, penv);
+  scheme::compute(blueprint, tenv, penv);
 
   scheme = {blueprint.begin(), &asset_, &tenv, &penv};
 };

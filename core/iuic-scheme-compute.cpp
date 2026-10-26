@@ -58,47 +58,45 @@ calc_root_child_area(const units::ui::adaptive::size &m, style::value style,
   return res;
 };
 
-void measure(environment::tmp &tenv, scheme::sketch &sketch,
-             layout::tree_type &tree) {
+void measure(environment::tmp &tenv, scheme::blueprint &bp) {
 
-  auto range = tree::iterator_range_for{
-      sketch, tree::iterator_type<tree::base_iterator>{},
-      tree::tag::reverse_levelorder{}};
+  auto range =
+      tree::iterator_range_for{bp, tree::iterator_type<tree::base_iterator>{},
+                               tree::tag::reverse_levelorder{}};
 
   for (auto el : range) {
-    auto sk_ait = tree::access_iterator{el};
-    auto tree_ait = tree::access_iterator{tree::shift(tree.begin(), el)};
+    auto ait = tree::access_iterator{el};
 
     std::visit(
         [&](auto obj) {
           if constexpr (std::same_as<decltype(obj), const layout::frame *>) {
 
             if (auto res = obj->measure(layout::measure::frame_utils{
-                    tenv, tree::base_iterator{tree_ait}})) {
-              tree_ait->measure = res.value();
+                    tenv, tree::base_iterator{ait}})) {
+              ait->is = ui::element::measured{res.value()};
             } else {
-              tree_ait->meta.set_discarded();
+              ait->is = ui::element::discarded{};
+              return;
+            };
+          } else if constexpr (std::same_as<decltype(obj),
+                                            const layout::text *>) {
+            if (auto res = obj->measure(layout::measure::text_utils{
+                    tenv, ait->text, tree::base_iterator{ait}})) {
+              ait->is = ui::element::measured{res.value()};
+            } else {
+              ait->is = ui::element::discarded{};
               return;
             };
           } else {
-            if (auto res = obj->measure(layout::measure::text_utils{
-                    tenv, sk_ait->text, tree::base_iterator{tree_ait}})) {
-              tree_ait->measure = res.value();
-              tree_ait->meta.set_text_mark();
-            } else {
-              tree_ait->meta.set_discarded();
-              return;
-            };
+            ait->is = ui::element::discarded{};
           };
-          tree_ait->meta.set_measured();
         },
-        sk_ait->layout);
+        ait->type);
   };
 };
 
-void arrange_root(environment::tmp &tenv, scheme::sketch &sketch,
-                  layout::tree_type &tree) {
-  auto root_ch = tree::childs_of(sketch.root());
+void arrange_root(environment::tmp &tenv, scheme::blueprint &bp) {
+  auto root_ch = tree::childs_of(bp.root());
 
   iuic::units::ui::position cursor{units::pixel{0}, units::pixel{0}};
   iuic::units::upixel margin{0};
@@ -106,68 +104,66 @@ void arrange_root(environment::tmp &tenv, scheme::sketch &sketch,
   for (auto el : tree::iterator_range_for{
            root_ch, tree::iterator_type<tree::base_iterator>{}}) {
     // DO JOB
-    auto sk_ait = tree::access_iterator{el};
-    auto tree_ait = tree::access_iterator{tree::shift(tree.begin(), el)};
+    auto ait = tree::access_iterator{el};
 
-    auto area =
-        calc_root_child_area(tree_ait->measure, tree_ait->style,
-                             tenv.meta.viewport_size, tenv.meta.segment_size);
+    auto area = calc_root_child_area(
+        std::get<ui::element::measured>(ait->is), tenv.style.get(ait->sid),
+        tenv.meta.viewport_size, tenv.meta.segment_size);
 
     area.bordered.y = area.bordered.y + cursor.y;
     area.borderless.y = area.borderless.y + cursor.y;
 
     // TODO : calc margin
 
-    tree_ait->arrange = area;
-    tree_ait->meta.set_applyed();
+    ait->is = ui::element::placed{area};
 
     cursor.y = cursor.y + area.bordered.h;
   };
 };
 
-void arrange(environment::tmp &tenv, scheme::sketch &sketch,
-             layout::tree_type &tree) {
-
-  arrange_root(tenv, sketch, tree);
+void arrange(environment::tmp &tenv, scheme::blueprint &bp) {
+  arrange_root(tenv, bp);
 
   for (auto el : tree::iterator_range_for{
-           sketch, tree::iterator_type<tree::base_iterator>{}}) {
-    auto sk_ait = tree::access_iterator{el};
-    auto tree_ait = tree::access_iterator{tree::shift(tree.begin(), el)};
+           bp, tree::iterator_type<tree::base_iterator>{}}) {
+    auto ait = tree::access_iterator{el};
 
     // TODO : DISCARTED | VIRTUALIZED
-    if (tree_ait->meta.is_discarded() || not tree_ait->meta.is_applyed()) {
-      tree_ait->meta.set_discarded();
+    if (std::holds_alternative<ui::element::measured>(ait->is)) {
+      ait->is = ui::element::discarded{};
 
       for (auto ch : tree::iterator_range_for{
-               tree::childs_of(tree_ait),
+               tree::childs_of(ait),
                tree::iterator_type<tree::access_iterator>{}}) {
-        ch->meta.set_discarded();
+        ch->is = ui::element::discarded{};
       };
       continue;
+    } else if (std::holds_alternative<ui::element::virtualized>(ait->is)) {
+      // TODO: work
     };
 
     std::visit(
         [&](auto obj) {
           if constexpr (std::same_as<decltype(obj), const layout::frame *>) {
-            if (iuic::tree::root_iterator rit{tree_ait}; ++rit) {
-              tree_ait->clipzone = iuic::tree::access_iterator{rit}->clipzone;
+            if (iuic::tree::root_iterator rit{ait}; ++rit) {
+              ait->clip = iuic::tree::access_iterator{rit}->clip;
             }
 
             if (not obj->arrange(iuic::layout::arrange::frame_utils{
-                    tenv, tree::base_iterator{tree_ait}})) {
-              tree_ait->meta.set_discarded();
+                    tenv, tree::base_iterator{ait}})) {
+              ait->is = ui::element::discarded{};
               return;
             };
           } else {
-            auto res = obj->arrange(iuic::layout::arrange::text_utils{
-                tenv, sk_ait->text, tree::base_iterator{tree_ait}});
-            tree_ait->text = res; // check empty ???
+            if (auto res = obj->arrange(iuic::layout::arrange::text_utils{
+                    tenv, ait->text, tree::base_iterator{ait}})) {
+              tenv.text.get(ait->text).value = res.value();
+            } else {
+              ait->is = ui::element::discarded{};
+            }
           }
-
-          tree_ait->meta.set_arranged();
         },
-        tree::access_iterator{el}->layout);
+        tree::access_iterator{el}->type);
   };
 };
 
@@ -175,38 +171,12 @@ void arrange(environment::tmp &tenv, scheme::sketch &sketch,
 
 namespace iuic::scheme {
 
-blueprint compute(sketch &sketch, environment::tmp &tenv,
-                  environment::persist &penv) {
-  layout::tree_type layout_tree{
-      sketch.reflect([&](const sketch::value_t &el) -> layout::element {
-        return {.style = tenv.style.get(el.sid)};
-      })};
+bool compute(blueprint &bp, environment::tmp &tenv,
+             environment::persist &penv) {
 
-  measure(tenv, sketch, layout_tree);
-  arrange(tenv, sketch, layout_tree);
+  measure(tenv, bp);
+  arrange(tenv, bp);
 
-  // resolve
-  // TODO : optimize
-  auto b = sketch.reflect([](sk_element sk) -> bp_element {
-    return {.uid = sk.uid, .sid = sk.sid, .order = sk.order};
-  });
-
-  for (auto el : tree::iterator_range_for{
-           layout_tree, tree::iterator_type<tree::base_iterator>{}}) {
-    tree::access_iterator{tree::shift(b.begin(), el)}->area =
-        tree::access_iterator{el}->arrange;
-    {
-      // BAG
-      // TODO : copy meta
-      auto &c_meta = tree::access_iterator{tree::shift(b.begin(), el)}->meta;
-      auto &bp_meta = tree::access_iterator{el}->meta;
-      c_meta.set(c_meta.discarded, bp_meta.is_discarded());
-    }
-
-    tree::access_iterator{tree::shift(b.begin(), el)}->text =
-        tree::access_iterator{el}->text;
-  };
-
-  return b;
+  return true;
 };
 }; // namespace iuic::scheme

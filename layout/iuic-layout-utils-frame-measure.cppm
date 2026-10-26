@@ -12,7 +12,8 @@ struct frame_utils : public utils_base {
 
   struct : utils::member_for<frame_utils> {
     const units::ui::adaptive::size &operator[](base_iterator el) {
-      return tree::access_iterator{iuic::tree::shift(self().it, el)}->measure;
+      return std::get<ui::element::measured>(
+          tree::access_iterator{iuic::tree::shift(self().it, el)}->is);
     };
   } measure{*this};
 };

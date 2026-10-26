@@ -9,59 +9,31 @@ import iuic.style;
 
 export namespace iuic::layout {
 
-struct element {
-  units::ui::adaptive::size measure;
-  units::ui::area arrange;
-  text::present text;
-  style::value style;
-  units::clip_id clipzone{
-      std::numeric_limits<std::underlying_type_t<units::clip_id>>::max()};
+struct frame;
+struct text;
+}; // namespace iuic::layout
 
-  struct meta {
-    void set_discarded() { value.set(static_cast<int>(map::discarded), true); };
+namespace iuic::ui {
 
-    void set_virtualized() {
-      value.set(static_cast<int>(map::virtualized), true);
-    };
-
-    void set_text_mark() { value.set(static_cast<int>(map::text_mark), true); };
-
-    void set_applyed() { value.set(static_cast<int>(map::applyed), true); };
-
-    void set_measured() { value.set(static_cast<int>(map::measured), true); };
-
-    void set_arranged() { value.set(static_cast<int>(map::arranged), true); };
-
-    bool is_discarded() {
-      return value.test(static_cast<int>(map::discarded));
-    };
-
-    bool is_virtualized() {
-      return value.test(static_cast<int>(map::virtualized));
-    };
-
-    bool is_applyed() { return value.test(static_cast<int>(map::applyed)); };
-
-    bool is_measured() { return value.test(static_cast<int>(map::measured)); };
-
-    bool is_arranged() { return value.test(static_cast<int>(map::arranged)); };
-
-    bool is_text() { return value.test(static_cast<int>(map::text_mark)); };
-
-  private:
-    enum class map {
-      discarded = 0,
-      text_mark,
-      virtualized,
-      measured,
-      applyed,
-      arranged,
-      size__,
-    };
-    std::bitset<static_cast<std::size_t>(map::size__)> value{0};
-  } meta;
+export struct element {
+  struct maked {};
+  struct discarded {};
+  struct virtualized {};
+  struct measured : units::ui::adaptive::size {};
+  struct placed : units::ui::area {};
+  std::variant<const layout::frame *, const layout::text *> type;
+  std::variant<maked, measured, placed, discarded, virtualized> is;
+  units::uid uid;
+  style::sid sid;
+  units::ui::order order;
+  units::clip_id clip{units::clip_id::null};
+  text::id text{text::id::null};
 };
 
-using tree_type = ::iuic::tree::flat_bfs_type<element>;
+}; // namespace iuic::ui
 
-}; // namespace iuic::layout
+export namespace iuic::layout {
+
+using tree = ::iuic::tree::flat_bfs_type<ui::element>;
+
+};

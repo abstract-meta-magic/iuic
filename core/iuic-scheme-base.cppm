@@ -23,35 +23,7 @@ protected:
   environment::persist *penv;
 };
 
-struct sk_element {
-  std::variant<const layout::frame *, const layout::text *> layout;
-  units::uid uid;
-  style::sid sid;
-  units::ui::order order;
-  std::span<const text::raw::token> text;
-};
-
-struct bp_element {
-  units::ui::area area;
-  units::uid uid;
-  style::sid sid;
-  units::ui::order order;
-  std::span<const text::present::token> text;
-  struct {
-    enum flag { discarded = 0, virtualized, text, measure, applied, arrange };
-
-    void set(flag f, bool value_ = true) { value.set(f, value_); };
-
-    bool has(flag f) const { return value.test(f); }
-
-  private:
-    std::bitset<8> value{};
-  } meta;
-};
-
-using sketch = tree::flat_bfs_type<sk_element>;
-
-using blueprint = tree::flat_bfs_type<bp_element>;
+using blueprint = tree::flat_bfs_type<ui::element>;
 
 export namespace iterators {
 

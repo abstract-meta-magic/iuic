@@ -25,7 +25,7 @@ struct test_persist : iuic::test::unit<test_persist> {
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<scheme::sketch::value_t> tree;
+    tree::flat_unordered_type<ui::element> tree;
 
     scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
