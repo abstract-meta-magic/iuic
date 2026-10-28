@@ -28,6 +28,8 @@ struct text_utils : public utils_base {
     return tenv.text.get(text).profile;
   };
 
+  iuic::units::upixel get_height() { return tenv.text.get(text).height; };
+
   // TODO: work with memory
 private:
   iuic::text::id text;

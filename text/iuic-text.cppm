@@ -8,7 +8,7 @@ TODO : MAKE THEM ALL CONSTEXPR IN C++26
 TODO : REWORK MEMORY MODEL
 */
 export module iuic.text;
-import :base;
+export import :base;
 export import :decoded;
 export import :decoded.tool;
 export import :present;

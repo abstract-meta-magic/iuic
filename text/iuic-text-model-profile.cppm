@@ -51,11 +51,13 @@ struct model::profile::tool {
     block.context.reserve(m.block->context.size());
     block.context.assign(m.block->context.size(), lmid::null);
   };
-  cmid create_metrics_for_cell(metrics::cell m = {}) {
+
+  cmid create_metrics_for_glyph(metrics::cell m = {}) {
     block.cell_metrics.push_back(m);
     return cmid{block.cell_metrics.size() - 1};
   };
-  lmid create_metrics_for_layout(metrics::layout m = {}) {
+
+  lmid create_metrics_for_context(metrics::layout m = {}) {
     block.layout_metrics.push_back(m);
     return lmid{block.layout_metrics.size() - 1};
   };

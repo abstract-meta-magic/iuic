@@ -20,6 +20,7 @@ export struct data {
   struct corrupted {};
   struct null {};
   std::variant<decoded, present, corrupted, null> value;
+  units::upixel height;
   model::decoder decoder;
   model::profile profile;
   asset::instance_id asset;

@@ -14,7 +14,10 @@ import :bind;
 
 namespace iuic::asset {
 
-export using any = std::variant<declaration, static_instance, instance_id>;
+export struct null {};
+
+export using any =
+    std::variant<null, declaration, static_instance, instance_id>;
 
 struct definition_record {
   definition def;

@@ -95,6 +95,9 @@ struct advanced {
     units::ui::adaptive::size min_size{units::ui::none{}, units::ui::none{}},
         max_size{units::ui::none{}, units::ui::none{}};
 
+    units::ui::adaptive::unit font_min_height{units::ui::none{}},
+        font_max_size{units::ui::none{}};
+
     units::ui::indent padding{units::ui::none{}, units::ui::none{},
                               units::ui::none{}, units::ui::none{}};
 
@@ -120,10 +123,9 @@ struct advanced {
   } shape;
 
   struct {
-    units::pixel height;
-
-    // name\famaly ?
-  } text;
+    units::upixel height; // TODO: to adaptive unit
+    asset::any asset;
+  } font;
 };
 
 struct decl {

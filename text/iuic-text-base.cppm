@@ -43,11 +43,14 @@ export enum struct lsgid : std::uint64_t {
 export enum class eid : std::uint64_t {
   null = std::numeric_limits<std::uint64_t>::max()
 };
+
 // Cell metrics ID
+// TODO: rename to glyph metrics ID
 export enum class cmid : std::uint64_t {
   null = std::numeric_limits<std::uint64_t>::max()
 };
 // Layout metrics ID
+// TODO: rename to context metrics ID
 export enum class lmid : std::uint64_t {
   null = std::numeric_limits<std::uint64_t>::max()
 };

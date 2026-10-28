@@ -26,8 +26,8 @@ auto model = [](iuic::text::model::tool mt) {
 
 auto profile = [](iuic::text::model::profile::tool mpt) {
   auto cell_metrics =
-      mpt.create_metrics_for_cell({.width = 0.6, .baseline = 0.8});
-  auto layout_metrics = mpt.create_metrics_for_layout();
+      mpt.create_metrics_for_glyph({.width = 0.6, .baseline = 0.8});
+  auto layout_metrics = mpt.create_metrics_for_context();
 
   for (auto g : model.glyph_range()) {
     mpt.link_with(g, cell_metrics);

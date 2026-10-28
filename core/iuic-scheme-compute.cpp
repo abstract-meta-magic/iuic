@@ -104,6 +104,11 @@ void arrange_root(environment::tmp &tenv, scheme::blueprint &bp) {
     // DO JOB
     auto ait = tree::access_iterator{el};
 
+    if (not std::holds_alternative<ui::element::measured>(ait->is)) {
+      // TODO: normal handling
+      continue;
+    }
+
     auto area = calc_root_child_area(
         std::get<ui::element::measured>(ait->is), tenv.style.get(ait->sid),
         tenv.meta.viewport_size, tenv.meta.segment_size);
@@ -160,6 +165,7 @@ void arrange(environment::tmp &tenv, scheme::blueprint &bp) {
               tenv.text.get(ait->text).value = res.value();
             } else {
               ait->is = ui::element::discarded{};
+              tenv.text.get(ait->text).value = text::data::corrupted{};
             }
           }
         },

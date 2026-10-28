@@ -114,6 +114,10 @@ export struct segment {
 
   gcid at(std::size_t I) const { return seq->segments_context_sequence.at(I); };
 
+  std::size_t size() const {
+    return seq->segments[index].end - seq->segments[index].begin;
+  };
+
   // TODO: need local pos ???
   // std::size_t local_position_of(std::size_t g) const;
 

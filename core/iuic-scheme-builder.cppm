@@ -290,6 +290,31 @@ struct builder_asset_interface : protected virtual builder_base {
     return false;
   };
 
+  bool try_visit_instance(asset::any iid,
+                          func::as<void(const asset::instance &)> auto &&func) {
+
+    std::visit(
+        [&]<typename type>(const type &obj) {
+          if constexpr (std::same_as<type, asset::declaration>) {
+            return assets.try_visit_instance(
+                assets.get_default_instance(obj),
+                std::forward<decltype(func)>(func));
+          } else if constexpr (std::same_as<type, asset::static_instance>) {
+            return assets.try_visit_instance(
+                assets.get_static_instance(obj),
+                std::forward<decltype(func)>(func));
+          } else if constexpr (std::same_as<type, asset::instance_id>) {
+            return assets.try_visit_instance(
+                obj, std::forward<decltype(func)>(func));
+          } else {
+            return false;
+          }
+        },
+        iid);
+
+    return false;
+  };
+
   void remove_dynamic_instance(asset::instance_id iid) {
     if (assets.is_dynamic(iid)) {
       assets.remove_instance(iid);
@@ -342,6 +367,7 @@ export struct builder final : protected virtual builder_base,
   builder_memory_interface &memory{*this};
   builder_event_interface &event{*this};
   builder_style_interface &style{*this};
+  builder_asset_interface &asset{*this};
 
 public: // public forward decl
   builder(const builder &) = delete;

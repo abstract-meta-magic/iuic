@@ -24,6 +24,7 @@ struct utils_base {
   iuic::tree::iterator_range_for<
       iuic::tree::iterator_range_trait<sibling_iterator>>
   childs() {
+    // TODO: ignore invalid childs
     return {iuic::tree::childs_of(base_iterator{it})};
   };
 

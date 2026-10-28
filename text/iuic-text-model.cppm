@@ -257,6 +257,9 @@ public: // Access
     return block->meta[std::to_underlying(m)];
   };
 
+public: // CTOR
+  model() noexcept {};
+
 private:
   block_t block;
 };

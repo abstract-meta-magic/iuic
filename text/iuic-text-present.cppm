@@ -118,9 +118,14 @@ export struct placement {
 
   eid get_expansion() const { return seq->placements[index].expansion; };
 
-  range_t range();
+  range_t range() { return range_t{seq, index}; };
 
-  index_range_t index_range();
+  index_range_t index_range() { return index_range_t{seq, index}; };
+
+  std::size_t size() const {
+    return seq->placements[index].range.end -
+           seq->placements[index].range.begin;
+  };
 
 private:
   const present_sequence *seq;
