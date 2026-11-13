@@ -125,7 +125,6 @@ void arrange_root(environment::tmp &tenv, layout::tree &bp) {
 
     cursor.y = cursor.y + area.bordered.h;
   };
-  std::get<ui::element::placed>(iterator::access{bp.begin()}->is);
 };
 
 void arrange(environment::tmp &tenv, layout::tree &bp) {

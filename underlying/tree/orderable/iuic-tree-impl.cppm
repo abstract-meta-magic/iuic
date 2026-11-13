@@ -125,6 +125,8 @@ struct orderable : protected basic_orderable<T, index_t> {
   void clear() {
     this->data.clear();
     this->hierarchy.clear();
+    this->root_.ch_first = this->npos;
+    this->root_.ch_last = this->npos;
   };
 
 public: // CTORS

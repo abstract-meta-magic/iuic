@@ -162,8 +162,7 @@ template <> struct organizer<iuic::tree::order::postorder_t> {
       index_t insert_index = res.hierarchy.size();
 
       if (up) {
-        siblings.pop_back();
-        auto &self_siblings = siblings.back();
+        auto &self_siblings = siblings.at(siblings.size() - 2);
 
         res.hierarchy.push_back({.left = self_siblings.last,
                                  .ch_first = sib.first,
@@ -173,7 +172,8 @@ template <> struct organizer<iuic::tree::order::postorder_t> {
         if (sib.first != npos) {
           auto range = sib;
           ++range.last;
-          for (; range.first < range.last; ++range.first) {
+          for (; range.first < npos;
+               range.first = res.hierarchy[range.first].right) {
             res.hierarchy[range.first].parent = insert_index;
           }
         }
@@ -186,7 +186,9 @@ template <> struct organizer<iuic::tree::order::postorder_t> {
           res.hierarchy[self_siblings.last].right = insert_index;
         }
 
+        // finalize
         self_siblings.last = insert_index;
+        siblings.pop_back();
 
       } else {
         auto &sib = siblings.back();
