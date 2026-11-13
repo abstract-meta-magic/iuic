@@ -171,7 +171,6 @@ template <> struct organizer<iuic::tree::order::postorder_t> {
 
         if (sib.first != npos) {
           auto range = sib;
-          ++range.last;
           for (; range.first < npos;
                range.first = res.hierarchy[range.first].right) {
             res.hierarchy[range.first].parent = insert_index;

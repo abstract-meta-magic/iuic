@@ -10,53 +10,60 @@ namespace {
 struct test : iuic::test::unit<test> {
   using tree_t = iuic::tree::orderable<int>;
   static constexpr std::string_view name{"iuic::tree[orderable]"};
-  static constexpr std::size_t execute_times{8};
+  static constexpr std::size_t execute_times{60};
 
-  static tree_t generate_tree() {
+  static tree_t generate_tree(std::size_t seed) {
     iuic::tree::orderable<int> res;
-    auto seed = std::random_device{}();
     std::mt19937 device{seed};
-    std::uniform_int_distribution<int> rng{0, 4};
+    int gen_count{std::uniform_int_distribution<int>{40, 260}(device)};
+    std::uniform_int_distribution<int> rng{0, 1000};
+
+    std::vector rng_cmd{
+        rng(device),
+        rng(device),
+        rng(device),
+    };
+
+    std::sort(rng_cmd.begin(), rng_cmd.end(), std::less<int>{});
+
+    int cmd_insert_in{rng_cmd[0]};
+    int cmd_insert_at{rng_cmd[1]};
+    int cmd_drop{rng_cmd[2]};
 
     std::size_t insert_index{0};
 
     iuic::iterator::insert current{res.root()};
     current[insert_index]; // R-1 Always
+    insert_index = 1;
 
     std::vector<decltype(current)> stack;
 
-    for (; insert_index < 1000; ++insert_index) {
+    for (; insert_index != gen_count; ++insert_index) {
       int cmd = rng(device);
-      switch (cmd) {
-      case 0: {
+      if (cmd < cmd_insert_in) {
+        stack.push_back(std::exchange(current, current(insert_index)));
+      } else if (cmd < cmd_insert_at) {
+        current &= insert_index;
+      } else if (cmd < cmd_drop) {
+        current = res.root();
+        stack.clear();
         current[insert_index];
-        break;
-      }
-      case 1: {
+      } else { // up and at
         if (not stack.empty()) {
           current = stack.back();
           stack.pop_back();
         }
-      }
-      case 2: {
         current &= insert_index;
-        break;
       }
-      case 3:
-      case 4: {
-        auto it = std::exchange(current, current(insert_index));
-        stack.push_back(it);
-        break;
-      }
-      };
     };
 
     return res;
   };
 
   static void body(iuic::test::utils utils) {
+    auto seed = std::random_device{}();
 
-    tree_t tree = generate_tree();
+    tree_t tree = generate_tree(seed);
 
     {
       tree_t levelorder_tree{tree};

@@ -127,6 +127,7 @@ struct orderable : protected basic_orderable<T, index_t> {
     this->hierarchy.clear();
     this->root_.ch_first = this->npos;
     this->root_.ch_last = this->npos;
+    this->state_ = order::unordered.type;
   };
 
 public: // CTORS
