@@ -25,10 +25,9 @@ struct test : iuic::test::unit<test> {
     };
 
     std::sort(rng_cmd.begin(), rng_cmd.end(), std::less<int>{});
-
-    int cmd_insert_in{rng_cmd[0]};
-    int cmd_insert_at{rng_cmd[1]};
-    int cmd_drop{rng_cmd[2]};
+    int threshold_1{rng_cmd[0]};
+    int threshold_2{rng_cmd[1]};
+    int threshold_3{rng_cmd[2]};
 
     std::size_t insert_index{0};
 
@@ -38,23 +37,46 @@ struct test : iuic::test::unit<test> {
 
     std::vector<decltype(current)> stack;
 
+    std::array cmd_index = {0, 1, 2, 3};
+    std::ranges::shuffle(cmd_index, device);
+
     for (; insert_index != gen_count; ++insert_index) {
       int cmd = rng(device);
-      if (cmd < cmd_insert_in) {
+      int selected_call_index{0};
+      if (cmd < threshold_1) {
+        selected_call_index = cmd_index[0];
+      } else if (cmd < threshold_2) {
+        selected_call_index = cmd_index[1];
+      } else if (cmd < threshold_3) {
+        selected_call_index = cmd_index[2];
+      } else { // up and at
+        selected_call_index = cmd_index[3];
+      }
+
+      switch (selected_call_index) {
+      case 0: {
         stack.push_back(std::exchange(current, current(insert_index)));
-      } else if (cmd < cmd_insert_at) {
-        current &= insert_index;
-      } else if (cmd < cmd_drop) {
+        break;
+      };
+      case 1: {
         current = res.root();
         stack.clear();
         current[insert_index];
-      } else { // up and at
+        break;
+      };
+      case 2: {
         if (not stack.empty()) {
           current = stack.back();
           stack.pop_back();
         }
         current &= insert_index;
-      }
+        break;
+      };
+      case 3: {
+        current &= insert_index;
+        break;
+      };
+      };
     };
 
     return res;
@@ -65,6 +87,7 @@ struct test : iuic::test::unit<test> {
 
     tree_t tree = generate_tree(seed);
 
+    std::println("tree seed : {}", seed);
     {
       tree_t levelorder_tree{tree};
       levelorder_tree.organize(iuic::tree::order::levelorder);
