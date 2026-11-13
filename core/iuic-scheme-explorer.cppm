@@ -15,7 +15,7 @@ import :scheme.query;
 namespace iuic::scheme {
 
 struct explorer_assign {
-  blueprint::base_iterator it;
+  layout::tree *tree;
   asset::catalog *assets;
   environment::tmp *tenv;
   environment::persist *penv;
@@ -23,26 +23,28 @@ struct explorer_assign {
 
 export struct explorer : base {
   struct : utils::member_for<explorer> {
-    style::value style(iterators::base it) {
+    style::value style(scheme::iterator::base it) {
       return self().tenv->style.get(self().get_sid(it));
     };
 
-    units::ui::order order(iterators::base it) {
+    units::ui::order order(scheme::iterator::base it) {
       return self().get_element(it).order;
     };
 
-    const units::ui::area &area(iterators::base it) {
+    const units::ui::area &area(scheme::iterator::base it) {
       return std::get<ui::element::placed>(self().get_element(it).is);
     };
 
-    template <typename T> T policy(iterators::base it) {
+    template <typename T> T policy(scheme::iterator::base it) {
       return self().tenv->policy.get<T>(self().get_uid(it));
     };
 
-    units::uid uid(iterators::base it) { return self().get_element(it).uid; };
+    units::uid uid(scheme::iterator::base it) {
+      return self().get_element(it).uid;
+    };
 
     // TODO: mb wrap ??
-    const text::data &text(iterators::base it) {
+    const text::data &text(scheme::iterator::base it) {
       return self().tenv->text.get(self().get_element(it).text);
     };
 
@@ -51,73 +53,67 @@ export struct explorer : base {
   } props{*this};
 
   struct : utils::member_for<explorer> {
-    bool is_virtualized(iterators::base it) {
+    bool is_virtualized(scheme::iterator::base it) {
       auto &el = self().get_element(it);
 
       return std::holds_alternative<ui::element::virtualized>(el.is);
     };
 
-    bool is_discarded(iterators::base it) {
+    bool is_discarded(scheme::iterator::base it) {
       auto &el = self().get_element(it);
 
       return std::holds_alternative<ui::element::discarded>(el.is);
     }
 
-    bool has_text(iterators::base it) {
+    bool has_text(scheme::iterator::base it) {
       return self().get_element(it).text != text::id::null;
     };
 
   } traits{*this};
 
   struct : utils::member_for<explorer> {
-    bool has(iterators::base it, state::value state) {
+    bool has(scheme::iterator::base it, state::value state) {
       return self().penv->state.access(self().get_uid(it)).has(state);
     };
 
-    void attach(iterators::base it, state::value state) {
+    void attach(scheme::iterator::base it, state::value state) {
       self().penv->state.access(self().get_uid(it)).attach(state);
     }
 
-    void detach(iterators::base it, state::value state) {
+    void detach(scheme::iterator::base it, state::value state) {
       self().penv->state.access(self().get_uid(it)).detach(state);
     }
   } state{*this};
 
   struct : utils::member_for<explorer> {
     auto level_order() {
+      self().tree->organize(iuic::tree::order::levelorder);
 
-      tree::hierarchy::bfs::base_iterator bhit{self().begin_};
-
-      return tree::iterator_range_for{
-          bhit, tree::iterator_type<tree::base_iterator>{}};
+      return iuic::iterator::range::from(iuic::iterator::basic{
+          layout::base_iterator{self().tree->begin()},
+          iuic::iterator::mode::liner,
+          iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
     };
+    auto reverse_level_order() { return 1; };
 
-    auto reverse_level_order() {
-      return ranges::reverse_level_order{
-          tree::hierarchy::bfs::base_iterator{self().begin_}};
-    };
-
-    auto postorder() {
-      return ranges::postorder{
-          tree::hierarchy::bfs::base_iterator{self().begin_}};
-    };
+    auto postorder() { return 1; };
 
     auto clipzones() { return self().tenv->clip.get(); };
   } ranges{*this};
 
   struct : utils::member_for<explorer> {
   private:
-    bool eval(scheme::iterators::base it, query::valid_t t) {
+    bool eval(scheme::iterator::base it, query::valid_t) {
       auto &el = self().get_element(it);
       return not(std::holds_alternative<ui::element::discarded>(el.is) ||
                  std::holds_alternative<ui::element::virtualized>(el.is));
     };
 
-    bool eval(scheme::iterators::base it, query::state t) {
+    bool eval(scheme::iterator::base it, query::state t) {
       return self().state.has(it, t.value);
     };
 
-    bool eval(scheme::iterators::base it, query::hit t) {
+    bool eval(scheme::iterator::base it, query::hit t) {
       auto &el = self().get_element(it);
 
       constexpr auto in__ =
@@ -130,7 +126,7 @@ export struct explorer : base {
     };
 
     template <typename EXPR>
-    bool eval(scheme::iterators::base it, query::qnot<EXPR> expr) {
+    bool eval(scheme::iterator::base it, query::qnot<EXPR> expr) {
       return not eval(it, expr.expr);
     };
 
@@ -149,10 +145,10 @@ export struct explorer : base {
     }
 
     template <typename... EXPR>
-    std::vector<scheme::iterators::base>
+    std::vector<scheme::iterator::base>
     operator()(const iuic::query::expr<query::tag::element, EXPR...> &expr) {
 
-      std::vector<scheme::iterators::base> res;
+      std::vector<scheme::iterator::base> res;
       for (auto el : self().ranges.level_order()) {
         if (expr.unroll([&](auto &&...args) {
               return (true && ... && eval(el, args));
@@ -229,7 +225,7 @@ export struct explorer : base {
 
 public: // assign
   explorer &operator=(explorer_assign assing) {
-    begin_ = assing.it;
+    tree = assing.tree;
     assets = assing.assets;
     tenv = assing.tenv;
     penv = assing.penv;
@@ -238,19 +234,24 @@ public: // assign
   }
 
 private:
-  units::uid get_uid(iterators::base it) {
-    return tree::access_iterator{tree::shift(begin_, it)}->uid;
+  units::uid get_uid(layout::base_iterator it) {
+    return layout::element_access_iterator{
+        iuic::iterator::basic{tree->begin()} = it}
+        ->uid;
   };
 
-  style::sid get_sid(iterators::base it) {
-    return tree::access_iterator{tree::shift(begin_, it)}->sid;
+  style::sid get_sid(layout::base_iterator it) {
+    return layout::element_access_iterator{
+        iuic::iterator::basic{tree->begin()} = it}
+        ->sid;
   };
 
-  const ui::element &get_element(iterators::base it) {
-    return *tree::const_access_iterator{tree::shift(begin_, it)};
+  const ui::element &get_element(layout::base_iterator it) {
+    return *layout::element_access_iterator{
+        iuic::iterator::basic{tree->begin()} = it};
   }
 
 private:
-  blueprint::base_iterator begin_{};
+  layout::tree *tree;
 };
 } // namespace iuic::scheme

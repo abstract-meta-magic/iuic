@@ -23,119 +23,14 @@ protected:
   environment::persist *penv;
 };
 
-using blueprint = tree::flat_bfs_type<ui::element>;
+export namespace iterator {
 
-export namespace iterators {
+using base = layout::base_iterator;
+using root = layout::root_iterator;
+using sibling = layout::sibling_iterator;
 
-using base = tree::base_iterator<tree::hierarchy::bfs>;
-using sentinel = tree::sentinel<base>;
-using root = tree::root_iterator<tree::hierarchy::bfs>;
-using sibling = tree::sibling_iterator<tree::hierarchy::bfs>;
+// sibling childs_of(base it) { return iuic::tree::childs_of(it); };
 
-sibling childs_of(base it) { return tree::childs_of(it); };
+}; // namespace iterator
 
-}; // namespace iterators
-
-export namespace ranges {
-// level_order
-
-struct level_order {
-  struct iterator : iterators::base {};
-
-  iterator begin();
-
-  tree::sentinel<iterator> end();
-};
-
-struct reverse_level_order {
-  struct iterator : iterators::base {
-    using base = iterators::base;
-    iterator(base b) : base{b} {}
-    iterator() {}
-
-    iterator &operator*() { return *this; }
-
-    iterator &operator++() {
-      --self;
-      return *this;
-    };
-  };
-
-  reverse_level_order(iterators::base it) : begin_{find_begin__(it)} {};
-
-  iterator begin() { return begin_; };
-
-  tree::sentinel<iterator> end() { return {}; };
-
-private:
-  static iterator find_begin__(iterators::base it) {
-    struct : iterators::base {
-      iterator find() {
-        return iterators::base{this->owner->hierarchy__.size() - 1,
-                               this->owner};
-      };
-    } search_end{it};
-
-    return search_end.find();
-  };
-
-private:
-  iterator begin_;
-};
-
-struct postorder {
-  struct iterator : iterators::base {
-    using base = iterators::base;
-    iterator(base b) : base{b} {}
-    iterator() {}
-
-    iterator &operator*() { return *this; }
-
-    iterator &operator++() {
-      throw std::runtime_error{"is boroken"};
-      return *this;
-    };
-  };
-
-  postorder(iterators::base it) : begin_{find_entry__(it)} {}
-
-  iterator begin() { return begin_; };
-
-  tree::sentinel<iterator> end() { return {}; };
-
-private:
-  static iterator find_entry__(iterators::base it) {
-    struct : iterators::base {
-      using base = iterator::base;
-      iterator find() {
-        if (owner && not owner->hierarchy__.empty()) {
-          auto &h = owner->hierarchy__;
-          index_t sel{0};
-
-          for (; h[sel].ch_begin != npos;) {
-            sel = h[sel].ch_begin;
-          }
-          return base{sel, owner};
-
-        } else {
-          return base{};
-        }
-      }
-    } search_entry{it};
-    return search_entry.find();
-  };
-
-private:
-  iterator begin_;
-};
-
-struct preorder {
-  struct iterator : iterators::base {};
-  iterator begin() { throw std::runtime_error{"Not impl"}; };
-
-  tree::sentinel<iterator> end() { return {}; };
-};
-
-// post_order
-}; // namespace ranges
 }; // namespace iuic::scheme

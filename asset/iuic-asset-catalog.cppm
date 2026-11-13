@@ -156,6 +156,7 @@ export struct catalog {
       auto iid = instance_id{records.instances.insert(instance_record{
           instance{&record.def}, decl, instance_record::Dynamic})};
       if (iid != invalid_id) {
+        record.instances.push_back(iid);
         return iid;
       }
     };

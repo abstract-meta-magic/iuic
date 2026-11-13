@@ -18,14 +18,14 @@ struct test_persist : iuic::test::unit<test_persist> {
 
   // other info
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     advance::pool pool;
     environment::persist penv{pool};
     environment::tmp tenv{pool};
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<ui::element> tree;
+    layout::tree tree;
 
     scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
@@ -112,4 +112,4 @@ struct test_persist : iuic::test::unit<test_persist> {
 
 }; // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(false); };
+extern "C++" int main() { return iuic::test::run(); };

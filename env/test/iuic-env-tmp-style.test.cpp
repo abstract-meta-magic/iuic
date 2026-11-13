@@ -8,7 +8,7 @@ import iuic.test;
 namespace {
 struct test : iuic::test::unit<test> {
   static constexpr std::string_view name{"iuic::env::tmp[style]"};
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     [&]<typename T = iuic::environment::style_tmp_registry>() {
       if constexpr (iuic::cenv::logic("iuic::debug.api").value_or(false)) {
         iuic::advance::pool pool;
@@ -92,4 +92,4 @@ struct test : iuic::test::unit<test> {
 } _{};
 }; // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(); }
+extern "C++" int main() { return iuic::test::run(); }

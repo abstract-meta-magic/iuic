@@ -13,7 +13,7 @@ struct text_utils : public utils_base {
       : utils_base{tenv, it}, text{text_} {};
 
   const units::ui::area &self_area() const {
-    return std::get<ui::element::placed>((tree::access_iterator{it})->is);
+    return std::get<ui::element::placed>((element_access_iterator{it})->is);
   };
 
   iuic::text::decoded get_text() {

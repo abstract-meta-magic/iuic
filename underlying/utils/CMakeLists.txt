@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}_underlying__utils PUBLIC
 	"iuic-utils-decl.cppm"
 	"iuic-utils.cppm"
 	"iuic-advance.cppm"
+	"iuic-iterator.cppm"
 	"iuic-func.cppm"
 )
 

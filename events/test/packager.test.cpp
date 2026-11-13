@@ -11,7 +11,7 @@ static constexpr iuic::event::channel test_channel{.memory = {.size = 4048}};
 struct test : iuic::test::unit<test> {
   static constexpr std::string_view name{"iuic::events[alloc]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::advance::pool pool;
     iuic::event::allocator<test_channel> alloc{pool};
     struct data {
@@ -38,7 +38,7 @@ struct test : iuic::test::unit<test> {
 struct test_2 : iuic::test::unit<test_2> {
   static constexpr std::string_view name{"iuic::events[pool]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::advance::pool pool;
 
     iuic::event::pool<test_channel> event_pool{pool};

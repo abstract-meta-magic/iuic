@@ -58,29 +58,34 @@ calc_root_child_area(const units::ui::adaptive::size &m, style::value style,
   return res;
 };
 
-void measure(environment::tmp &tenv, scheme::blueprint &bp) {
+void measure(environment::tmp &tenv, layout::tree &bp) {
 
-  auto range =
-      tree::iterator_range_for{bp, tree::iterator_type<tree::base_iterator>{},
-                               tree::tag::reverse_levelorder{}};
+  // reverse
+  auto range = iuic::iterator::range::from(iuic::iterator::basic{
+      --bp.end(), iuic::iterator::mode::reverse,
+      iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
+
+  layout::element_access_iterator ait{bp.begin()};
 
   for (auto el : range) {
-    auto ait = tree::access_iterator{el};
+    ait = el;
 
     std::visit(
         [&](auto obj) {
           if constexpr (std::same_as<decltype(obj), const layout::frame *>) {
 
             if (auto res = obj->measure(layout::measure::frame_utils{
-                    tenv, tree::base_iterator{ait}})) {
+                    tenv, iuic::iterator::basic{ait, el}})) {
+
               ait->is = ui::element::measured{res.value()};
             } else {
               ait->is = ui::element::discarded{};
+              std::println("measure discard");
             };
           } else if constexpr (std::same_as<decltype(obj),
                                             const layout::text *>) {
             if (auto res = obj->measure(layout::measure::text_utils{
-                    tenv, ait->text, tree::base_iterator{ait}})) {
+                    tenv, ait->text, iuic::iterator::basic{ait, el}})) {
               ait->is = ui::element::measured{res.value()};
             } else {
               ait->is = ui::element::discarded{};
@@ -93,55 +98,55 @@ void measure(environment::tmp &tenv, scheme::blueprint &bp) {
   };
 };
 
-void arrange_root(environment::tmp &tenv, scheme::blueprint &bp) {
-  auto root_ch = tree::childs_of(bp.root());
-
+void arrange_root(environment::tmp &tenv, layout::tree &bp) {
   iuic::units::ui::position cursor{units::pixel{0}, units::pixel{0}};
   iuic::units::upixel margin{0};
 
-  for (auto el : tree::iterator_range_for{
-           root_ch, tree::iterator_type<tree::base_iterator>{}}) {
-    // DO JOB
-    auto ait = tree::access_iterator{el};
+  auto range = iuic::iterator::range::from(tree::childs_of(bp.root()));
 
-    if (not std::holds_alternative<ui::element::measured>(ait->is)) {
+  for (auto &el : range) {
+    // DO JOB
+
+    if (not std::holds_alternative<ui::element::measured>(el.is)) {
       // TODO: normal handling
       continue;
     }
 
     auto area = calc_root_child_area(
-        std::get<ui::element::measured>(ait->is), tenv.style.get(ait->sid),
+        std::get<ui::element::measured>(el.is), tenv.style.get(el.sid),
         tenv.meta.viewport_size, tenv.meta.segment_size);
 
     area.bordered.y = area.bordered.y + cursor.y;
     area.borderless.y = area.borderless.y + cursor.y;
 
     // TODO : calc margin
-
-    ait->is = ui::element::placed{area};
+    auto &is = el.is;
+    is = ui::element::placed{area};
 
     cursor.y = cursor.y + area.bordered.h;
   };
+  std::get<ui::element::placed>(iterator::access{bp.begin()}->is);
 };
 
-void arrange(environment::tmp &tenv, scheme::blueprint &bp) {
+void arrange(environment::tmp &tenv, layout::tree &bp) {
   arrange_root(tenv, bp);
 
-  for (auto el : tree::iterator_range_for{
-           bp, tree::iterator_type<tree::base_iterator>{}}) {
-    auto ait = tree::access_iterator{el};
+  auto range = iuic::iterator::range::from(iuic::iterator::basic{
+      bp.begin(), iuic::iterator::mode::liner,
+      iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
+
+  for (auto el : range) {
+    iterator::access ait{el};
 
     // TODO : DISCARTED | VIRTUALIZED
     if (not std::holds_alternative<ui::element::placed>(ait->is)) {
       if (std::holds_alternative<ui::element::virtualized>(ait->is)) {
         // do virtualize
       } else {
-        ait->is = ui::element::discarded{};
+        iterator::access{el}->is = ui::element::discarded{};
 
-        for (auto ch : tree::iterator_range_for{
-                 tree::childs_of(ait),
-                 tree::iterator_type<tree::access_iterator>{}}) {
-          ch->is = ui::element::discarded{};
+        for (auto ch : iuic::iterator::range::from(tree::childs_of(el))) {
+          ch.is = ui::element::discarded{};
         };
       }
       continue;
@@ -150,18 +155,19 @@ void arrange(environment::tmp &tenv, scheme::blueprint &bp) {
     std::visit(
         [&](auto obj) {
           if constexpr (std::same_as<decltype(obj), const layout::frame *>) {
-            if (iuic::tree::root_iterator rit{ait}; ++rit) {
-              ait->clip = iuic::tree::access_iterator{rit}->clip;
+            if (iuic::iterator::basic rit{ait, iuic::iterator::mode::root};
+                ++rit) {
+              ait->clip = iuic::iterator::access{rit}->clip;
             }
 
-            if (not obj->arrange(iuic::layout::arrange::frame_utils{
-                    tenv, tree::base_iterator{ait}})) {
+            if (not obj->arrange(
+                    iuic::layout::arrange::frame_utils{tenv, el})) {
               ait->is = ui::element::discarded{};
               return;
             };
           } else {
-            if (auto res = obj->arrange(iuic::layout::arrange::text_utils{
-                    tenv, ait->text, tree::base_iterator{ait}})) {
+            if (auto res = obj->arrange(
+                    iuic::layout::arrange::text_utils{tenv, ait->text, el})) {
               tenv.text.get(ait->text).value = res.value();
             } else {
               ait->is = ui::element::discarded{};
@@ -169,7 +175,7 @@ void arrange(environment::tmp &tenv, scheme::blueprint &bp) {
             }
           }
         },
-        tree::access_iterator{el}->type);
+        ait->type);
   };
 };
 
@@ -177,8 +183,10 @@ void arrange(environment::tmp &tenv, scheme::blueprint &bp) {
 
 namespace iuic::scheme {
 
-bool compute(blueprint &bp, environment::tmp &tenv,
+bool compute(layout::tree &bp, environment::tmp &tenv,
              environment::persist &penv) {
+
+  bp.organize(iuic::tree::order::levelorder);
 
   measure(tenv, bp);
   arrange(tenv, bp);

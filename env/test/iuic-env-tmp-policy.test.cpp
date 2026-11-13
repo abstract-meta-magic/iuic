@@ -8,7 +8,7 @@ import iuic.test;
 namespace {
 struct test : iuic::test::unit<test> {
   static constexpr std::string_view name{"iuic::env::tmp[policy]"};
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     // todo
     [&]<typename T = iuic::environment::policy_tmp_registry>() {
       if constexpr (iuic::cenv::logic("iuic::debug.api").value_or(false)) {
@@ -70,4 +70,4 @@ struct test : iuic::test::unit<test> {
 
 } // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(); }
+extern "C++" int main() { return iuic::test::run(); }

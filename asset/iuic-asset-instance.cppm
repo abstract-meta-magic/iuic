@@ -9,7 +9,7 @@ import :definition;
 
 namespace iuic::asset {
 
-static constexpr type use_of;
+constexpr type use_of;
 
 export struct instance {
   constexpr instance(const definition *of) : of_{of} {};
@@ -20,7 +20,7 @@ export struct instance {
 
   void reset_type() { type_ = use_of; };
 
-  type get_type() const {
+  constexpr type get_type() const {
     if (type_ != use_of) {
       return type_;
     } else if (of_) {

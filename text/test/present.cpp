@@ -10,7 +10,7 @@ namespace {
 struct test_1 : iuic::test::unit<test_1> {
   static constexpr std::string_view name{"iuic::text[present.fill]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::text::present::tool pt;
 
     iuic::units::ui::position baseline;
@@ -27,7 +27,7 @@ struct test_1 : iuic::test::unit<test_1> {
 struct test_2 : iuic::test::unit<test_2> {
   static constexpr std::string_view name{"iuic::text[present.logical]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::text::present::tool pt;
 
     iuic::units::ui::position baseline;
@@ -53,7 +53,7 @@ struct test_2 : iuic::test::unit<test_2> {
 struct test_3 : iuic::test::unit<test_3> {
   static constexpr std::string_view name{"iuic::text[present.semantic]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
 
     iuic::text::present::tool pt;
 

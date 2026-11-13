@@ -8,7 +8,7 @@ struct test : iuic::test::unit<test> {
 
   static constexpr std::string_view name{"iuic::asset::map"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     //
     iuic::asset::catalog catalog;
 
@@ -58,7 +58,7 @@ struct test_2 : iuic::test::unit<test_2> {
 
   static constexpr std::string_view name{"iuic::asset::map"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::asset::catalog c;
 
     struct info {

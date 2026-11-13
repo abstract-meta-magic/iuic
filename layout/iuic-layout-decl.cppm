@@ -34,6 +34,23 @@ export struct element {
 
 export namespace iuic::layout {
 
-using tree = ::iuic::tree::flat_bfs_type<ui::element>;
+using tree = iuic::tree::orderable<ui::element, std::uint16_t>;
 
-};
+using base_iterator =
+    iuic::iterator::basic<iuic::tree::hierarchy::orderable<std::uint16_t>>;
+
+using sibling_iterator =
+    iuic::iterator::basic<iuic::tree::hierarchy::orderable<std::uint16_t>,
+                          iuic::iterator::mode::sibling_t>;
+
+using root_iterator =
+    iuic::iterator::basic<iuic::tree::hierarchy::orderable<std::uint16_t>,
+                          iuic::iterator::mode::root_t>;
+
+using element_base_iterator =
+    iuic::iterator::basic<iuic::tree::orderable<ui::element, std::uint16_t>>;
+
+using element_access_iterator =
+    iuic::iterator::access<iuic::tree::orderable<ui::element, std::uint16_t>>;
+
+}; // namespace iuic::layout

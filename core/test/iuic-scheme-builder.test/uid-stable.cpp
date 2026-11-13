@@ -15,14 +15,14 @@ namespace {
 struct test : iuic::test::unit<test> {
   static constexpr std::string_view name{"uid::stable"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     advance::pool p;
     environment::persist penv{p};
     environment::tmp tenv{p};
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<ui::element> tree;
+    layout::tree tree;
 
     scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
@@ -55,4 +55,4 @@ struct test : iuic::test::unit<test> {
 } _{};
 }; // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(); };
+extern "C++" int main() { return iuic::test::run(); };

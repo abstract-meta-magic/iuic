@@ -15,14 +15,14 @@ using namespace iuic;
 struct test_basic : iuic::test::unit<test_basic> {
   static constexpr std::string_view name{"memory::tmp(basic)"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     advance::pool pool;
     environment::persist penv{pool};
     environment::tmp tenv{pool};
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<ui::element> tree;
+    layout::tree tree;
 
     scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
@@ -42,14 +42,14 @@ struct test_ex : iuic::test::unit<test_ex> {
 
   // other info
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     advance::pool pool;
     environment::persist penv{pool};
     environment::tmp tenv{pool};
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<ui::element> tree;
+    layout::tree tree;
 
     scheme::builder builder{penv, tenv, denv, assets, {tree.root()}};
 
@@ -76,4 +76,4 @@ struct test_ex : iuic::test::unit<test_ex> {
 
 } // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(false); };
+extern "C++" int main() { return iuic::test::run(); };

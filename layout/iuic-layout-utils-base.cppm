@@ -7,31 +7,26 @@ import :decl;
 
 namespace iuic::layout {
 struct utils_base {
-  using base_iterator = iuic::tree::base_iterator<iuic::tree::hierarchy::bfs>;
-  using sibling_iterator =
-      iuic::tree::sibling_iterator<iuic::tree::hierarchy::bfs>;
-  using root_iterator = iuic::tree::root_iterator<iuic::tree::hierarchy::bfs>;
-  using element_base_iterator = tree::base_iterator;
-  using element_access_iterator = tree::access_iterator;
 
   utils_base(environment::tmp &tenv_, element_base_iterator it_)
       : tenv{tenv_}, it{it_} {}
 
   base_iterator self() { return it; };
 
-  base_iterator parent() { return ++tree::root_iterator{it}; };
+  base_iterator parent() { return ++root_iterator{it}; };
 
-  iuic::tree::iterator_range_for<
-      iuic::tree::iterator_range_trait<sibling_iterator>>
-  childs() {
+  auto childs() {
     // TODO: ignore invalid childs
-    return {iuic::tree::childs_of(base_iterator{it})};
+    return iuic::iterator::range::from(iuic::iterator::basic{
+        layout::sibling_iterator{iuic::tree::childs_of(it)},
+        iuic::iterator::mode::sibling,
+        iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
   };
 
   struct : utils::member_for<utils_base> {
     style::value operator[](base_iterator el) {
       return self().tenv.style.get(
-          element_access_iterator{iuic::tree::shift(self().it, el)}->sid);
+          iterator::access{iterator::basic{self().it, el}}->sid);
     };
   } style{*this};
 

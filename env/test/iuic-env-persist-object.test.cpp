@@ -10,7 +10,7 @@ struct test : iuic::test::unit<test> {
   static constexpr std::string_view name{
       "iuic::env::persist[object_storage(arena)]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     // TODO:
     // invalide arena.get(id)
     // double free
@@ -94,7 +94,7 @@ struct test_2 : iuic::test::unit<test_2> {
   static constexpr std::string_view name{
       "iuic::env::persist[object_storage(pool)]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     // TODO : later
     // add double alloc\ctor\dealloc
     static std::size_t counter{};
@@ -218,4 +218,4 @@ struct test_2 : iuic::test::unit<test_2> {
 } pool{};
 }; // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(); };
+extern "C++" int main() { return iuic::test::run(); };

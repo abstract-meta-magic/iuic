@@ -13,7 +13,7 @@ struct test : iuic::test::unit<test> {
   // need
   // using test_type = iuic::test::async;
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     static constexpr iuic::state::decl state_1;
     static constexpr iuic::state::decl state_2;
     static constexpr iuic::state::decl state_3;
@@ -192,4 +192,4 @@ struct test : iuic::test::unit<test> {
 } _{};
 } // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(); };
+extern "C++" int main() { return iuic::test::run(); };

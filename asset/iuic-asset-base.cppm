@@ -23,7 +23,7 @@ export struct tag {
 };
 
 export struct type {
-  template <iuic::utils::unique_type t = {{}}> consteval type() : decl{this} {}
+  consteval type() : decl{this} {}
   const type *decl;
   constexpr auto operator<=>(const type &) const = default;
 };

@@ -28,9 +28,7 @@ public: // api
   void make(units::ui::size viewport, units::upixel segment,
             scheme::builder_block_cpt auto &&call);
 
-  context() {
-    scheme = scheme::explorer_assign{blueprint.begin(), &asset_, &tenv, &penv};
-  };
+  context() { scheme = scheme::explorer_assign{&tree, &asset_, &tenv, &penv}; };
 
   void domain(std::invocable<domain> auto &&call) {
     call(iuic::domain{&denv});
@@ -53,7 +51,7 @@ private:
   asset::catalog asset_;
 
   // explore
-  scheme::blueprint blueprint;
+  layout::tree tree;
   environment::tmp tenv{adp};
   environment::persist penv{adp};
   environment::domain denv;
@@ -77,11 +75,11 @@ void context::make(units::ui::size vp, units::upixel seg,
 
   scheme::director d{tenv, penv, denv, asset_};
 
-  blueprint = d.make(vp, std::forward<decltype(call)>(call));
+  tree = d.make(vp, std::forward<decltype(call)>(call));
 
-  scheme::compute(blueprint, tenv, penv);
+  scheme::compute(tree, tenv, penv);
 
-  scheme = {blueprint.begin(), &asset_, &tenv, &penv};
+  scheme = {&tree, &asset_, &tenv, &penv};
 };
 
 } // namespace iuic

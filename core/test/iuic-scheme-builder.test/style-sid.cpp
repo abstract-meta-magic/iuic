@@ -16,7 +16,7 @@ struct test_persist : iuic::test::unit<test_persist> {
 
   // other info
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     using namespace iuic::units::literals;
     advance::pool pool;
     environment::persist penv{pool};
@@ -24,7 +24,7 @@ struct test_persist : iuic::test::unit<test_persist> {
     environment::domain denv{};
     asset::catalog assets;
 
-    tree::flat_unordered_type<ui::element> tree;
+    layout::tree tree;
 
     static constexpr auto style_1 = [](style::decl style) {
       style.shape.size.width = 20_upx;
@@ -129,4 +129,4 @@ struct test_persist : iuic::test::unit<test_persist> {
 } _{};
 } // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(false); };
+extern "C++" int main() { return iuic::test::run(); };

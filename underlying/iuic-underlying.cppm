@@ -7,3 +7,4 @@ export import iuic.underlying.utils;
 export import iuic.underlying.tree;
 export import iuic.underlying.units;
 export import iuic.underlying.query;
+export import iuic.underlying.tree.orderable;

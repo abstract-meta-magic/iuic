@@ -36,7 +36,9 @@ target_compile_features(${PROJECT_NAME}_layout
 
 target_compile_options(${PROJECT_NAME}_layout
 	PRIVATE
-	${IUIC_DEFAULT_COMPILE_OPTIONS}
+	#${IUIC_DEFAULT_COMPILE_OPTIONS}
+	-g
+	-O0
 )
 
 add_library(${PROJECT_NAME}::layout ALIAS ${PROJECT_NAME}_layout)

@@ -50,6 +50,11 @@ target_link_libraries(test_catalog
 	iuic::asset
 )
 
+target_compile_options(test_catalog PRIVATE
+	-g
+	-O0
+)
+
 
 add_test(NAME "iuic::asset::catalog"
 	COMMAND valgrind --error-exitcode=1 --leak-check=full $<TARGET_FILE:test_catalog>

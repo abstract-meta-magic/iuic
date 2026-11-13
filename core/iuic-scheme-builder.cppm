@@ -7,8 +7,11 @@ import iuic.underlying;
 import iuic.state;
 import iuic.text;
 import iuic.event;
+import iuic.env;
+import iuic.style;
+import iuic.layout;
+import iuic.asset;
 import :policy;
-import :scheme.base;
 // import :proto.base;
 
 namespace iuic::scheme {
@@ -19,8 +22,7 @@ template <typename T>
 concept builder_block_cpt = std::invocable<T, builder &>;
 
 struct builder_base {
-  using insert_iterator =
-      tree::insert_iterator<tree::flat_unordered_type<ui::element>>;
+  using insert_iterator = iuic::iterator::insert<iuic::layout::tree>;
 
 public:
   struct unit_t {
@@ -387,16 +389,16 @@ struct director {
            environment::domain &denv_, asset::catalog &assets_)
       : tenv{tenv_}, penv{penv_}, denv{denv_}, assets{assets_} {};
 
-  blueprint make(units::ui::size viewport,
-                 std::invocable<builder &> auto &&call) {
+  iuic::layout::tree make(units::ui::size viewport,
+                          std::invocable<builder &> auto &&call) {
     tenv.meta.viewport_size = viewport;
-    tree::flat_unordered_type<ui::element> tree;
+    iuic::layout::tree tree;
 
-    builder b{penv, tenv, denv, assets, {tree.root()}};
+    builder b{penv, tenv, denv, assets, tree.root()};
 
     call(b);
 
-    return blueprint{tree::move_iterator{tree.root()}};
+    return tree;
   };
 
 private:
@@ -412,12 +414,12 @@ private:
 void builder_element_interface::frame(style::sid sid_,
                                       const layout::frame &layout,
                                       builder_block_cpt auto &&call) noexcept {
-  auto ait = tree::access_iterator{it};
+  auto ait = iterator::access{it};
 
   ++deep_index.at(current_deep).position;
 
   // ~~~
-  auto nit = it.at(ui::element{
+  auto nit = it(ui::element{
       .type = &layout,
       .is = ui::element::maked{},
       .uid = ait ? ait->uid : units::uid{0},
@@ -445,10 +447,10 @@ void builder_element_interface::frame(style::sid sid_,
 void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       const layout::frame &layout_,
                                       builder_block_cpt auto &&call) noexcept {
-  auto ait = tree::access_iterator{it};
+  auto ait = iterator::access{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(ui::element{
+  auto nit = it(ui::element{
       .type = &layout_,
       .is = ui::element::maked{},
       .uid = uid_,
@@ -474,10 +476,11 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
 
 void builder_element_interface::frame(units::uid uid_, style::sid sid_,
                                       const layout::frame &layout_) noexcept {
-  auto ait = tree::access_iterator{it};
+  auto ait = iterator::access{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(ui::element{
+
+  auto _ = it(ui::element{
       .type = &layout_,
       .is = ui::element::maked{},
       .uid = uid_,
@@ -493,10 +496,10 @@ void builder_element_interface::frame(units::uid uid_, style::sid sid_,
 void builder_element_interface::frame(style::sid sid_,
                                       const layout::frame &layout_) noexcept {
 
-  auto ait = tree::access_iterator{it};
+  auto ait = iterator::access{it};
 
   ++deep_index.at(current_deep).position;
-  auto nit = it.at(ui::element{
+  auto _ = it(ui::element{
       .type = &layout_,
       .is = ui::element::maked{},
       .uid = ait ? ait->uid : units::uid{0},
@@ -513,11 +516,11 @@ void builder_element_interface::text(const text::data &data,
                                      iuic::style::sid sid,
                                      const layout::text &layout) {
 
-  auto ait = tree::access_iterator{it};
+  auto ait = iterator::access{it};
 
   ++deep_index.at(current_deep).position;
 
-  auto nit = it.at(ui::element{
+  auto _ = it(ui::element{
       .type = &layout,
       .is = ui::element::maked{},
       .uid = ait ? ait->uid : units::uid{0},
@@ -578,7 +581,7 @@ units::uid builder_uid_interface::make_stable(const std::string &str,
   static thread_local char buff[512]{"--stable--"}; // type prefix
   std::size_t size{10};
 
-  if (auto ait = tree::access_iterator{it}) {
+  if (auto ait = iterator::access{it}) {
     std::memcpy(&buff[size], &ait->uid, sizeof(units::uid));
     size += sizeof(units::uid);
   } else {
@@ -598,7 +601,7 @@ units::uid builder_uid_interface::make_stable(const std::string &str,
 };
 
 units::uid builder_uid_interface::self() const noexcept {
-  return tree::access_iterator{it}->uid;
+  return iterator::access{it}->uid;
 };
 
 // ---- IMPL [state] ----
@@ -612,7 +615,7 @@ void builder_state_interface::detach(units::uid uid, state::value v) {
 };
 
 bool builder_state_interface::has(state::value v) {
-  return penv.state.access(tree::access_iterator{it}->uid).has(v);
+  return penv.state.access(iterator::access{it}->uid).has(v);
 };
 
 bool builder_state_interface::has(units::uid uid, state::value v) {
@@ -628,11 +631,11 @@ void builder_state_interface::persist(units::uid uid) {
 // ---- IMPL [style] ----
 
 style::sid builder_style_interface::self() {
-  return tree::access_iterator{it}->sid;
+  return iterator::access{it}->sid;
 };
 
 void builder_style_interface::replace_self_style(style::sid sid) {
-  tree::access_iterator{it}->sid = sid;
+  iterator::access{it}->sid = sid;
 };
 
 style::sid builder_style_interface::make(const style::decl *s) {
@@ -763,7 +766,7 @@ void builder_policy_interface::set(units::uid uid, auto p) {
 };
 
 void builder_policy_interface::set(auto p) {
-  set(tree::access_iterator{it}->uid, p);
+  set(iterator::access{it}->uid, p);
 };
 
 template <typename T> T builder_policy_interface::get(units::uid uid) {
@@ -771,27 +774,27 @@ template <typename T> T builder_policy_interface::get(units::uid uid) {
 };
 
 template <typename T> T builder_policy_interface::get() {
-  return get<T>(tree::access_iterator{it}->uid);
+  return get<T>(iterator::access{it}->uid);
 };
 
 // ---- IMPL [order] ----
 void builder_order_interface::layer_set(std::int16_t value) {
-  tree::access_iterator{it}->order.layer = value;
+  iterator::access{it}->order.layer = value;
 };
 void builder_order_interface::layer_up() {
-  ++tree::access_iterator{it}->order.layer;
+  ++iterator::access{it}->order.layer;
 };
 void builder_order_interface::layer_down() {
-  --tree::access_iterator{it}->order.layer;
+  --iterator::access{it}->order.layer;
 };
 
 void builder_order_interface::priority_set(std::int16_t value) {
-  tree::access_iterator{it}->order.priority = value;
+  iterator::access{it}->order.priority = value;
 };
 void builder_order_interface::priority_up() {
-  ++tree::access_iterator{it}->order.priority;
+  ++iterator::access{it}->order.priority;
 };
 void builder_order_interface::priority_down() {
-  --tree::access_iterator{it}->order.priority;
+  --iterator::access{it}->order.priority;
 };
 }; // namespace iuic::scheme

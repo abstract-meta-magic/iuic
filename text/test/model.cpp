@@ -43,7 +43,7 @@ auto profile = [](iuic::text::model::profile::tool mpt) {
 struct test : iuic::test::unit<test> {
   static constexpr std::string_view name{"iuic::text[model.check]"};
 
-  void body(iuic::test::utils){
+  static void body(iuic::test::utils){
       // model
 
   };

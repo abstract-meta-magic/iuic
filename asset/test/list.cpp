@@ -9,7 +9,7 @@ struct test : iuic::test::unit<test> {
 
   static constexpr std::string_view name{"iuic::asset::map"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::container<iuic::asset::free_list::fixed<int, 1024>> c;
 
     std::size_t inseprt_point_0 = c.insert(12);

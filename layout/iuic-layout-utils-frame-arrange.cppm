@@ -11,21 +11,24 @@ struct frame_utils : public utils_base {
       : utils_base{tenv, it} {};
 
   void apply_element(base_iterator el, units::ui::area a) {
-    tree::access_iterator ait{iuic::tree::shift(it, el)};
+    iterator::access ait{iterator::basic{it, el}};
 
-    auto &veu = *ait;
+    auto index = ait->is.index();
+
+    bool is = std::holds_alternative<ui::element::measured>(ait->is);
 
     // make assert ??
     if (std::holds_alternative<ui::element::measured>(ait->is)) {
       ait->is = ui::element::placed{a};
+    } else {
+      //
+      auto index = ait->is.index();
     }
   };
 
   void apply_element(base_iterator el, units::ui::area a,
                      units::clip_id clipzone) {
-    tree::access_iterator ait{iuic::tree::shift(it, el)};
-
-    auto &veu = *ait;
+    iterator::access ait{iterator::basic{it, el}};
 
     // make assert ??
     if (std::holds_alternative<ui::element::measured>(ait->is)) {
@@ -35,7 +38,7 @@ struct frame_utils : public utils_base {
   };
 
   units::clip_id make_clipzone() {
-    if (tree::access_iterator ait{it};
+    if (element_access_iterator ait{it};
         ait && ait->clip != units::clip_id::null) {
       return tenv.clip.make_clipzone(std::get<ui::element::placed>(ait->is),
                                      tenv.style.get(ait->sid), ait->clip);
@@ -50,12 +53,12 @@ struct frame_utils : public utils_base {
   struct : utils::member_for<frame_utils> {
     const units::ui::adaptive::size &operator[](base_iterator el) {
       return std::get<ui::element::measured>(
-          tree::access_iterator{iuic::tree::shift(self().it, el)}->is);
+          iterator::access{iterator::basic{self().it, el}}->is);
     };
   } measure{*this};
 
   const units::ui::area &self_area() const {
-    return std::get<ui::element::placed>((tree::access_iterator{it})->is);
+    return std::get<ui::element::placed>((element_access_iterator{it})->is);
   };
 };
 }; // namespace iuic::layout::arrange

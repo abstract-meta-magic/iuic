@@ -9,7 +9,8 @@ import :tmp.exception;
 namespace {
 struct test : iuic::test::unit<test> {
   static constexpr std::string_view name{"iuic::env::tmp[memory]"};
-  void body(iuic::test::utils utils) {
+
+  static void body(iuic::test::utils utils) {
     //
     iuic::advance::pool pool;
     iuic::environment::tmp_memory mem{pool};
@@ -38,4 +39,4 @@ struct test : iuic::test::unit<test> {
 } _{};
 }; // namespace
 
-extern "C++" int main() { return iuic::test::registry::instance().run(); };
+extern "C++" int main() { return iuic::test::run(); };

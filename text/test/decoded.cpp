@@ -10,7 +10,7 @@ namespace {
 struct test_1 : iuic::test::unit<test_1> {
   static constexpr std::string_view name{"iuic::text[decoded.fill]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::text::decoded::tool dt;
 
     iuic::text::gcid c{44};
@@ -44,7 +44,7 @@ struct test_1 : iuic::test::unit<test_1> {
 struct test_2 : iuic::test::unit<test_2> {
   static constexpr std::string_view name{"iuic::text[decoded.logical]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::text::decoded::tool dt;
 
     iuic::text::gcid c{44};
@@ -69,7 +69,7 @@ struct test_2 : iuic::test::unit<test_2> {
 struct test_3 : iuic::test::unit<test_3> {
   static constexpr std::string_view name{"iuic::text[decoded.semantic]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::text::decoded::tool dt;
 
     iuic::text::gcid c{44};
@@ -94,7 +94,7 @@ struct test_3 : iuic::test::unit<test_3> {
 struct test_4 : iuic::test::unit<test_4> {
   static constexpr std::string_view name{"iuic::text[decoded.expansion]"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::text::decoded::tool dt;
 
     iuic::text::gcid c{44};

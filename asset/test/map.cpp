@@ -9,7 +9,7 @@ struct test : iuic::test::unit<test> {
 
   static constexpr std::string_view name{"iuic::asset::map"};
 
-  void body(iuic::test::utils utils) {
+  static void body(iuic::test::utils utils) {
     iuic::container<iuic::asset::map::fixed<int, std::string_view, 1024>> c;
 
     auto access = c.access(7);
