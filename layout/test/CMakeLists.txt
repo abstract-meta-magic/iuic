@@ -5,13 +5,10 @@ target_sources(test_layout PRIVATE
 )
 
 target_link_libraries(test_layout PUBLIC 
-	iuic_test
-	iuic_layout
-)
-
-target_compile_options(test_layout PRIVATE
-	-g
-	-O0
+	PRIVATE ${PROJECT_NAME}_default
+	PRIVATE ${PROJECT_NAME}_test
+	PRIVATE ${PROJECT_NAME}_underlying
+	PRIVATE ${PROJECT_NAME}_layout
 )
 
 add_test(NAME "iuic::layout"

@@ -3,11 +3,13 @@ add_library(${PROJECT_NAME}_underlying STATIC)
 # 1
 add_subdirectory(cenv)
 add_subdirectory(erasure)
-add_subdirectory(tree)
 # 2
 add_subdirectory(utils)
 add_subdirectory(units)
 add_subdirectory(query)
+# 3
+add_subdirectory(iterator)
+add_subdirectory(tree)
 
 target_sources(${PROJECT_NAME}_underlying PUBLIC
 	FILE_SET iuic_underlying_modules
@@ -16,12 +18,9 @@ target_sources(${PROJECT_NAME}_underlying PUBLIC
 	"iuic-underlying.cppm"
 )
 
-if(${IUIC_USER_STD})
-	target_link_libraries(${PROJECT_NAME}_underlying PRIVATE iuic::user_std)
-endif()
-
 ## UNDERLYING LIBS
 target_link_libraries(${PROJECT_NAME}_underlying
+	PRIVATE ${PROJECT_NAME}_default
 	PUBLIC ${PROJECT_NAME}_underlying__cenv
 	PUBLIC ${PROJECT_NAME}_underlying__erasure
 	PUBLIC ${PROJECT_NAME}_underlying__utils
@@ -36,9 +35,3 @@ target_compile_features(${PROJECT_NAME}_underlying
 )
 
 add_library(${PROJECT_NAME}::underlying ALIAS ${PROJECT_NAME}_underlying)
-
-
-target_compile_options(${PROJECT_NAME}_underlying
-	PRIVATE
-	${IUIC_DEFAULT_COMPILE_OPTIONS}
-)

@@ -24,9 +24,9 @@ add_executable(iuic_env_persist_object_test
 )
 
 target_link_libraries(iuic_env_persist_object_test
-	PRIVATE
-	iuic_test
-	iuic_env
+	PRIVATE ${PROJECT_NAME}_default
+	PRIVATE ${PROJECT_NAME}_test
+	PRIVATE ${PROJECT_NAME}_env
 )
 
 add_valgrind_test("iuic::env::persist[object_storage]" iuic_env_persist_object_test)
@@ -36,9 +36,9 @@ add_executable(iuic_env_persist_state_test
 )
 
 target_link_libraries(iuic_env_persist_state_test
-	PRIVATE
-	iuic_test
-	iuic_env
+	PRIVATE ${PROJECT_NAME}_default
+	PRIVATE ${PROJECT_NAME}_test
+	PRIVATE ${PROJECT_NAME}_env
 )
 
 add_valgrind_test("iuic::env::persist[state]" iuic_env_persist_state_test)
@@ -48,9 +48,9 @@ add_executable(iuic_env_tmp_style_test
 )
 
 target_link_libraries(iuic_env_tmp_style_test
-	PRIVATE
-	iuic_test
-	iuic_env
+	PRIVATE ${PROJECT_NAME}_default
+	PRIVATE ${PROJECT_NAME}_test
+	PRIVATE ${PROJECT_NAME}_env
 )
 
 add_test(NAME "iuic::env::tmp[style]"
@@ -64,9 +64,9 @@ add_executable(iuic_env_tmp_policy_test
 )
 
 target_link_libraries(iuic_env_tmp_policy_test
-	PRIVATE
-	iuic_test
-	iuic_env
+	PRIVATE ${PROJECT_NAME}_default
+	PRIVATE ${PROJECT_NAME}_test
+	PRIVATE ${PROJECT_NAME}_env
 )
 
 add_test(NAME "iuic::env::tmp[policy]"
@@ -80,9 +80,9 @@ add_executable(iuic_env_tmp_memory_test
 )
 
 target_link_libraries(iuic_env_tmp_memory_test
-	PRIVATE
-	iuic_test
-	iuic_env
+	PRIVATE ${PROJECT_NAME}_default
+	PRIVATE ${PROJECT_NAME}_test
+	PRIVATE ${PROJECT_NAME}_env
 )
 
 add_test(NAME "iuic::env::tmp[memory]"

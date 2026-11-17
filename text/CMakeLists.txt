@@ -18,11 +18,6 @@ target_sources(${PROJECT_NAME}_text PUBLIC
 )
 
 
-if(${IUIC_USER_STD})
-	target_link_libraries(${PROJECT_NAME}_text PRIVATE iuic::user_std)
-endif()
-
-
 target_link_libraries(${PROJECT_NAME}_text 
 	PUBLIC
 	iuic::underlying

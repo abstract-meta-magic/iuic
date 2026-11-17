@@ -92,7 +92,7 @@ export struct explorer : base {
       return iuic::iterator::range::from(iuic::iterator::basic{
           layout::base_iterator{self().tree->begin()},
           iuic::iterator::mode::liner,
-          iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
+          iuic::iterator::extension::iterator<iuic::iterator::basic>});
     };
     auto reverse_level_order() { return 1; };
 

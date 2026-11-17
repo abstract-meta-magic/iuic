@@ -3,6 +3,7 @@
 
 export module iuic.core:context;
 import std;
+import iuic.profile;
 import iuic.underlying;
 import iuic.asset;
 import iuic.env;
@@ -67,7 +68,10 @@ void context::make(units::ui::size vp, units::upixel seg,
                    scheme::builder_block_cpt auto &&call) {
 
   // <<-----------------------<< advance
-  adp.advance();
+  {
+    iuic::profile::zone _{"iuic::context::make[advance]"};
+    adp.advance();
+  }
 
   // <<-----------------------<< begin
   tenv.meta.viewport_size = vp;
@@ -75,9 +79,15 @@ void context::make(units::ui::size vp, units::upixel seg,
 
   scheme::director d{tenv, penv, denv, asset_};
 
-  tree = d.make(vp, std::forward<decltype(call)>(call));
+  {
+    iuic::profile::zone _{"iuic::context::make[make]"};
+    tree = d.make(vp, std::forward<decltype(call)>(call));
+  }
 
-  scheme::compute(tree, tenv, penv);
+  {
+    iuic::profile::zone _{"iuic::context::make[compute]"};
+    scheme::compute(tree, tenv, penv);
+  }
 
   scheme = {&tree, &asset_, &tenv, &penv};
 };

@@ -251,7 +251,7 @@ struct common<iuic::tree::orderable<T, index_t>, extension::debug_t>
 template <typename T, typename index_t,
           template <typename...> typename Iterator>
 struct common<iuic::tree::orderable<T, index_t>,
-              iuic::iterator::extension::iterator<Iterator>>
+              iuic::iterator::extension::iterator_t<Iterator>>
     : common<iuic::tree::orderable<T, index_t>, iuic::tree::basic_ex> {
   using container_type = iuic::tree::orderable<T, index_t>;
   using value_type = T;
@@ -576,5 +576,9 @@ childs_of(iuic::iterator::basic<iuic::tree::orderable<T, index_t>, Mode> it) {
   } result{it};
 
   return result;
+};
+
+struct point {
+  int x, y;
 };
 }; // namespace iuic::tree

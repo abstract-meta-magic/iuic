@@ -522,29 +522,4 @@ private:
   // кол-во разбиений для вызова маркера.
   // [Later] thread for dead_marker and GC ???
 };
-
-void reserve(persist_object_storage &s, units::uid uid,
-             const erasure::type *t) {
-  if (auto access = s.access(uid, t);
-      access.state() == object_state::non_exist) {
-    access.reserve();
-  } else if (access.state() == object_state::reserve_this_type) {
-    access.update_lifetime();
-  };
-};
-
-void init_if_not(persist_object_storage &s, units::uid uid,
-                 const erasure::type *t) {
-
-  if (auto access = s.access(uid, t);
-      access.state() == object_state::reserve_this_type) {
-    access.allocate();
-    access.construct([](void *ptr) { new (ptr) int{4}; });
-  } else if (access.state() == object_state::alive_this_type) {
-    access.update_lifetime();
-  };
-
-  // SYNC GC IN ADVANCE::POOL
-};
-
 }; // namespace iuic::environment

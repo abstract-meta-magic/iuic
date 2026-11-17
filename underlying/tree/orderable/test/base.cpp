@@ -129,14 +129,14 @@ struct test : iuic::test::unit<test> {
 
     for (auto it : iuic::iterator::range::from(iuic::iterator::basic{
              iuic::tree::childs_of(exp.root()), iuic::iterator::mode::sibling,
-             iuic::iterator::extension::iterator<iuic::iterator::basic>{}})) {
+             iuic::iterator::extension::iterator<iuic::iterator::basic>})) {
       current_exp.push_back(it);
     }
     current_exp.push_back(separator{});
 
     for (auto it : iuic::iterator::range::from(iuic::iterator::basic{
              iuic::tree::childs_of(dir.root()), iuic::iterator::mode::sibling,
-             iuic::iterator::extension::iterator<iuic::iterator::basic>{}})) {
+             iuic::iterator::extension::iterator<iuic::iterator::basic>})) {
       current_dir.push_back(it);
     }
     current_dir.push_back(separator{});
@@ -153,7 +153,7 @@ struct test : iuic::test::unit<test> {
           for (auto it : iuic::iterator::range::from(iuic::iterator::basic{
                    iuic::tree::childs_of(it), iuic::iterator::mode::sibling,
                    iuic::iterator::extension::iterator<
-                       iuic::iterator::basic>{}})) {
+                       iuic::iterator::basic>})) {
             next_exp.push_back(it);
           }
           next_exp.push_back(separator{});
@@ -167,7 +167,7 @@ struct test : iuic::test::unit<test> {
           for (auto it : iuic::iterator::range::from(iuic::iterator::basic{
                    iuic::tree::childs_of(it), iuic::iterator::mode::sibling,
                    iuic::iterator::extension::iterator<
-                       iuic::iterator::basic>{}})) {
+                       iuic::iterator::basic>})) {
             next_dir.push_back(it);
           }
           next_dir.push_back(separator{});

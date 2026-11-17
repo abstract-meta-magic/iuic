@@ -7,14 +7,10 @@ target_sources(${PROJECT_NAME}_style PUBLIC
 	"iuic-style.cppm"
 )
 
-if(${IUIC_USER_STD})
-target_link_libraries(${PROJECT_NAME}_style PRIVATE iuic::user_std)
-endif()
-
 target_link_libraries(${PROJECT_NAME}_style
-	PUBLIC
-	iuic::underlying
-	iuic::asset
+	PRIVATE ${PROJECT_NAME}_default
+	PUBLIC ${PROJECT_NAME}_underlying
+	PUBLIC ${PROJECT_NAME}_asset
 )
 
 target_compile_features(${PROJECT_NAME}_style

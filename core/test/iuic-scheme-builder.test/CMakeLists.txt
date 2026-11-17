@@ -19,7 +19,11 @@ foreach(TEST_NAME ${TEST_NAMES})
     string(REPLACE "_" "-" SOURCE_FILE "${TEST_NAME}.cpp")
     
     add_executable(${TEST_NAME})
-    target_link_libraries(${TEST_NAME} PRIVATE iuic_test iuic_core)
+    target_link_libraries(${TEST_NAME}
+	    PRIVATE ${PROJECT_NAME}_default
+	    PRIVATE ${PROJECT_NAME}_test
+	    PRIVATE ${PROJECT_NAME}_core
+    )
     target_sources(${TEST_NAME} PUBLIC ${SOURCE_FILE})
     
     string(REPLACE "_" "::" FULL_NAME "${TEST_NAME}")

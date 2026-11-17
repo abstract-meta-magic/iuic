@@ -26,7 +26,20 @@ std::pmr::memory_resource *buffer_overflow_ex_resource() {
   return &_;
 };
 
+// TODO:
+// - Heap allocation  => "iuic::env::tmp.use_heap"
+// - Heap basic size
+// - Heap dynamic size
+// - Stack allocation => "iuic::env::tmp.use_stack"
+// - Stack size
 struct tmp_memory final : private iuic::advance::interface {
+private:
+  static constexpr auto buffer_size =
+      iuic::cenv::num("iuic::env.tmp_buffer_size").value_or(1024 * 1024 * 4);
+
+  using buff_t = std::array<std::byte, buffer_size>;
+
+public:
   friend iuic::advance::interface;
 
   template <typename T> std::span<T> allocate(std::size_t count = 1) {
@@ -43,17 +56,16 @@ public: // BIG-V
   constexpr ~tmp_memory() {};
 
 private:
-  void *allocate(std::size_t size, std::size_t align, std::size_t count = 1) {
-    return allocator.allocate(size * count, align);
+  void *allocate(std::size_t element_size, std::size_t align,
+                 std::size_t count = 1) {
+    return allocator.allocate(element_size * count, align);
   };
 
   void advance() override { allocator.release(); };
 
 private:
-  std::array<std::byte, iuic::cenv::num("iuic::env.tmp_buffer_size")
-                            .value_or(1024 * 1024 * 4)>
-      tmp_buff;
-  std::pmr::monotonic_buffer_resource allocator{&tmp_buff, tmp_buff.size(),
-                                                buffer_overflow_ex_resource()};
+  std::unique_ptr<buff_t> tmp_buff{new buff_t{}};
+  std::pmr::monotonic_buffer_resource allocator{
+      tmp_buff->data(), tmp_buff->size(), buffer_overflow_ex_resource()};
 };
 } // namespace iuic::environment

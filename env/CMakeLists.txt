@@ -16,18 +16,13 @@ target_sources(${PROJECT_NAME}_env PUBLIC
 	"iuic-env.cppm"
 )
 
-if(${IUIC_USER_STD})
-target_link_libraries(${PROJECT_NAME}_env PRIVATE iuic::user_std)
-endif()
-
-
 target_link_libraries(${PROJECT_NAME}_env
-	PUBLIC
-	iuic::underlying
-	iuic::state
-	iuic::style
-	iuic::text
-	iuic::events
+	PRIVATE ${PROJECT_NAME}_default
+	PUBLIC ${PROJECT_NAME}_underlying
+	PUBLIC ${PROJECT_NAME}_state
+	PUBLIC ${PROJECT_NAME}_style
+	PUBLIC ${PROJECT_NAME}_text
+	PUBLIC ${PROJECT_NAME}_events
 )
 
 target_compile_features(${PROJECT_NAME}_env
@@ -35,11 +30,6 @@ target_compile_features(${PROJECT_NAME}_env
 
 add_library(${PROJECT_NAME}::env ALIAS ${PROJECT_NAME}_env)
 
-
 if(${IUIC_BUILD_TESTS})
   add_subdirectory(test)
 endif()
-
-target_compile_options(${PROJECT_NAME}_env PRIVATE
-	${IUIC_DEFAULT_COMPILE_OPTIONS}
-)

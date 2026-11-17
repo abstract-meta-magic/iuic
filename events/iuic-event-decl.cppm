@@ -52,7 +52,7 @@ struct thread {
 };
 
 struct memory {
-  std::size_t size{1024 * 8};
+  std::size_t size{1024 * 1024 * 2};
   bool only_trivially_destructible{true};
   // alloc exception policy
   // etc

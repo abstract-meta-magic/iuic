@@ -19,19 +19,12 @@ target_sources(${PROJECT_NAME}_underlying__erasure PUBLIC
 	"iuic-erasure.cppm"
 )
 
-target_link_libraries(${PROJECT_NAME}_underlying__erasure PUBLIC ${PROJECT_NAME}_underlying__cenv)
-
-if(${IUIC_USER_STD})
-target_link_libraries(${PROJECT_NAME}_underlying__erasure PRIVATE iuic::user_std)
-endif()
+target_link_libraries(${PROJECT_NAME}_underlying__erasure
+	PRIVATE ${PROJECT_NAME}_default
+	PUBLIC ${PROJECT_NAME}_underlying__cenv
+)
 
 target_compile_features(${PROJECT_NAME}_underlying__erasure
 	PRIVATE cxx_std_20
 	PRIVATE cxx_std_23
-)
-
-
-target_compile_options(${PROJECT_NAME}_underlying__erasure
-	PRIVATE
-	${IUIC_DEFAULT_COMPILE_OPTIONS}
 )

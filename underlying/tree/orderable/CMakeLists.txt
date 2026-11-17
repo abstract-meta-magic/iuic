@@ -11,30 +11,16 @@ target_sources(${PROJECT_NAME}_underlying__tree_orderable PUBLIC
 	"iuic-tree-orderable.cppm"
 )
 
-if(${IUIC_USER_STD})
-target_link_libraries(${PROJECT_NAME}_underlying__tree_orderable PRIVATE iuic::user_std)
-endif()
-
-
 target_link_libraries(${PROJECT_NAME}_underlying__tree_orderable
+	PRIVATE ${PROJECT_NAME}_default
 	PUBLIC ${PROJECT_NAME}_underlying__utils
 	PUBLIC ${PROJECT_NAME}_underlying__erasure
+	PUBLIC ${PROJECT_NAME}_underlying__iterator
 )
 
 target_compile_features(${PROJECT_NAME}_underlying__tree_orderable
 	PRIVATE cxx_std_20
 	PRIVATE cxx_std_23
-)
-
-target_compile_options(${PROJECT_NAME}_underlying__tree_orderable
-	PRIVATE
-	${IUIC_DEFAULT_COMPILE_OPTIONS}
-)
-
-target_compile_options(${PROJECT_NAME}_underlying__tree_orderable
-	PRIVATE
-	-g
-	-O0
 )
 
 if(${IUIC_BUILD_TESTS})

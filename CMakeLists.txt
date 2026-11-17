@@ -7,27 +7,33 @@ project(iuic
 
 option(IUIC_USER_STD "Using user difined module std[iuic::user_std]" OFF)
 option(IUIC_BUILD_TESTS "Build unit tests" OFF)
+option(IUIC_USE_PROFILER "Porfiler[private: tracy]" OFF)
 option(IUIC_EXTRA "Add extra flags" OFF)
-
-set(IUIC_DEFAULT_TARGET_COMPILE_OPTIONS
-	# DEBUG
-	$<$<CONFIG:Debug>:-g>
-	$<$<CONFIG:Debug>:-O0>
-	$<$<CONFIG:Debug>:-Wall>
-	$<$<CONFIG:Debug>:-Wextra>
-	# RELEASE
-	$<$<CONFIG:Release>:$<IF:$<BOOL:${IUIC_EXTRA}>,-O3,-O2>>
-)
 
 if(${IUIC_USER_STD} AND NOT TARGET iuic::user_std)
 	message(FATAL_ERROR "IUIC_USER_STD=ON, but target iuic::user_std is not defined")
 endif()
 
 
+add_library(${PROJECT_NAME}_default INTERFACE)
+
+target_compile_options(${PROJECT_NAME}_default
+	INTERFACE
+	$<$<CONFIG:Debug>:-g>
+	$<$<CONFIG:Debug>:-O0>
+	$<$<CONFIG:Debug>:-Wall>
+	$<$<CONFIG:Debug>:-Wextra>
+)
+
+target_link_libraries(${PROJECT_NAME}_default
+	INTERFACE $<IF:$<BOOL:${IUIC_USER_STD}>,iuic::user_std,>
+)
+
 
 ## project ENV ?
 
 ## lvl - 0
+add_subdirectory(profile)
 add_subdirectory(test)
 add_subdirectory(underlying)
 ## lvl - 1

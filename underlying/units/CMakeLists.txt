@@ -11,20 +11,12 @@ target_sources(${PROJECT_NAME}_underlying__units PUBLIC
 	"iuic-units-ui.cppm"
 )
 
-if(${IUIC_USER_STD})
-target_link_libraries(${PROJECT_NAME}_underlying__units PRIVATE iuic::user_std)
-endif()
-
 target_link_libraries(${PROJECT_NAME}_underlying__units
+	PRIVATE ${PROJECT_NAME}_default
 	PUBLIC ${PROJECT_NAME}_underlying__utils
 )
 
 target_compile_features(${PROJECT_NAME}_underlying__units
 	PRIVATE cxx_std_20
 	PRIVATE cxx_std_23
-)
-
-target_compile_options(${PROJECT_NAME}_underlying__units
-	PRIVATE
-	${IUIC_DEFAULT_COMPILE_OPTIONS}
 )

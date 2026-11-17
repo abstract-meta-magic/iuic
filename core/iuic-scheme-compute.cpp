@@ -3,6 +3,7 @@
 
 module iuic.core;
 import std;
+import iuic.profile;
 import iuic.underlying;
 import :scheme.compute;
 
@@ -63,7 +64,7 @@ void measure(environment::tmp &tenv, layout::tree &bp) {
   // reverse
   auto range = iuic::iterator::range::from(iuic::iterator::basic{
       --bp.end(), iuic::iterator::mode::reverse,
-      iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
+      iuic::iterator::extension::iterator<iuic::iterator::basic>});
 
   layout::element_access_iterator ait{bp.begin()};
 
@@ -132,7 +133,7 @@ void arrange(environment::tmp &tenv, layout::tree &bp) {
 
   auto range = iuic::iterator::range::from(iuic::iterator::basic{
       bp.begin(), iuic::iterator::mode::liner,
-      iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
+      iuic::iterator::extension::iterator<iuic::iterator::basic>});
 
   for (auto el : range) {
     iterator::access ait{el};
@@ -154,6 +155,7 @@ void arrange(environment::tmp &tenv, layout::tree &bp) {
     std::visit(
         [&](auto obj) {
           if constexpr (std::same_as<decltype(obj), const layout::frame *>) {
+            iuic::profile::zone _{"element.frame"};
             if (iuic::iterator::basic rit{ait, iuic::iterator::mode::root};
                 ++rit) {
               ait->clip = iuic::iterator::access{rit}->clip;
@@ -165,6 +167,7 @@ void arrange(environment::tmp &tenv, layout::tree &bp) {
               return;
             };
           } else {
+            iuic::profile::zone _{"element.text"};
             if (auto res = obj->arrange(
                     iuic::layout::arrange::text_utils{tenv, ait->text, el})) {
               tenv.text.get(ait->text).value = res.value();
@@ -185,10 +188,20 @@ namespace iuic::scheme {
 bool compute(layout::tree &bp, environment::tmp &tenv,
              environment::persist &penv) {
 
-  bp.organize(iuic::tree::order::levelorder);
+  {
+    iuic::profile::zone _{"tree-organize"};
+    bp.organize(iuic::tree::order::levelorder);
+  }
 
-  measure(tenv, bp);
-  arrange(tenv, bp);
+  {
+    iuic::profile::zone _{"measure"};
+    measure(tenv, bp);
+  }
+
+  {
+    iuic::profile::zone _{"arrange"};
+    arrange(tenv, bp);
+  }
 
   return true;
 };

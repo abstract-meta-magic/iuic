@@ -138,7 +138,7 @@ struct common<iuic::tree::hierarchy::orderable<index_t>>
 
 template <typename index_t, template <typename...> typename Iterator>
 struct common<iuic::tree::hierarchy::orderable<index_t>,
-              iterator::extension::iterator<Iterator>>
+              iterator::extension::iterator_t<Iterator>>
     : common<iuic::tree::hierarchy::orderable<index_t>, iuic::tree::basic_ex> {
   using container_type = iuic::tree::hierarchy::orderable<index_t>;
   using value_type = index_t;

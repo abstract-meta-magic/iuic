@@ -2,22 +2,7 @@ cmake_minimum_required(VERSION 4.0)
 
 add_library(${PROJECT_NAME}_core STATIC)
 
-target_link_libraries(${PROJECT_NAME}_core
-	iuic::underlying
-	iuic::text
-	iuic::state
-	iuic::style
-	iuic::env
-	iuic::layout
-)
 
-if(TARGET iuic_std_module)
-target_link_libraries(${PROJECT_NAME}_core iuic_std_module)
-endif()
-
-target_compile_features(${PROJECT_NAME}_core
-	PRIVATE cxx_std_23
-)
 
 # Modules
 target_sources(${PROJECT_NAME}_core PUBLIC
@@ -37,21 +22,24 @@ target_sources(${PROJECT_NAME}_core PUBLIC
 	"iuic-scheme-compute.cpp"
 )
 
+target_link_libraries(${PROJECT_NAME}_core
+	PRIVATE ${PROJECT_NAME}_default
+	PUBLIC ${PROJECT_NAME}_profile
+	PUBLIC ${PROJECT_NAME}_underlying
+	PUBLIC ${PROJECT_NAME}_text
+	PUBLIC ${PROJECT_NAME}_state
+	PUBLIC ${PROJECT_NAME}_style
+	PUBLIC ${PROJECT_NAME}_env
+	PUBLIC ${PROJECT_NAME}_layout
+)
+
+target_compile_features(${PROJECT_NAME}_core
+	PRIVATE cxx_std_23
+)
+
 ## Main alias
 add_library(${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_core)
 
-## IF TEST
-if(IUIC_BUILD_TESTS)
-  if(TARGET Catch2::Catch2)
-    add_subdirectory(test)
-  else()
-    message(FATAL_ERROR "IUIC use BUILD_TESTS, but Catch2 not found")
-  endif()
+if(${IUIC_BUILD_TESTS})
+	add_subdirectory(test)
 endif()
-
-target_compile_options(${PROJECT_NAME}_core
-	PRIVATE
-	${IUIC_DEFAULT_TARGET_COMPILE_OPTIONS}
-)
-
-## Set tests default options 

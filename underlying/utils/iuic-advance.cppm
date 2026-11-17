@@ -61,7 +61,7 @@ protected:
 
   virtual void after_rebind() {};
 
-  ~interface() {
+  virtual ~interface() {
     if (pool) {
       pool->detach(this);
     }

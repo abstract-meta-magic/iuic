@@ -16,19 +16,14 @@ target_sources(${PROJECT_NAME}_asset PUBLIC
 	"iuic-asset.cppm"
 )
 
-if(${IUIC_USER_STD})
-	target_link_libraries(${PROJECT_NAME}_asset PRIVATE iuic::user_std)
-endif()
-
-target_link_libraries(${PROJECT_NAME}_asset PUBLIC iuic::underlying)
+target_link_libraries(${PROJECT_NAME}_asset
+	PRIVATE ${PROJECT_NAME}_default
+	PUBLIC ${PROJECT_NAME}_underlying
+)
 
 target_compile_features(${PROJECT_NAME}_asset
 	PRIVATE
 	cxx_std_23
-)
-
-target_compile_options(${PROJECT_NAME}_asset PRIVATE
-	${IUIC_DEFAULT_COMPILE_OPTIONS}
 )
 
 add_library(${PROJECT_NAME}::asset ALIAS ${PROJECT_NAME}_asset)

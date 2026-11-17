@@ -20,7 +20,7 @@ struct utils_base {
     return iuic::iterator::range::from(iuic::iterator::basic{
         layout::sibling_iterator{iuic::tree::childs_of(it)},
         iuic::iterator::mode::sibling,
-        iuic::iterator::extension::iterator<iuic::iterator::basic>{}});
+        iuic::iterator::extension::iterator<iuic::iterator::basic>});
   };
 
   struct : utils::member_for<utils_base> {

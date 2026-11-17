@@ -1,7 +1,7 @@
 add_library(${PROJECT_NAME}_layout)
 
 target_sources(${PROJECT_NAME}_layout PUBLIC
-	FILE_SET iuic_underlying_modules
+	FILE_SET iuic_layout_modules
 	TYPE CXX_MODULES
 	FILES
 	"iuic-layout-decl.cppm"
@@ -17,28 +17,16 @@ target_sources(${PROJECT_NAME}_layout PUBLIC
 	"iuic-layout.cppm"
 )
 
-if(${IUIC_USER_STD})
-target_link_libraries(${PROJECT_NAME}_layout PRIVATE iuic::user_std)
-endif()
-
-
 target_link_libraries(${PROJECT_NAME}_layout
-	PUBLIC
-	iuic::underlying
-	iuic::text
-	iuic::env
+	PRIVATE ${PROJECT_NAME}_default
+	PUBLIC ${PROJECT_NAME}_underlying
+	PUBLIC ${PROJECT_NAME}_text
+	PUBLIC ${PROJECT_NAME}_env
 )
 
 target_compile_features(${PROJECT_NAME}_layout
 	PRIVATE
 	cxx_std_23
-)
-
-target_compile_options(${PROJECT_NAME}_layout
-	PRIVATE
-	#${IUIC_DEFAULT_COMPILE_OPTIONS}
-	-g
-	-O0
 )
 
 add_library(${PROJECT_NAME}::layout ALIAS ${PROJECT_NAME}_layout)
